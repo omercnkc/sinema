@@ -1,0 +1,16 @@
+# Build context'e yalnızca derleme için gerekenler girsin (hız + secret sızmasın)
+**/target/
+.git/
+.idea/
+.vscode/
+.claude/
+.env
+*.pem
+*.key
+keys/
+docker/
+frontend/
+memory-bank/
+docs/
+*.md
+mvnw.cmd

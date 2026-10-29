@@ -1,0 +1,89 @@
+# Yerel geliştirme yığını. Çalıştırma: docker compose up --build
+# Değerler .env dosyasından gelir (.env.example'ı kopyalayın). Eksik değişkende compose hemen hata verir.
+
+# Java servislerinin ortak ayarları (YAML anchor); her servis yalnızca farklı olanı yazar
+x-java-servis: &java-servis
+  restart: unless-stopped
+  networks: [sinema-ag]
+  depends_on:
+    mysql:
+      condition: service_healthy
+  deploy:
+    resources:
+      limits:
+        memory: 512m
+
+services:
+  mysql:
+    image: mysql:8.4.13
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD .env içinde tanımlı olmalı}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD .env içinde tanımlı olmalı}
+      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:?CATALOG_DB_PASSWORD .env içinde tanımlı olmalı}
+      BOOKING_DB_PASSWORD: ${BOOKING_DB_PASSWORD:?BOOKING_DB_PASSWORD .env içinde tanımlı olmalı}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?PAYMENT_DB_PASSWORD .env içinde tanımlı olmalı}
+      TZ: UTC
+    command: ["--default-time-zone=+00:00"]
+    volumes:
+      - mysql-veri:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    # Yalnızca bu bilgisayardan erişim: IDE'de çalışan servisler için (planlama §6.5)
+    ports:
+      - "127.0.0.1:${MYSQL_HOST_PORT:-3306}:3306"
+    networks: [sinema-ag]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  auth-service:
+    <<: *java-servis
+    build:
+      context: .
+      args: { SERVIS: auth-service }
+    image: sinema/auth-service:dev
+    healthcheck: &saglik
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  catalog-service:
+    <<: *java-servis
+    build:
+      context: .
+      args: { SERVIS: catalog-service }
+    image: sinema/catalog-service:dev
+    healthcheck:
+      <<: *saglik
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health"]
+
+  booking-service:
+    <<: *java-servis
+    build:
+      context: .
+      args: { SERVIS: booking-service }
+    image: sinema/booking-service:dev
+    healthcheck:
+      <<: *saglik
+      test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health"]
+
+  payment-service:
+    <<: *java-servis
+    build:
+      context: .
+      args: { SERVIS: payment-service }
+    image: sinema/payment-service:dev
+    healthcheck:
+      <<: *saglik
+      test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]
+
+networks:
+  sinema-ag:
+
+volumes:
+  mysql-veri:

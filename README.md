@@ -73,7 +73,28 @@ Tek bir servisi yerelde çalıştırmak (örnek):
 | booking-service | 8083 | http://localhost:8083/actuator/health |
 | payment-service | 8084 | http://localhost:8084/actuator/health |
 
-`docker compose up --build` ve ortam değişkenleri tablosu M0 tamamlandıkça bu bölüme eklenecek.
+### Docker ile tüm yığın
+
+```powershell
+copy .env.example .env      # sonra .env içindeki parolaları doldurun
+docker compose up -d --build --wait
+docker compose ps           # hepsi (healthy) olmalı
+```
+
+- Servis portları dışarı açık değildir; container'lar yalnızca iç ağda (`sinema-ag`) birbirini görür.
+- MySQL yalnızca `127.0.0.1:${MYSQL_HOST_PORT}` üzerinden erişilebilir (IDE'de çalışan servisler için).
+- İlk açılışta `docker/mysql/init` betiği 4 şemayı ve her servis için yalnızca kendi şemasına yetkili kullanıcıyı oluşturur.
+  Betik yalnızca veri klasörü boşken çalışır; sıfırlamak için `docker compose down -v`.
+
+### Ortam değişkenleri
+
+| Değişken | Açıklama |
+|---|---|
+| `MYSQL_ROOT_PASSWORD` | MySQL root parolası |
+| `AUTH_DB_PASSWORD`, `CATALOG_DB_PASSWORD`, `BOOKING_DB_PASSWORD`, `PAYMENT_DB_PASSWORD` | Servis başına DB kullanıcısı parolası (tek tırnak içermemeli) |
+| `MYSQL_HOST_PORT` | MySQL'in bilgisayarda açılacağı port (varsayılan 3306) |
+
+JWT anahtarları, Redis, TMDB ve iyzico değişkenleri ilgili adımlarda eklenecek.
 
 ## Lisans / atıf
 
