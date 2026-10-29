@@ -4,8 +4,9 @@
 Misafirler film, seans ve koltuk doluluğunu görür; üyeler en fazla 5 koltuk tutup iyzico (sandbox) ile satın alır;
 adminler film (TMDB), salon düzeni, seans ve fiyatları yönetir.
 
-> **Durum:** M0 (iskelet) tamamlandı. Servisler ayağa kalkıyor, veritabanına bağlanıyor ve sağlık kontrolünden geçiyor;
-> henüz iş özelliği yok. Ayrıntılı plan: [planlama.md](planlama.md), veritabanı: [db-planlama.md](db-planlama.md).
+> **Durum:** M1 (kimlik doğrulama + gateway güvenliği) tamamlandı. Kayıt, giriş, oturum yenileme, çıkış, admin yönetimi
+> ve servisler arası kimlik çalışıyor; katalog/rezervasyon/ödeme özellikleri sonraki adımlarda.
+> Ayrıntılı plan: [planlama.md](planlama.md), veritabanı: [db-planlama.md](db-planlama.md).
 
 ## Mimari
 
@@ -30,20 +31,20 @@ MySQL 8.4: tek instance, servis başına ayrı şema ve kullanıcı
 | Veri | MySQL 8.4, Redis (yalnızca gateway rate limit) |
 | Frontend | Angular 13, RxJS, SCSS, Bootstrap + ng-bootstrap |
 | Altyapı | Maven (wrapper), Docker / Docker Compose |
-| Test | JUnit 5, AssertJ, Testcontainers (gerçek MySQL) |
+| Test | JUnit 5, AssertJ, Mockito, Testcontainers (gerçek MySQL ve Redis) |
 
 ## Repo yapısı
 
 ```
 sinema/
  ├── pom.xml                 # parent POM: tüm sürümler tek yerde
- ├── sinema-common/          # servlet servislerin ortak altyapısı (korelasyon kimliği filtresi)
- ├── sinema-test-destegi/    # entegrasyon testleri için ortak kurulum (Testcontainers MySQL)
+ ├── sinema-common/          # servlet servislerin ortak altyapısı: hata biçimi, korelasyon kimliği, JWT güvenlik zinciri
+ ├── sinema-test-destegi/    # testler için ortak kurulum (Testcontainers MySQL, test JWT anahtarları ve token'ları)
  ├── services/
  │    ├── api-gateway/       # reaktif, tek giriş noktası
  │    └── auth-service/  catalog-service/  booking-service/  payment-service/
  ├── docker/mysql/init/      # ilk açılışta şema + kullanıcı oluşturan betik
- ├── scripts/                # yardımcı betikler (JWT anahtar üretimi)
+ ├── scripts/                # JWT anahtar üretimi, duman testi
  ├── Dockerfile              # tüm Java servisleri için tek, multi-stage
  ├── docker-compose.yml
  ├── .env.example            # gerekli ortam değişkenleri (değersiz)
@@ -56,7 +57,7 @@ sinema/
 |---|---|
 | JDK 21 | `java -version` ile kontrol edin |
 | Docker Desktop (Compose v2) | Çalışıyor olmalı; testler de Docker kullanır |
-| Git Bash (Windows) | JWT anahtar betiği için (`openssl` içerir) |
+| Git Bash (Windows) | Betikler için (`openssl`, `curl` içerir) |
 | Maven | **Gerekmez**, proje Maven Wrapper ile gelir |
 | nvm + Node 16 | Yalnızca frontend için (M5'ten itibaren) |
 
@@ -65,11 +66,11 @@ sinema/
 ```powershell
 git clone https://github.com/omercnkc/sinema.git
 cd sinema
-copy .env.example .env               # .env içindeki boş parolaları doldurun (openssl rand -base64 24)
+copy .env.example .env               # .env içindeki boş değerleri doldurun (openssl rand -base64 24)
 bash ./scripts/jwt-anahtar-uret.sh   # keys/ altında JWT anahtar çifti
 docker compose up -d --build --wait  # ilk build birkaç dakika sürer
 docker compose ps                    # hepsi (healthy) olmalı
-curl http://localhost:8080/actuator/health
+bash ./scripts/duman-testi.sh        # gateway üzerinden uçtan uca kontrol
 ```
 
 Durdurmak: `docker compose down`. Veritabanını da silip sıfırdan başlamak: `docker compose down -v`.
@@ -83,11 +84,50 @@ Durdurmak: `docker compose down`. Veritabanını da silip sıfırdan başlamak: 
 | auth / catalog / booking / payment | yok | Yalnızca iç ağda (`sinema-ag`), Docker DNS adıyla |
 | Redis | yok | Yalnızca gateway kullanır, kalıcı veri tutmaz |
 
-- İlk açılışta `docker/mysql/init` betiği 4 şemayı (`auth_db`, `catalog_db`, `booking_db`, `payment_db`) ve her biri
-  yalnızca kendi şemasına yetkili 4 kullanıcıyı oluşturur.
+- İlk açılışta `docker/mysql/init` betiği 4 şemayı ve her biri yalnızca kendi şemasına yetkili 4 kullanıcıyı oluşturur.
 - Her servis açılışta kendi Flyway migration'larını uygular.
-- Redis düşerse gateway çalışmaya devam eder: `/actuator/health` DOWN olur, container sağlığına bakılan
-  `/actuator/health/liveness` UP kalır.
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD` doluysa ve sistemde hiç admin yoksa, auth-service açılışta ilk admini oluşturur.
+
+## Güvenlik modeli
+
+**Kimlik:** auth-service, RS256 ile imzalı kısa ömürlü bir **access token** (15 dk, JSON gövdede) ve opak bir
+**refresh token** (14 gün, `HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth` cookie) verir. Private key yalnızca
+auth-service'tedir; diğer servisler ve gateway yalnızca public key ile doğrular.
+
+**İki katmanlı doğrulama:** gateway token'ı ve rota rolünü kontrol eder; her servis aynı token'ı ayrıca kendisi doğrular
+(gateway atlanıp iç ağdan gelinse de servis korunur). Kurallar varsayılan olarak kapalıdır:
+
+| Yol | Kim erişir |
+|---|---|
+| Servisin açık yolları (ör. `GET /api/v1/catalog/**`, giriş/kayıt) ve sağlık kontrolü | Herkes |
+| `/api/v1/admin/**` | ADMIN |
+| Diğer `/api/v1/**` | USER veya ADMIN |
+| `/internal/**` | Yalnızca o servise kesilmiş SERVICE token'ı; gateway'den hiç erişilemez |
+
+**Diğer korumalar:**
+- Hesap kilidi: 5 hatalı giriş → 5 dk (429 + `Retry-After`).
+- Refresh token rotasyonu: her yenilemede değişir; eski token tekrar kullanılırsa tüm oturum ailesi iptal edilir.
+- Cookie'li uçlar (refresh, logout) yalnızca izinli `Origin`'den kabul edilir (CSRF savunması).
+- IP başına istek sınırı (Redis): giriş 10/dk, kayıt 5/dk, bilet doğrulama 30/dk, genel 20/sn. Redis erişilemezse giriş ve
+  kayıt reddedilir (503), diğer trafik geçer.
+- Servisler birbirini `POST /internal/v1/auth/service-token` ile alınan 5 dk'lık token'larla çağırır; hangi servisin hangi
+  servise token alabileceği sınırlıdır (booking → catalog, payment → booking).
+- Tüm hata cevapları RFC 7807 `application/problem+json`: `code` (makine okunur), `detail`, `correlationId`, `timestamp`.
+
+## API (M1)
+
+Gateway üzerinden (`http://localhost:8080`):
+
+| Uç | Erişim | Açıklama |
+|---|---|---|
+| `POST /api/v1/auth/register` | Herkes | `{email, password}` → 201. Rol her zaman USER |
+| `POST /api/v1/auth/login` | Herkes | `{email, password}` → `{accessToken, expiresInSeconds}` + refresh cookie |
+| `POST /api/v1/auth/refresh` | Cookie + izinli Origin | Yeni access token + yeni refresh cookie |
+| `POST /api/v1/auth/logout` | Cookie + izinli Origin | 204, oturum ailesi iptal, cookie silinir |
+| `GET /api/v1/auth/me` | USER/ADMIN | `{id, email, role}` |
+| `POST /api/v1/admin/auth/admins` | ADMIN | `{email, password}` → 201, yeni admin |
+
+Parola kuralı: en az 8 karakter, en çok 72 bayt (BCrypt sınırı; Türkçe harfler 2 bayt sayılır).
 
 ## Yerel geliştirme (tek servis IDE'de veya Maven ile)
 
@@ -95,13 +135,13 @@ MySQL'i Docker'dan, geliştirdiğiniz servisi doğrudan çalıştırın:
 
 ```powershell
 docker compose up -d mysql
-.\mvnw.cmd install -DskipTests          # sinema-common'ı yerel Maven deposuna kurar (bir kez, değişince tekrar)
+.\mvnw.cmd install -DskipTests          # ortak modülleri yerel Maven deposuna kurar (bir kez, değişince tekrar)
 $env:DB_PASSWORD = "<.env içindeki CATALOG_DB_PASSWORD>"
 .\mvnw.cmd -pl services/catalog-service spring-boot:run
 ```
 
-IDE'de çalıştırırken aynı `DB_PASSWORD` değişkenini çalıştırma yapılandırmasına ekleyin.
-Docker'daki aynı servis de çalışıyorsa çakışma olmaz (container portları dışarı açık değildir).
+Servisler JWT anahtarlarını `./keys` altında arar (servis klasöründen çalıştırılıyorsa `JWT_KEYS_DIR` ile mutlak yol verin).
+IDE'de çalıştırırken aynı değişkenleri çalıştırma yapılandırmasına ekleyin.
 
 | Servis | Yerel port | Ana sınıf | DB kullanıcısı / parola değişkeni |
 |---|---|---|---|
@@ -111,8 +151,7 @@ Docker'daki aynı servis de çalışıyorsa çakışma olmaz (container portlar�
 | booking-service | 8083 | `RezervasyonServisiUygulamasi` | `booking_user` / `BOOKING_DB_PASSWORD` |
 | payment-service | 8084 | `OdemeServisiUygulamasi` | `payment_user` / `PAYMENT_DB_PASSWORD` |
 
-Port `SERVER_PORT`, DB adresi `DB_HOST` / `DB_PORT` ile değiştirilebilir. Docker'daki gateway 8080'i kullanıyorsa
-yerel gateway'i `SERVER_PORT` ile başka porta alın.
+Port `SERVER_PORT`, DB adresi `DB_HOST` / `DB_PORT` ile değiştirilebilir.
 
 ## Derleme ve test
 
@@ -121,9 +160,10 @@ yerel gateway'i `SERVER_PORT` ile başka porta alın.
 ./mvnw verify          # Linux / macOS
 ```
 
-- İlk çalıştırmada wrapper Maven 3.9.16'yı ve bağımlılıkları indirir.
-- Entegrasyon testleri Testcontainers ile gerçek bir MySQL başlatır: **Docker çalışıyor olmalı**.
-- Her servlet servisi `ServisAltyapiTesti`'ni miras alır: sağlık kontrolü, korelasyon kimliği ve Flyway testi.
+- Entegrasyon testleri Testcontainers ile gerçek MySQL ve Redis başlatır: **Docker çalışıyor olmalı**.
+- Testler JWT anahtarlarını çalışma anında kendileri üretir; `keys/` gerekmez.
+- Her servlet servisi `ServisAltyapiTesti`'ni miras alır: sağlık kontrolü, Flyway ve 6 güvenlik senaryosu.
+- Çalışan yığın için: `bash ./scripts/duman-testi.sh [gateway-adresi]`.
 
 **Veritabanı değişiklikleri** yalnızca Flyway ile yapılır: servisin `src/main/resources/db/migration` klasörüne
 `V<sürüm>__<açıklama>.sql` eklenir. Uygulanmış bir migration dosyası değiştirilmez; değişiklik için yeni sürüm eklenir.
@@ -138,17 +178,17 @@ Hibernate şemayı değiştirmez (`ddl-auto=validate`), yalnızca entity'lerle u
 | `MYSQL_HOST_PORT` | MySQL'in bilgisayarda açılacağı port (varsayılan 3306) |
 | `REDIS_PASSWORD` | Redis parolası (gateway rate limit) |
 | `GATEWAY_HOST_PORT` | Gateway'in bilgisayarda açılacağı port (varsayılan 8080) |
-| `JWT_KEYS_DIR` | JWT anahtar klasörü (varsayılan `./keys`, betikle üretilir) — M1 |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Sistemde admin yokken açılışta oluşturulan ilk admin — M1 |
-| `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servisler arası çağrılar için servis JWT'si alma sırrı — M1 |
+| `CORS_ALLOWED_ORIGINS` | Gateway'e tarayıcıdan istek atabilecek frontend adresleri, virgülle (varsayılan `http://localhost:4200`) |
+| `JWT_KEYS_DIR` | JWT anahtar klasörü (varsayılan `./keys`, betikle üretilir) |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Sistemde admin yokken açılışta oluşturulan ilk admin; boşsa oluşturulmaz |
+| `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servis token'ı almak için sırlar; boş olan servis token alamaz |
 | `TMDB_API_TOKEN` | TMDB API Read Access Token — M2 |
 | `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` | iyzico sandbox bilgileri — M4 |
 
-Milestone etiketli değişkenler o adımın kodu gelince kullanılmaya başlar; şimdilik boş bırakılabilir.
 Eksik zorunlu bir değişkende `docker compose` hangi değişkenin eksik olduğunu söyleyerek başlamaz.
 
-**JWT anahtarları:** `keys/jwt-private.pem` token imzalar ve yalnızca auth-service'e verilir; `keys/jwt-public.pem`
-token doğrular ve diğer servislere verilir. `keys/` repoya girmez. Anahtarı `--zorla` ile yeniden üretmek, verilmiş
+**JWT anahtarları:** `keys/jwt-private.pem` token imzalar ve yalnızca auth-service'e mount edilir; diğer servislere ve
+gateway'e yalnızca `keys/jwt-public.pem` verilir. `keys/` repoya girmez. Anahtarı `--zorla` ile yeniden üretmek, verilmiş
 tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 
 ## Sık karşılaşılan sorunlar
@@ -157,11 +197,15 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 |---|---|
 | `failed to connect to the docker API` | Docker Desktop açık değil. Açın, `docker info` çalışana kadar bekleyin. |
 | `MYSQL_ROOT_PASSWORD .env içinde tanımlı olmalı` | `.env` yok veya değer boş. `.env.example`'dan kopyalayıp doldurun. |
-| `port is already allocated` (3306 / 8080) | Bilgisayarda başka MySQL veya uygulama o portu kullanıyor. `.env`'de `MYSQL_HOST_PORT` / `GATEWAY_HOST_PORT` değiştirin. |
-| `Access denied for user 'xxx_user'` | `.env`'deki parola değişti ama MySQL eski parolayla kurulmuştu. Init betiği yalnızca ilk açılışta çalışır: `docker compose down -v` ile sıfırlayın. |
+| `port is already allocated` (3306 / 8080) | Başka bir uygulama o portu kullanıyor. `.env`'de `MYSQL_HOST_PORT` / `GATEWAY_HOST_PORT` değiştirin. |
+| Servis açılmıyor, logda `JWT ... key okunamadı` | Anahtar çifti üretilmemiş: `bash ./scripts/jwt-anahtar-uret.sh`. |
+| auth açılmıyor, `ADMIN_EMAIL / ADMIN_PASSWORD geçersiz` | İlk admin parolası kurala uymuyor (en az 8 karakter). `.env`'i düzeltin. |
+| `Access denied for user 'xxx_user'` | `.env`'deki DB parolası değişti ama MySQL eski parolayla kurulmuştu. Init betiği yalnızca ilk açılışta çalışır: `docker compose down -v`. |
+| Refresh/logout `403 ORIGIN_NOT_ALLOWED` | İstek izinli bir frontend'den gelmiyor; `CORS_ALLOWED_ORIGINS`'e frontend adresini ekleyin. |
+| Giriş/kayıt `503 RATE_LIMIT_UNAVAILABLE` | Redis'e ulaşılamıyor (`docker compose ps redis`); bu iki uç Redis olmadan bilerek kapalıdır. |
+| `429 RATE_LIMITED` | İstek sınırı aşıldı; `Retry-After` saniye bekleyin. Docker'da tüm yerel istekler aynı IP'den görünür. |
 | Servis `unhealthy`, logda `Validate failed: Migrations have failed validation` | Uygulanmış bir migration dosyası değiştirilmiş. Dosyayı geri alın, değişikliği yeni `V<n>__` dosyasıyla yapın. |
 | Yerel çalıştırmada `Could not resolve placeholder 'DB_PASSWORD'` | `DB_PASSWORD` ortam değişkeni verilmemiş (bkz. Yerel geliştirme). |
-| Yerel çalıştırmada `sinema-common` bulunamıyor | Önce kökte `.\mvnw.cmd install -DskipTests` çalıştırın. |
 | `mvnw verify` testlerde `Could not find a valid Docker environment` | Testcontainers Docker'a ulaşamıyor; Docker Desktop'ı başlatın. |
 | `./mvnw: bad interpreter` (Linux container / WSL) | Satır sonları CRLF olmuş. `.gitattributes` bunu önler; `git add --renormalize .` ile düzeltin. |
 
@@ -170,8 +214,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | Milestone | İçerik | Durum |
 |---|---|---|
 | M0 | İskelet: servisler, Docker, MySQL, Redis, Flyway, testler | Tamamlandı |
-| M1 | Auth + gateway güvenliği (JWT, refresh, rate limit, CORS) | Sırada |
-| M2 | Catalog: şube, salon, düzen, film (TMDB), seans | |
+| M1 | Auth + gateway güvenliği (JWT, refresh, hesap kilidi, admin, servis token'ı, rate limit, CORS) | Tamamlandı |
+| M2 | Catalog: şube, salon, düzen, film (TMDB), seans | Sırada |
 | M3 | Booking: koltuk tutma (çift satış yok), rezervasyon | |
 | M4 | Payment (iyzico sandbox) + bilet doğrulama | |
 | M5–M7 | Angular frontend, koltuk haritası, admin paneli | |

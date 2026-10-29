@@ -829,7 +829,9 @@ Eski sorular (referans):
 9. [x] gateway: Redis rate limit (genel IP sınırı + login/register/tickets sıkı), auth rotalarında fail-closed dekoratörü; Testcontainers Redis ile Redis açık/kapalı testleri
 **Çalışma düzeni (2026-10-29):** gruplar [3], [4+5], [6+7], [8], [9], [10]; her alt görev ayrı commit. Test: her alt görevde değişen modül, grup sonunda tüm `mvnw verify`, Docker uçtan uca yalnızca Dockerfile/compose/migration değişince ve milestone sonunda.
 
-10. [ ] compose: anahtar mount'ları (private yalnızca auth'a), admin ve client secret env'leri; gateway üzerinden uçtan uca duman testi (register → login → me → refresh → logout); README
+10. [x] compose: anahtar mount'ları (private yalnızca auth'a), admin ve client secret env'leri; gateway üzerinden uçtan uca duman testi (register → login → me → refresh → logout); README. `scripts/duman-testi.sh` (15 adım) hem mevcut yığında hem sıfırdan kurulan ayrı yığında geçti.
+
+**M1 tamamlandı (2026-10-29).** Ertelenen notlar: Feign servis-token interceptor'ı M3'te (ilk Feign çağrısıyla); Redis kesintisinde RedisRateLimiter'ın her istekte stack trace loglaması ve gateway önüne proxy konursa güvenilen X-Forwarded-For ayarı M9'da.
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
