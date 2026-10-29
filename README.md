@@ -83,6 +83,7 @@ Tek bir servisi yerelde çalıştırmak (örnek):
 
 ```powershell
 copy .env.example .env      # sonra .env içindeki parolaları doldurun
+bash ./scripts/jwt-anahtar-uret.sh   # JWT anahtar çifti (Windows'ta Git Bash'in bash'i)
 docker compose up -d --build --wait
 docker compose ps           # hepsi (healthy) olmalı
 ```
@@ -104,8 +105,17 @@ docker compose ps           # hepsi (healthy) olmalı
 | `MYSQL_HOST_PORT` | MySQL'in bilgisayarda açılacağı port (varsayılan 3306) |
 | `REDIS_PASSWORD` | Redis parolası (gateway rate limit) |
 | `GATEWAY_HOST_PORT` | Gateway'in bilgisayarda açılacağı port (varsayılan 8080) |
+| `JWT_KEYS_DIR` | JWT anahtar klasörü (varsayılan `./keys`, betikle üretilir) — M1 |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Sistemde admin yokken açılışta oluşturulan ilk admin — M1 |
+| `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servisler arası çağrılar için servis JWT'si alma sırrı — M1 |
+| `TMDB_API_TOKEN` | TMDB API Read Access Token — M2 |
+| `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` | iyzico sandbox bilgileri — M4 |
 
-JWT anahtarları, TMDB ve iyzico değişkenleri ilgili adımlarda eklenecek.
+Milestone etiketli değişkenler o adımın kodu gelince kullanılmaya başlar; şimdilik boş bırakılabilir.
+
+**JWT anahtarları:** `keys/jwt-private.pem` token imzalar ve yalnızca auth-service'e verilir; `keys/jwt-public.pem`
+token doğrular ve diğer servislere verilir. `keys/` repoya girmez. Anahtarı `--zorla` ile yeniden üretmek, verilmiş
+tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 
 ## Lisans / atıf
 

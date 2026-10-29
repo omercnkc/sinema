@@ -810,7 +810,7 @@ Eski sorular (referans):
 3. [x] Servis Dockerfile'ları (multi-stage, non-root) + `docker-compose.yml` + MySQL init (4 şema/kullanıcı) + healthcheck'ler
 4. [x] Redis + gateway'in compose'da ayağa kalkması (container sağlığı `/actuator/health/liveness`; Redis düşünce liveness UP kalır, K38 fail-open ile uyumlu)
 5. [x] Flyway altyapısı (her serviste `V1__baslangic.sql`, `ddl-auto=validate`); entegrasyon testleri Testcontainers + gerçek MySQL 8.4.13, ortak kurulum `sinema-test-destegi` modülünde
-6. [ ] `.env.example` + JWT anahtar çifti üretim betiği
+6. [x] `.env.example` (M0–M4 tüm secret'lar, milestone etiketli) + `scripts/jwt-anahtar-uret.sh` (RSA 3072, PKCS#8 private + X.509 public, `keys/` gitignore'da). Container mount'ları M1'de (anahtarı kullanan kod gelince). TMDB için `TMDB_API_TOKEN` (v4 Bearer token) kullanılır
 7. [ ] README (kurulum, çalıştırma, env tablosu)
 
 Eski sorular (referans):
