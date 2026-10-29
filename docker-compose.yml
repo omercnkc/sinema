@@ -82,6 +82,44 @@ services:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]
 
+  redis:
+    image: redis:8.8.4-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD .env içinde tanımlı olmalı}
+    # Parola komut satırına compose değil container kabuğu koyar; yalnızca rate limit sayacı olduğu için kalıcılık kapalı
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --save '' --appendonly no"]
+    networks: [sinema-ag]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api-gateway:
+    build:
+      context: .
+      args: { SERVIS: api-gateway }
+    image: sinema/api-gateway:dev
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    # Dışarıya açılan tek API giriş noktası (planlama §6.2); geliştirmede yalnızca bu bilgisayardan erişilir
+    ports:
+      - "127.0.0.1:${GATEWAY_HOST_PORT:-8080}:8080"
+    networks: [sinema-ag]
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    healthcheck:
+      <<: *saglik
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/liveness"]
+
 networks:
   sinema-ag:
 

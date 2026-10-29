@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
+// Testte Redis çalışmıyor; liveness Redis'ten bağımsız olmalı, bunu da doğrulamış oluyoruz
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ApiGatewayUygulamasiTest {
 
@@ -17,8 +18,9 @@ class ApiGatewayUygulamasiTest {
     private int port;
 
     @Test
-    void shouldReportUp_whenHealthEndpointCalled() throws Exception {
-        HttpRequest istek = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/actuator/health")).build();
+    void shouldReportLivenessUp_whenRedisIsUnavailable() throws Exception {
+        HttpRequest istek = HttpRequest.newBuilder(
+                URI.create("http://localhost:" + port + "/actuator/health/liveness")).build();
 
         HttpResponse<String> cevap = HttpClient.newHttpClient().send(istek, HttpResponse.BodyHandlers.ofString());
 

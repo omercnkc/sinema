@@ -81,7 +81,10 @@ docker compose up -d --build --wait
 docker compose ps           # hepsi (healthy) olmalı
 ```
 
+- Dışarıya açık tek API portu gateway'dir: `http://localhost:8080` (yalnızca bu bilgisayardan).
 - Servis portları dışarı açık değildir; container'lar yalnızca iç ağda (`sinema-ag`) birbirini görür.
+- Redis yalnızca gateway rate limit sayaçlarını tutar, kalıcı veri yoktur. Redis düşerse gateway çalışmaya devam eder:
+  `/actuator/health` DOWN olur ama container sağlığına bakılan `/actuator/health/liveness` UP kalır.
 - MySQL yalnızca `127.0.0.1:${MYSQL_HOST_PORT}` üzerinden erişilebilir (IDE'de çalışan servisler için).
 - İlk açılışta `docker/mysql/init` betiği 4 şemayı ve her servis için yalnızca kendi şemasına yetkili kullanıcıyı oluşturur.
   Betik yalnızca veri klasörü boşken çalışır; sıfırlamak için `docker compose down -v`.
@@ -93,8 +96,10 @@ docker compose ps           # hepsi (healthy) olmalı
 | `MYSQL_ROOT_PASSWORD` | MySQL root parolası |
 | `AUTH_DB_PASSWORD`, `CATALOG_DB_PASSWORD`, `BOOKING_DB_PASSWORD`, `PAYMENT_DB_PASSWORD` | Servis başına DB kullanıcısı parolası (tek tırnak içermemeli) |
 | `MYSQL_HOST_PORT` | MySQL'in bilgisayarda açılacağı port (varsayılan 3306) |
+| `REDIS_PASSWORD` | Redis parolası (gateway rate limit) |
+| `GATEWAY_HOST_PORT` | Gateway'in bilgisayarda açılacağı port (varsayılan 8080) |
 
-JWT anahtarları, Redis, TMDB ve iyzico değişkenleri ilgili adımlarda eklenecek.
+JWT anahtarları, TMDB ve iyzico değişkenleri ilgili adımlarda eklenecek.
 
 ## Lisans / atıf
 

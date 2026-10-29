@@ -1,6 +1,12 @@
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
 
 server:
   port: ${SERVER_PORT:8080}
@@ -10,3 +16,9 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  endpoint:
+    health:
+      # /actuator/health/liveness Redis'e bakmaz: Redis düşse de gateway istek geçirmeye devam eder (K38 fail-open),
+      # bu yüzden container sağlığı liveness ile ölçülür. Genel /actuator/health ise Redis bağlantısını da gösterir.
+      probes:
+        enabled: true

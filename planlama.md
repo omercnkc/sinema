@@ -808,7 +808,7 @@ Eski sorular (referans):
 1. [x] Maven Wrapper + parent POM (Boot 4.1.2, Cloud 2025.1.4) + `sinema-common` (korelasyon kimliği filtresi + otomatik yapılandırma, 4 test)
 2. [x] 4 servlet servis iskeleti (auth, catalog, booking, payment) + gateway iskeleti, Actuator health. Portlar: gateway 8080, auth 8081, catalog 8082, booking 8083, payment 8084 (`SERVER_PORT` ile değiştirilebilir)
 3. [x] Servis Dockerfile'ları (multi-stage, non-root) + `docker-compose.yml` + MySQL init (4 şema/kullanıcı) + healthcheck'ler
-4. [ ] Redis + gateway'in compose'da ayağa kalkması
+4. [x] Redis + gateway'in compose'da ayağa kalkması (container sağlığı `/actuator/health/liveness`; Redis düşünce liveness UP kalır, K38 fail-open ile uyumlu)
 5. [ ] Flyway altyapısı (her serviste boş başlangıç migration'ı, `ddl-auto=validate`)
 6. [ ] `.env.example` + JWT anahtar çifti üretim betiği
 7. [ ] README (kurulum, çalıştırma, env tablosu)
