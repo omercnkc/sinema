@@ -36,7 +36,7 @@ MySQL 8.4: tek instance, servis başına ayrı şema ve kullanıcı
 sinema/
  ├── pom.xml            # parent POM (sürümler tek yerde)
  ├── sinema-common/     # servlet servislerin ortak altyapısı (korelasyon kimliği vb.)
- ├── services/          # api-gateway, auth, catalog, booking, payment (M0'da ekleniyor)
+ ├── services/          # api-gateway, auth-service, catalog-service, booking-service, payment-service
  ├── frontend/          # Angular 13 (M5)
  ├── planlama.md, db-planlama.md, memory-bank/
 ```
@@ -58,6 +58,20 @@ sinema/
 İlk çalıştırmada wrapper Maven 3.9.16'yı ve bağımlılıkları indirir.
 
 ## Çalıştırma
+
+Tek bir servisi yerelde çalıştırmak (örnek):
+
+```powershell
+.\mvnw.cmd -pl services/catalog-service -am spring-boot:run
+```
+
+| Servis | Port | Sağlık kontrolü |
+|---|---|---|
+| api-gateway | 8080 | http://localhost:8080/actuator/health |
+| auth-service | 8081 | http://localhost:8081/actuator/health |
+| catalog-service | 8082 | http://localhost:8082/actuator/health |
+| booking-service | 8083 | http://localhost:8083/actuator/health |
+| payment-service | 8084 | http://localhost:8084/actuator/health |
 
 `docker compose up --build` ve ortam değişkenleri tablosu M0 tamamlandıkça bu bölüme eklenecek.
 

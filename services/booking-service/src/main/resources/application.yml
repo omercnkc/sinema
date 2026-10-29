@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: booking-service
+
+server:
+  port: ${SERVER_PORT:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  pattern:
+    # Her log satırına korelasyon kimliği eklenir (sinema-common filtresi MDC'ye yazar)
+    level: "%5p [${spring.application.name},%X{correlationId:-}]"

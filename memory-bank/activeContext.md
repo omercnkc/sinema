@@ -20,4 +20,4 @@ Planlama aşaması, adım adım ilerliyoruz. Kod YOK. Konu: sinema koltuk seçim
 - Adım 4: K32–K34 kesin (P2 ödeme penceresi, W=30 dk, polling 5 sn, seans iptali kapsam dışı).
 - Adım 4 tamam (K35 dahil). Adım 5 tamam (K36). Adım 6 tamam (K37, K38). Adım 7 tamam (K40). Adım 8 tamam (K41). Adım 9 tamam (K42): planlama bitti. Kodlama yalnızca kullanıcı "kodlamaya geçelim" deyince, M0'dan (alt görevlere bölünerek) başlar. iyzico yerel/sandbox, webhook yok (K39).
 - 2026-10-29: DB planı onaylandı (K43, db-planlama.md).
-- 2026-10-29: **KODLAMA BAŞLADI.** M0 alt görevleri planlama.md §9.5'te. Alt görev 1 bitti; sıradaki alt görev 2 (servis iskeletleri + health). Kullanıcıyla "beraber" ilerleniyor: her sınıf ne/nasıl anlatılır.
+- 2026-10-29: **KODLAMA BAŞLADI.** M0 alt görevleri planlama.md §9.5'te. Alt görev 1 ve 2 bitti (GitHub: https://github.com/omercnkc/sinema, main); sıradaki alt görev 3 (Dockerfile + compose + MySQL init). Kullanıcıyla "beraber" ilerleniyor: her sınıf ne/nasıl anlatılır.

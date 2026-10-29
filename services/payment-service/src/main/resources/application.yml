@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: payment-service
+
+server:
+  port: ${SERVER_PORT:8084}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  pattern:
+    # Her log satırına korelasyon kimliği eklenir (sinema-common filtresi MDC'ye yazar)
+    level: "%5p [${spring.application.name},%X{correlationId:-}]"
