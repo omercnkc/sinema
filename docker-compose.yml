@@ -49,6 +49,9 @@ services:
       DB_HOST: mysql
       DB_PASSWORD: ${AUTH_DB_PASSWORD}
       JWT_KEYS_DIR: /run/secrets/jwt
+      # Boşsa ilk admin oluşturulmaz; doluysa yalnızca sistemde hiç admin yokken bir kez oluşturulur
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     # Private key yalnızca auth'a verilir (token imzalayan tek servis); salt okunur
     volumes:
       - ${JWT_KEYS_DIR:-./keys}:/run/secrets/jwt:ro

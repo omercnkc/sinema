@@ -1,6 +1,7 @@
 package com.sinema.auth.kullanici.repository;
 
 import com.sinema.auth.kullanici.entity.Kullanici;
+import com.sinema.auth.kullanici.entity.Rol;
 import java.time.Instant;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +15,8 @@ public interface KullaniciRepository extends JpaRepository<Kullanici, Long> {
     boolean existsByEmail(String email);
 
     Optional<Kullanici> findByEmail(String email);
+
+    boolean existsByRol(Rol rol);
 
     /**
      * Başarısız girişi TEK SQL ifadesiyle sayar; eşiğe ulaşınca hesabı kilitleyip sayacı sıfırlar.

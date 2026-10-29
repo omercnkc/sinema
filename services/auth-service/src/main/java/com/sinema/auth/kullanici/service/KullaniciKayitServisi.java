@@ -26,11 +26,21 @@ public class KullaniciKayitServisi {
     /** Herkese açık kayıt: rol her zaman USER (admin bu yoldan oluşturulamaz, planlama §5.6). */
     @Transactional
     public KayitCevabi kaydet(KayitIstegi istek) {
+        return rolIleKaydet(istek, Rol.USER);
+    }
+
+    /** Yalnızca mevcut bir admin (veya açılıştaki ilk admin kurulumu) çağırır; yetki kontrolü çağıranda. */
+    @Transactional
+    public KayitCevabi adminEkle(KayitIstegi istek) {
+        return rolIleKaydet(istek, Rol.ADMIN);
+    }
+
+    private KayitCevabi rolIleKaydet(KayitIstegi istek, Rol rol) {
         String email = emailNormalizeEt(istek.email());
         if (kullaniciRepository.existsByEmail(email)) {
             throw new CakismaIstisnasi(EMAIL_KAYITLI_KODU, EMAIL_KAYITLI_MESAJI);
         }
-        Kullanici kullanici = Kullanici.olustur(email, parolaKodlayici.encode(istek.password()), Rol.USER);
+        Kullanici kullanici = Kullanici.olustur(email, parolaKodlayici.encode(istek.password()), rol);
         return new KayitCevabi(kaydetVeyaCakismaBildir(kullanici).getId(), email);
     }
 
