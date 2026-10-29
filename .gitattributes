@@ -1,0 +1,5 @@
+# Linux container'larda çalışan betikler LF satır sonuyla kalmalı (Windows checkout'ta bozulmasın)
+* text=auto
+mvnw text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
