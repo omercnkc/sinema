@@ -48,6 +48,10 @@ services:
     environment:
       DB_HOST: mysql
       DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      JWT_KEYS_DIR: /run/secrets/jwt
+    # Private key yalnızca auth'a verilir (token imzalayan tek servis); salt okunur
+    volumes:
+      - ${JWT_KEYS_DIR:-./keys}:/run/secrets/jwt:ro
     healthcheck: &saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
       interval: 10s

@@ -820,13 +820,15 @@ Eski sorular (referans):
 **M1 alt görevleri (2026-10-29):**
 1. [x] `sinema-common`: ortak hata formatı (RFC 7807 `ProblemDetail` + `code`, `correlationId`, `errors[]`), özel exception hiyerarşisi, global `@RestControllerAdvice`
 2. [x] auth: `users` tablosu (V2), kayıt (`POST /register`): doğrulama, e-posta normalize, BCrypt(12), rol her zaman USER
-3. [ ] auth: JWT imzalama (private key mount, RS256, `kid`, `sub/role/iss/iat/exp/jti`, 15 dk) + giriş (`POST /login`, genel hata mesajı) + hesap kilidi (5 hata → 5 dk)
+3. [x] auth: JWT imzalama (private key mount, RS256, `kid`, `sub/role/iss/iat/exp/jti`, 15 dk) + giriş (`POST /login`, genel hata mesajı) + hesap kilidi (5 hata → 5 dk)
 4. [ ] auth: refresh token (V3 `refresh_tokens`: opak, SHA-256 hash, aile, rotasyon, yeniden kullanım tespiti, 10 sn tolerans), HttpOnly cookie, `POST /refresh`, `POST /logout`, `GET /me`
 5. [ ] auth: ilk ADMIN `.env` ile (yalnızca admin yokken), `POST /admin/auth/admins`
-6. [ ] `sinema-common`: servlet servislerde JWT doğrulama (oauth2-resource-server, public key, `iss`, rol → authority, STATELESS, `@PreAuthorize` açık; health herkese açık) — 4 servise uygulanır
+6. [ ] (401/403 problem+json yazıcıları, `GuvenlikHataYoneticisi` ve auth'un private+public key mount'u alt görev 3'te öne çekildi) `sinema-common`: servlet servislerde JWT doğrulama (oauth2-resource-server, public key, `iss`, rol → authority, STATELESS, `@PreAuthorize` açık; health herkese açık) — 4 servise uygulanır
 7. [ ] Servis JWT'si: auth `POST /internal/v1/auth/service-token` (client credentials, `aud`, `SERVICE` rolü, 5 dk) + `/internal/**` yalnızca `SERVICE` ve doğru `aud` (çağıran taraftaki Feign interceptor M3'te, ilk Feign çağrısıyla)
 8. [ ] gateway: rotalar (§3.5, §7.7), reaktif JWT ön doğrulama + rota bazlı rol, `/internal/**` yönlendirilmez, korelasyon kimliği üretimi, CORS (izinli origin listesi, credentials) + refresh/logout için `Origin` kontrolü
 9. [ ] gateway: Redis rate limit (genel IP sınırı + login/register/tickets sıkı), auth rotalarında fail-closed dekoratörü; Testcontainers Redis ile Redis açık/kapalı testleri
+**Çalışma düzeni (2026-10-29):** gruplar [3], [4+5], [6+7], [8], [9], [10]; her alt görev ayrı commit. Test: her alt görevde değişen modül, grup sonunda tüm `mvnw verify`, Docker uçtan uca yalnızca Dockerfile/compose/migration değişince ve milestone sonunda.
+
 10. [ ] compose: anahtar mount'ları (private yalnızca auth'a), admin ve client secret env'leri; gateway üzerinden uçtan uca duman testi (register → login → me → refresh → logout); README
 
 Eski sorular (referans):

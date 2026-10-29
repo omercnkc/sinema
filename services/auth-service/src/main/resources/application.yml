@@ -19,6 +19,15 @@ sinema:
   auth:
     # BCrypt iş faktörü (planlama §5.6); 12 ≈ parola başına ~250 ms, kaba kuvveti pahalılaştırır
     bcrypt-maliyeti: 12
+    jwt:
+      yayinci: sinema-auth
+      erisim-token-suresi: 15m
+      # scripts/jwt-anahtar-uret.sh ile üretilir; Docker'da salt okunur mount edilen klasör
+      ozel-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-private.pem
+      acik-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-public.pem
+    kilit:
+      esik: 5
+      sure: 5m
 
 management:
   endpoints:

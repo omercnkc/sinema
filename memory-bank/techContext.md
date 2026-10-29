@@ -22,3 +22,7 @@ Sabit stack ve tüm kurallar: [rules.md](rules.md). Özet:
 - MockMvc: `spring-boot-starter-webmvc-test`, `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`.
 - Lombok annotation processor parent POM'daki maven-compiler-plugin `annotationProcessorPaths` ile tanımlı (MapStruct eklenince buraya).
 - Spring 7'de 422 = `HttpStatus.UNPROCESSABLE_CONTENT`.
+- Resource server starter'ı Boot 4'te `spring-boot-starter-security-oauth2-resource-server` (eski `spring-boot-starter-oauth2-resource-server` deprecated).
+- Spring 7 `ProblemDetail.getType()` varsayılan `null` (Spring 6'da about:blank).
+- `Jwt.getIssuer()` "iss"i URL'e çevirmeye çalışır; düz ad için `getClaimAsString("iss")`.
+- Testlerde JWT anahtarları: `sinema-test-destegi` → `TestJwtAnahtarlari` + `TestJwtAnahtarBaslaticisi` (META-INF/spring.factories ile her @SpringBootTest'e otomatik).
