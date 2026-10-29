@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sinema.testdestegi.TestTokenUretici;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,9 +13,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Mono;
-import reactor.netty.DisposableServer;
-import reactor.netty.http.server.HttpServer;
 
 /**
  * Gerçek gateway + sahte arka uç: dört servisin adresi, gelen her isteği kaydeden tek bir küçük
@@ -28,17 +24,8 @@ class GatewayEntegrasyonTest {
 
     static final String FRONTEND = "http://localhost:4200";
 
-    private static final List<GelenIstek> ARKA_UCA_GELENLER = new CopyOnWriteArrayList<>();
-    private static final DisposableServer SAHTE_ARKA_UC = HttpServer.create().port(0)
-            .handle((istek, cevap) -> {
-                ARKA_UCA_GELENLER.add(new GelenIstek(istek.uri(), istek.requestHeaders().get(HttpHeaders.AUTHORIZATION),
-                        istek.requestHeaders().get("X-Correlation-Id")));
-                // Gerçek servisler gibi korelasyon başlığını geri döner (gateway bunu tekrarlamamalı)
-                String kimlik = istek.requestHeaders().get("X-Correlation-Id");
-                return cevap.status(200).header("X-Correlation-Id", kimlik == null ? "" : kimlik)
-                        .sendString(Mono.just("arka-uc"));
-            })
-            .bindNow();
+    private static final SahteArkaUc ARKA_UC = new SahteArkaUc();
+    private static final List<SahteArkaUc.GelenIstek> ARKA_UCA_GELENLER = ARKA_UC.gelenler();
 
     @Value("${local.server.port}")
     private int port;
@@ -47,21 +34,18 @@ class GatewayEntegrasyonTest {
 
     @DynamicPropertySource
     static void servisAdresleri(DynamicPropertyRegistry kayit) {
-        String adres = "http://localhost:" + SAHTE_ARKA_UC.port();
-        for (String servis : List.of("AUTH", "CATALOG", "BOOKING", "PAYMENT")) {
-            kayit.add(servis + "_SERVICE_URL", () -> adres);
-        }
+        ARKA_UC.adresleriKaydet(kayit);
     }
 
     @BeforeEach
     void kur() {
-        ARKA_UCA_GELENLER.clear();
+        ARKA_UC.temizle();
         istemci = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
     }
 
     @AfterAll
     static void kapat() {
-        SAHTE_ARKA_UC.disposeNow();
+        ARKA_UC.kapat();
     }
 
     @Test
@@ -178,8 +162,5 @@ class GatewayEntegrasyonTest {
             istek = istek.header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         }
         return istek.exchange().returnResult(String.class).getStatus().value();
-    }
-
-    record GelenIstek(String yol, String yetkiBasligi, String korelasyonKimligi) {
     }
 }

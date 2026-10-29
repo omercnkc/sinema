@@ -43,6 +43,30 @@ sinema:
     cors:
       # Virgülle ayrılmış liste; Angular dev sunucusu varsayılan
       izinli-originler: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    # IP başına istek sınırları; sırayla denenir, ilk eşleşen uygulanır (özelden genele).
+    # kati: Redis yoksa reddet (giriş/kayıt kaba kuvvete açık kalmasın, K38); diğerleri Redis yoksa geçer.
+    hiz-siniri:
+      kurallar:
+        - ad: giris
+          yol: POST /api/v1/auth/login
+          istek: 10
+          sure: 1m
+          kati: true
+        - ad: kayit
+          yol: POST /api/v1/auth/register
+          istek: 5
+          sure: 1m
+          kati: true
+        # QR bilet kodlarının toplu denenmesine karşı (K30)
+        - ad: bilet-dogrulama
+          yol: GET /api/v1/tickets/*
+          istek: 30
+          sure: 1m
+        - ad: genel
+          yol: /api/**
+          istek: 20
+          sure: 1s
+          ani-artis: 40
 
 management:
   endpoints:
