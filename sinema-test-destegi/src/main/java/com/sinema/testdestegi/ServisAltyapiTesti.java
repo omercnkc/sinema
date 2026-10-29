@@ -38,14 +38,15 @@ public abstract class ServisAltyapiTesti {
         assertThat(cevap.headers().firstValue(KORELASYON_BASLIGI)).isPresent();
     }
 
+    // Korumalı serviste token'sız istek adres var mı yok mu öğrenemez (401); korumasızda 404. İkisinde de biçim aynı.
     @Test
     void shouldReturnProblemJsonWithCode_whenPathDoesNotExist() throws Exception {
         HttpResponse<String> cevap = getIstegiGonder("/olmayan-adres");
 
-        assertThat(cevap.statusCode()).isEqualTo(404);
+        assertThat(cevap.statusCode()).isIn(401, 404);
         assertThat(cevap.headers().firstValue("Content-Type")).hasValueSatisfying(
                 tip -> assertThat(tip).startsWith("application/problem+json"));
-        assertThat(cevap.body()).contains("\"code\":\"NOT_FOUND\"").contains("\"correlationId\"");
+        assertThat(cevap.body()).containsPattern("\"code\":\"(NOT_FOUND|UNAUTHORIZED)\"").contains("\"correlationId\"");
     }
 
     @Test

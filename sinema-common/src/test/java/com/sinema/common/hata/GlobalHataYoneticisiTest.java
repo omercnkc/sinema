@@ -15,6 +15,7 @@ import com.sinema.common.korelasyon.KorelasyonKimligiFiltresi;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -75,6 +76,15 @@ class GlobalHataYoneticisiTest {
     }
 
     @Test
+    void shouldSetRetryAfterHeaderRoundedUp_whenTooManyRequestsThrown() throws Exception {
+        mockMvc.perform(get("/bekle"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "91"))
+                .andExpect(jsonPath("$.retryAfterSeconds").value(91))
+                .andExpect(jsonPath("$.code").value("ACCOUNT_LOCKED"));
+    }
+
+    @Test
     void shouldHideInternalDetails_whenUnexpectedExceptionThrown() throws Exception {
         mockMvc.perform(get("/patla"))
                 .andExpect(status().isInternalServerError())
@@ -99,6 +109,11 @@ class GlobalHataYoneticisiTest {
 
         @PostMapping("/kayit")
         void kayit(@Valid @RequestBody DenemeIstegi istek) {
+        }
+
+        @GetMapping("/bekle")
+        void bekle() {
+            throw new CokFazlaIstekIstisnasi("ACCOUNT_LOCKED", "Hesap kilitli.", Duration.ofMillis(90_001));
         }
 
         @GetMapping("/patla")

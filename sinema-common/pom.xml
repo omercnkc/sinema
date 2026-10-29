@@ -24,6 +24,18 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
         </dependency>
+        <!-- Güvenlik hatalarını (401/403) problem+json yazmak için. optional: güvenliği olmayan servise taşınmaz,
+             ilgili bean'ler yalnızca Spring Security classpath'teyse kurulur -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- Filtre içinden (MVC dışında) JSON yazmak için; Boot 4 = Jackson 3 -->
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
         <!-- MDC için; doğrudan kullandığımız API'yi geçişli bağımlılığa bırakmayız -->
         <dependency>
             <groupId>org.slf4j</groupId>

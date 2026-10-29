@@ -1,11 +1,8 @@
 package com.sinema.common.hata;
 
-import com.sinema.common.korelasyon.KorelasyonKimligi;
-import java.time.Instant;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -25,9 +22,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class GlobalHataYoneticisi extends ResponseEntityExceptionHandler {
 
-    public static final String KOD_ALANI = "code";
-    public static final String KORELASYON_ALANI = "correlationId";
-    public static final String ZAMAN_ALANI = "timestamp";
     public static final String ALAN_HATALARI = "errors";
 
     public static final String DOGRULAMA_HATASI_KODU = "VALIDATION_FAILED";
@@ -37,20 +31,18 @@ public class GlobalHataYoneticisi extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(SinemaIstisnasi.class)
     public ResponseEntity<ProblemDetail> sinemaIstisnasiniIsle(SinemaIstisnasi istisna) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(istisna.getDurum(), istisna.getMessage());
-        problem.setProperty(KOD_ALANI, istisna.getKod());
+        ProblemDetail problem = ProblemDetaylari.olustur(istisna.getDurum(), istisna.getKod(), istisna.getMessage());
         istisna.getEkAlanlar().forEach(problem::setProperty);
-        return problemCevabi(problem);
+        return ResponseEntity.status(istisna.getDurum()).headers(istisna.getBasliklar()).body(problem);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> beklenmeyenHatayiIsle(Exception istisna) {
         // Ayrıntı yalnızca loga gider (korelasyon kimliğiyle); istemci genel bir mesaj görür
         log.error("Beklenmeyen hata", istisna);
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.INTERNAL_SERVER_ERROR, "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.");
-        problem.setProperty(KOD_ALANI, BEKLENMEYEN_HATA_KODU);
-        return problemCevabi(problem);
+        ProblemDetail problem = ProblemDetaylari.olustur(HttpStatus.INTERNAL_SERVER_ERROR, BEKLENMEYEN_HATA_KODU,
+                "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
     }
 
     @Override
@@ -58,7 +50,7 @@ public class GlobalHataYoneticisi extends ResponseEntityExceptionHandler {
             HttpHeaders basliklar, HttpStatusCode durum, WebRequest istek) {
         ProblemDetail problem = istisna.getBody();
         problem.setDetail("İstekte geçersiz alanlar var.");
-        problem.setProperty(KOD_ALANI, DOGRULAMA_HATASI_KODU);
+        problem.setProperty(ProblemDetaylari.KOD_ALANI, DOGRULAMA_HATASI_KODU);
         problem.setProperty(ALAN_HATALARI, alanHatalari(istisna));
         return handleExceptionInternal(istisna, problem, basliklar, durum, istek);
     }
@@ -68,22 +60,12 @@ public class GlobalHataYoneticisi extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> createResponseEntity(Object govde, HttpHeaders basliklar,
             HttpStatusCode durum, WebRequest istek) {
         if (govde instanceof ProblemDetail problem) {
-            if (problem.getProperties() == null || !problem.getProperties().containsKey(KOD_ALANI)) {
-                problem.setProperty(KOD_ALANI, durumAdi(durum));
+            if (problem.getProperties() == null || !problem.getProperties().containsKey(ProblemDetaylari.KOD_ALANI)) {
+                problem.setProperty(ProblemDetaylari.KOD_ALANI, durumAdi(durum));
             }
-            zenginlestir(problem);
+            ProblemDetaylari.zenginlestir(problem);
         }
         return super.createResponseEntity(govde, basliklar, durum, istek);
-    }
-
-    private ResponseEntity<ProblemDetail> problemCevabi(ProblemDetail problem) {
-        zenginlestir(problem);
-        return ResponseEntity.status(problem.getStatus()).body(problem);
-    }
-
-    private static void zenginlestir(ProblemDetail problem) {
-        problem.setProperty(KORELASYON_ALANI, MDC.get(KorelasyonKimligi.MDC_ANAHTARI));
-        problem.setProperty(ZAMAN_ALANI, Instant.now().toString());
     }
 
     private static List<AlanHatasi> alanHatalari(MethodArgumentNotValidException istisna) {

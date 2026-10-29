@@ -1,6 +1,7 @@
 package com.sinema.common.hata;
 
 import java.util.Map;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 /**
@@ -21,6 +22,11 @@ public abstract class SinemaIstisnasi extends RuntimeException {
     }
 
     public abstract HttpStatus getDurum();
+
+    /** Cevaba eklenecek HTTP başlıkları (ör. 429'da Retry-After); varsayılan yok. */
+    public HttpHeaders getBasliklar() {
+        return new HttpHeaders();
+    }
 
     public String getKod() {
         return kod;
