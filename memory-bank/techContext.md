@@ -25,4 +25,7 @@ Sabit stack ve tüm kurallar: [rules.md](rules.md). Özet:
 - Resource server starter'ı Boot 4'te `spring-boot-starter-security-oauth2-resource-server` (eski `spring-boot-starter-oauth2-resource-server` deprecated).
 - Spring 7 `ProblemDetail.getType()` varsayılan `null` (Spring 6'da about:blank).
 - `Jwt.getIssuer()` "iss"i URL'e çevirmeye çalışır; düz ad için `getClaimAsString("iss")`.
+- Boot 4 security autoconfig sınıfları `org.springframework.boot.security.autoconfigure.*` ve `...security.oauth2.server.resource.autoconfigure.*`; ortak zincir bunlardan `beforeName` ile önce yüklenir.
+- Spring Security 7 `AuthorizationManager`: soyut metot `authorize(Supplier<? extends Authentication>, T)` → `AuthorizationResult`.
+- Git Bash'te `docker exec ... /run/...` gibi Linux yolları Windows yoluna çevrilir: `MSYS_NO_PATHCONV=1` kullan.
 - Testlerde JWT anahtarları: `sinema-test-destegi` → `TestJwtAnahtarlari` + `TestJwtAnahtarBaslaticisi` (META-INF/spring.factories ile her @SpringBootTest'e otomatik).

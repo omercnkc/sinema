@@ -16,15 +16,33 @@ server:
   port: ${SERVER_PORT:8081}
 
 sinema:
+  guvenlik:
+    jwt:
+      yayinci: sinema-auth
+      acik-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-public.pem
+    # Token'sız erişilen uçlar; refresh/logout JWT yerine cookie ile, service-token clientSecret ile çalışır
+    acik-yollar:
+      - POST /api/v1/auth/register
+      - POST /api/v1/auth/login
+      - POST /api/v1/auth/refresh
+      - POST /api/v1/auth/logout
+      - POST /internal/v1/auth/service-token
   auth:
     # BCrypt iş faktörü (planlama §5.6); 12 ≈ parola başına ~250 ms, kaba kuvveti pahalılaştırır
     bcrypt-maliyeti: 12
     jwt:
-      yayinci: sinema-auth
       erisim-token-suresi: 15m
+      servis-token-suresi: 5m
       # scripts/jwt-anahtar-uret.sh ile üretilir; Docker'da salt okunur mount edilen klasör
       ozel-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-private.pem
-      acik-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-public.pem
+    # Servis token'ı alabilen servisler ve gidebilecekleri hedefler (tek yönlü bağımlılık: payment → booking → catalog)
+    servis-istemcileri:
+      booking-service:
+        sir: ${BOOKING_SERVICE_CLIENT_SECRET:}
+        izinli-hedefler: [catalog-service]
+      payment-service:
+        sir: ${PAYMENT_SERVICE_CLIENT_SECRET:}
+        izinli-hedefler: [booking-service]
     kilit:
       esik: 5
       sure: 5m

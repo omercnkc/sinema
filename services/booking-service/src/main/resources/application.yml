@@ -15,6 +15,16 @@ spring:
 server:
   port: ${SERVER_PORT:8083}
 
+sinema:
+  guvenlik:
+    jwt:
+      yayinci: sinema-auth
+      acik-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-public.pem
+    # Misafir koltuk doluluğunu görür (K3, K40); QR bilet doğrulama herkese açık (K30)
+    acik-yollar:
+      - GET /api/v1/bookings/showtimes/*/seat-status
+      - GET /api/v1/tickets/*
+
 management:
   endpoints:
     web:

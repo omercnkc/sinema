@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -24,19 +26,43 @@ public record KimlikAyarlari(
         @Valid @NotNull Jwt jwt,
         @Valid @NotNull Kilit kilit,
         @Valid @NotNull Yenileme yenileme,
-        IlkAdmin ilkAdmin) {
+        IlkAdmin ilkAdmin,
+        Map<String, ServisIstemcisi> servisIstemcileri) {
+
+    public KimlikAyarlari {
+        servisIstemcileri = servisIstemcileri == null ? Map.of() : Map.copyOf(servisIstemcileri);
+    }
 
     /**
-     * @param yayinci           token'daki "iss"; doğrulayan servisler bunu da kontrol eder
-     * @param erisimTokenSuresi access token ömrü (K36: 15 dk)
+     * Yayıncı (iss) ve public key ortak "sinema.guvenlik.jwt" ayarındadır (tüm servisler doğrularken kullanır);
+     * burada yalnızca imzalamaya özgü olanlar var.
+     *
+     * @param erisimTokenSuresi kullanıcı access token ömrü (K36: 15 dk)
+     * @param servisTokenSuresi servisler arası token ömrü (planlama §5.5: 5 dk)
      * @param ozelAnahtar       PKCS#8 private key (yalnızca auth-service'te)
-     * @param acikAnahtar       X.509 public key
      */
     public record Jwt(
-            @NotBlank String yayinci,
             @NotNull Duration erisimTokenSuresi,
-            @NotNull Resource ozelAnahtar,
-            @NotNull Resource acikAnahtar) {
+            @NotNull Duration servisTokenSuresi,
+            @NotNull Resource ozelAnahtar) {
+    }
+
+    /**
+     * Servis token'ı alabilen bir servis (client credentials, planlama §5.5). Anahtar = clientId (servis adı).
+     *
+     * @param sir             paylaşılan sır (.env); boşsa bu istemci devre dışıdır
+     * @param izinliHedefler  token isteyebileceği hedef servisler ("aud"); ör. payment yalnızca booking
+     */
+    public record ServisIstemcisi(String sir, List<String> izinliHedefler) {
+
+        public ServisIstemcisi {
+            izinliHedefler = izinliHedefler == null ? List.of() : List.copyOf(izinliHedefler);
+        }
+
+        @Override
+        public String toString() {
+            return "ServisIstemcisi[sir=***, izinliHedefler=" + izinliHedefler + "]";
+        }
     }
 
     /**

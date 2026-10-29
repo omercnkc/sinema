@@ -16,6 +16,7 @@ public class TestJwtAnahtarBaslaticisi implements ApplicationContextInitializer<
     public void initialize(ConfigurableApplicationContext context) {
         context.getEnvironment().getPropertySources().addFirst(new MapPropertySource("testJwtAnahtarlari", Map.of(
                 "sinema.auth.jwt.ozel-anahtar", TestJwtAnahtarlari.ozelAnahtarKonumu(),
-                "sinema.auth.jwt.acik-anahtar", TestJwtAnahtarlari.acikAnahtarKonumu())));
+                "sinema.guvenlik.jwt.acik-anahtar", TestJwtAnahtarlari.acikAnahtarKonumu(),
+                "sinema.guvenlik.jwt.yayinci", TestTokenUretici.YAYINCI)));
     }
 }

@@ -12,6 +12,9 @@ x-java-servis: &java-servis
     resources:
       limits:
         memory: 512m
+  # Doğrulayan servislere YALNIZCA public key dosyası verilir (private key yok); auth bunu kendi volumes'üyle ezer
+  volumes:
+    - ${JWT_KEYS_DIR:-./keys}/jwt-public.pem:/run/secrets/jwt/jwt-public.pem:ro
 
 services:
   mysql:
@@ -52,6 +55,9 @@ services:
       # Boşsa ilk admin oluşturulmaz; doluysa yalnızca sistemde hiç admin yokken bir kez oluşturulur
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Servis token'ı isteyen servislerin sırları; boş olan istemci devre dışıdır
+      BOOKING_SERVICE_CLIENT_SECRET: ${BOOKING_SERVICE_CLIENT_SECRET:-}
+      PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET:-}
     # Private key yalnızca auth'a verilir (token imzalayan tek servis); salt okunur
     volumes:
       - ${JWT_KEYS_DIR:-./keys}:/run/secrets/jwt:ro
@@ -71,6 +77,7 @@ services:
     environment:
       DB_HOST: mysql
       DB_PASSWORD: ${CATALOG_DB_PASSWORD}
+      JWT_KEYS_DIR: /run/secrets/jwt
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health"]
@@ -84,6 +91,7 @@ services:
     environment:
       DB_HOST: mysql
       DB_PASSWORD: ${BOOKING_DB_PASSWORD}
+      JWT_KEYS_DIR: /run/secrets/jwt
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health"]
@@ -97,6 +105,7 @@ services:
     environment:
       DB_HOST: mysql
       DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      JWT_KEYS_DIR: /run/secrets/jwt
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]

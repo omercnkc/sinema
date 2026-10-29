@@ -2,10 +2,14 @@ package com.sinema.auth.oturum.service;
 
 import com.sinema.auth.config.KimlikAyarlari;
 import com.sinema.auth.kullanici.entity.Kullanici;
+import com.sinema.common.guvenlik.GuvenlikAyarlari;
+import com.sinema.common.guvenlik.Roller;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -15,33 +19,44 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Component;
 
 /**
- * Kullanıcı için RS256 imzalı access token üretir (planlama §5.1).
- * İçerik bilerek az: kimlik (sub), rol, yayıncı, zamanlar ve benzersiz id. E-posta gibi kişisel veri yok;
- * JWT imzalıdır ama şifreli değildir, herkes içini okuyabilir.
+ * RS256 imzalı access token üretir (planlama §5.1, §5.5). İki tür:
+ *  - kullanıcı: sub = kullanıcı id, role = USER/ADMIN, 15 dk
+ *  - servis   : sub = servis adı, role = SERVICE, aud = hedef servis, 5 dk
+ * İçerik bilerek az; e-posta gibi kişisel veri yok: JWT imzalıdır ama şifreli değildir, herkes içini okuyabilir.
  */
 @Component
 @RequiredArgsConstructor
 public class ErisimTokeniUretici {
 
-    public static final String ROL_ALANI = "role";
-
     private final JwtEncoder jwtEncoder;
-    private final KimlikAyarlari ayarlar;
+    private final KimlikAyarlari kimlikAyarlari;
+    private final GuvenlikAyarlari guvenlikAyarlari;
     private final Clock saat;
 
     public ErisimTokeni uret(Kullanici kullanici) {
-        Instant simdi = saat.instant();
-        Duration gecerlilik = ayarlar.jwt().erisimTokenSuresi();
-        JwtClaimsSet icerik = JwtClaimsSet.builder()
-                .issuer(ayarlar.jwt().yayinci())
+        return imzala(kimlikAyarlari.jwt().erisimTokenSuresi(), icerik -> icerik
                 .subject(kullanici.getId().toString())
+                .claim(Roller.ROL_ALANI, kullanici.getRol().name()));
+    }
+
+    public ErisimTokeni servisTokeniUret(String cagiranServis, String hedefServis) {
+        return imzala(kimlikAyarlari.jwt().servisTokenSuresi(), icerik -> icerik
+                .subject(cagiranServis)
+                .claim(Roller.ROL_ALANI, Roller.SERVICE)
+                .audience(List.of(hedefServis)));
+    }
+
+    // Ortak alanlar (yayıncı, zamanlar, benzersiz id) tek yerde; tür farkı yalnızca 'ozellestir' içinde
+    private ErisimTokeni imzala(Duration gecerlilik, Consumer<JwtClaimsSet.Builder> ozellestir) {
+        Instant simdi = saat.instant();
+        JwtClaimsSet.Builder icerik = JwtClaimsSet.builder()
+                .issuer(guvenlikAyarlari.jwt().yayinci())
                 .issuedAt(simdi)
                 .expiresAt(simdi.plus(gecerlilik))
-                .id(UUID.randomUUID().toString())
-                .claim(ROL_ALANI, kullanici.getRol().name())
-                .build();
+                .id(UUID.randomUUID().toString());
+        ozellestir.accept(icerik);
         JwsHeader baslik = JwsHeader.with(SignatureAlgorithm.RS256).build();
-        String deger = jwtEncoder.encode(JwtEncoderParameters.from(baslik, icerik)).getTokenValue();
+        String deger = jwtEncoder.encode(JwtEncoderParameters.from(baslik, icerik.build())).getTokenValue();
         return new ErisimTokeni(deger, gecerlilik);
     }
 }

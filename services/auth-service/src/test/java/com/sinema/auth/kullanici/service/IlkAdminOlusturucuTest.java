@@ -54,7 +54,7 @@ class IlkAdminOlusturucuTest {
     }
 
     private IlkAdminOlusturucu olusturucu(KimlikAyarlari.IlkAdmin ilkAdmin) {
-        KimlikAyarlari ayarlar = new KimlikAyarlari(12, null, null, null, ilkAdmin);
+        KimlikAyarlari ayarlar = new KimlikAyarlari(12, null, null, null, ilkAdmin, null);
         return new IlkAdminOlusturucu(ayarlar, kullaniciRepository, kayitServisi, dogrulayici);
     }
 }

@@ -15,6 +15,15 @@ spring:
 server:
   port: ${SERVER_PORT:8082}
 
+sinema:
+  guvenlik:
+    jwt:
+      yayinci: sinema-auth
+      acik-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-public.pem
+    # Misafir (token'sız) katalogu görüntüler (K3); listede olmayan her şey token ister
+    acik-yollar:
+      - GET /api/v1/catalog/**
+
 management:
   endpoints:
     web:

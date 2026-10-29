@@ -14,39 +14,36 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Her servlet servisinin ortak altyapı testleri. Servis test sınıfı bunu miras alır;
+ * Her servlet servisinin ortak altyapı ve güvenlik testleri. Servis test sınıfı bunu miras alır;
  * @SpringBootTest uygulama sınıfını alt sınıfın paketinden bulur, böylece her servis kendi context'iyle test edilir.
+ *
+ * Güvenlik testleri olmayan adreslere gider: amaç bir ucun işi değil, isteğin güvenlik zincirinden
+ * geçip geçmediğidir. Geçerse 404 (adres yok), geçemezse 401/403 döner.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(MysqlTestYapilandirmasi.class)
 public abstract class ServisAltyapiTesti {
 
     private static final String KORELASYON_BASLIGI = "X-Correlation-Id";
+    private static final String OLMAYAN_KULLANICI_YOLU = "/api/v1/olmayan-adres";
+    private static final String OLMAYAN_IC_YOL = "/internal/v1/olmayan-adres";
 
     @Value("${local.server.port}")
     private int port;
+
+    @Value("${spring.application.name}")
+    private String servisAdi;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Test
     void shouldReportUpWithCorrelationId_whenHealthEndpointCalled() throws Exception {
-        HttpResponse<String> cevap = getIstegiGonder("/actuator/health");
+        HttpResponse<String> cevap = istekGonder("/actuator/health", null);
 
         assertThat(cevap.statusCode()).isEqualTo(200);
         assertThat(cevap.body()).contains("\"status\":\"UP\"");
         assertThat(cevap.headers().firstValue(KORELASYON_BASLIGI)).isPresent();
-    }
-
-    // Korumalı serviste token'sız istek adres var mı yok mu öğrenemez (401); korumasızda 404. İkisinde de biçim aynı.
-    @Test
-    void shouldReturnProblemJsonWithCode_whenPathDoesNotExist() throws Exception {
-        HttpResponse<String> cevap = getIstegiGonder("/olmayan-adres");
-
-        assertThat(cevap.statusCode()).isIn(401, 404);
-        assertThat(cevap.headers().firstValue("Content-Type")).hasValueSatisfying(
-                tip -> assertThat(tip).startsWith("application/problem+json"));
-        assertThat(cevap.body()).containsPattern("\"code\":\"(NOT_FOUND|UNAUTHORIZED)\"").contains("\"correlationId\"");
     }
 
     @Test
@@ -57,8 +54,66 @@ public abstract class ServisAltyapiTesti {
         assertThat(basariliSurumSayisi).isEqualTo(1);
     }
 
-    private HttpResponse<String> getIstegiGonder(String yol) throws Exception {
-        HttpRequest istek = HttpRequest.newBuilder(URI.create("http://localhost:" + port + yol)).build();
-        return HttpClient.newHttpClient().send(istek, HttpResponse.BodyHandlers.ofString());
+    // ---------- kimlik doğrulama: token yok / bozuk → 401 problem+json ----------
+
+    @Test
+    void shouldReturnUnauthorizedProblemJson_whenTokenMissing() throws Exception {
+        HttpResponse<String> cevap = istekGonder(OLMAYAN_KULLANICI_YOLU, null);
+
+        assertThat(cevap.statusCode()).isEqualTo(401);
+        assertThat(cevap.headers().firstValue("Content-Type")).hasValueSatisfying(
+                tip -> assertThat(tip).startsWith("application/problem+json"));
+        assertThat(cevap.body()).contains("\"code\":\"UNAUTHORIZED\"").contains("\"correlationId\"");
+    }
+
+    @Test
+    void shouldRejectToken_whenExpiredOrWrongIssuerOrForeignKey() throws Exception {
+        assertThat(istekGonder(OLMAYAN_KULLANICI_YOLU, TestTokenUretici.suresiDolmusKullaniciTokeni()).statusCode())
+                .as("süresi dolmuş").isEqualTo(401);
+        assertThat(istekGonder(OLMAYAN_KULLANICI_YOLU, TestTokenUretici.yanlisYayinciliKullaniciTokeni()).statusCode())
+                .as("yanlış yayıncı").isEqualTo(401);
+        assertThat(istekGonder(OLMAYAN_KULLANICI_YOLU, TestTokenUretici.yabanciAnahtarlaImzaliToken()).statusCode())
+                .as("başka anahtarla imzalı").isEqualTo(401);
+    }
+
+    // ---------- yetki: kim nereye girebilir ----------
+
+    @Test
+    void shouldPassSecurity_whenUserTokenCallsUserPath() throws Exception {
+        assertThat(istekGonder(OLMAYAN_KULLANICI_YOLU, TestTokenUretici.kullaniciTokeni(1, "USER")).statusCode())
+                .isEqualTo(404);
+    }
+
+    @Test
+    void shouldForbidServiceToken_whenCallingUserPath() throws Exception {
+        String servisTokeni = TestTokenUretici.servisTokeni("payment-service", servisAdi);
+
+        assertThat(istekGonder(OLMAYAN_KULLANICI_YOLU, servisTokeni).statusCode()).isEqualTo(403);
+    }
+
+    @Test
+    void shouldAllowInternalPath_onlyForServiceTokenAddressedToThisService() throws Exception {
+        assertThat(istekGonder(OLMAYAN_IC_YOL, TestTokenUretici.servisTokeni("payment-service", servisAdi)).statusCode())
+                .as("bu servise kesilmiş servis token'ı").isEqualTo(404);
+        assertThat(istekGonder(OLMAYAN_IC_YOL, TestTokenUretici.servisTokeni("payment-service", "baska-servis"))
+                .statusCode()).as("başka servise kesilmiş servis token'ı").isEqualTo(403);
+        assertThat(istekGonder(OLMAYAN_IC_YOL, TestTokenUretici.kullaniciTokeni(1, "ADMIN")).statusCode())
+                .as("admin kullanıcı token'ı").isEqualTo(403);
+    }
+
+    @Test
+    void shouldForbidRegularUser_whenCallingAdminPath() throws Exception {
+        assertThat(istekGonder("/api/v1/admin/olmayan", TestTokenUretici.kullaniciTokeni(1, "USER")).statusCode())
+                .isEqualTo(403);
+        assertThat(istekGonder("/api/v1/admin/olmayan", TestTokenUretici.kullaniciTokeni(1, "ADMIN")).statusCode())
+                .isEqualTo(404);
+    }
+
+    private HttpResponse<String> istekGonder(String yol, String token) throws Exception {
+        HttpRequest.Builder istek = HttpRequest.newBuilder(URI.create("http://localhost:" + port + yol));
+        if (token != null) {
+            istek.header("Authorization", "Bearer " + token);
+        }
+        return HttpClient.newHttpClient().send(istek.build(), HttpResponse.BodyHandlers.ofString());
     }
 }

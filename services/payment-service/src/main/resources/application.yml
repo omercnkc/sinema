@@ -15,6 +15,15 @@ spring:
 server:
   port: ${SERVER_PORT:8084}
 
+sinema:
+  guvenlik:
+    jwt:
+      yayinci: sinema-auth
+      acik-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-public.pem
+    # iyzico ödeme sonrası tarayıcıyı buraya form POST'uyla yönlendirir; JWT taşımaz, sonuç retrieve ile doğrulanır (K39)
+    acik-yollar:
+      - POST /api/v1/payments/callback/iyzico
+
 management:
   endpoints:
     web:

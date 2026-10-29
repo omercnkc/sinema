@@ -31,6 +31,11 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
         </dependency>
+        <!-- Testlerde JWT imzalamak için (Nimbus) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
         <!-- JdbcTemplate'i servisler (data-jpa üzerinden) zaten taşır -->
         <dependency>
             <groupId>org.springframework</groupId>
