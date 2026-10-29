@@ -15,6 +15,11 @@ spring:
 server:
   port: ${SERVER_PORT:8081}
 
+sinema:
+  auth:
+    # BCrypt iş faktörü (planlama §5.6); 12 ≈ parola başına ~250 ms, kaba kuvveti pahalılaştırır
+    bcrypt-maliyeti: 12
+
 management:
   endpoints:
     web:

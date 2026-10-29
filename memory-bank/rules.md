@@ -231,4 +231,4 @@ Copy-paste kod; Entity'yi API'den döndürmek; Controller'da iş mantığı; fie
 ## Proje Özel Kural (kullanıcıdan)
 - ~~Planlama aşamasında kod yazılmaz.~~ **2026-10-29: kullanıcı kodlamaya geçişi onayladı ("kod kısmına beraber başlayalım"). Kodlama aşamasındayız.**
 - **Beraber ilerleme:** her alt görevde hangi sınıfın ne yaptığı ve nasıl yaptığı kısaca anlatılır; alt görev bitince kullanıcıya özet verilip bir sonrakine geçilir.
-- **İsimlendirme:** sınıf/metot/değişken adları Türkçe ve yalnızca ASCII (ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u); test metot adları rules §5.10'daki İngilizce kalıpla (`shouldX_whenY`).
+- **İsimlendirme:** sınıf/metot/değişken adları Türkçe ve yalnızca ASCII (ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u); test metot adları rules §5.10'daki İngilizce kalıpla (`shouldX_whenY`). **Çalışacak test sınıflarının adı `Test` ile biter** (`...Test`, `...EntegrasyonTest`): Maven Surefire `...Testi` ile biten sınıfı çalıştırmaz (yalnızca miras alınan soyut taban sınıflar `...Testi` olabilir).
