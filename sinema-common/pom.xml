@@ -19,9 +19,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
+        <!-- spring-webmvc: ResponseEntityExceptionHandler (global hata yönetimi) buradadır; spring-web'i de getirir -->
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
+            <artifactId>spring-webmvc</artifactId>
         </dependency>
         <!-- MDC için; doğrudan kullandığımız API'yi geçişli bağımlılığa bırakmayız -->
         <dependency>
@@ -38,6 +39,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Testte JSON yazımı (Jackson 3) ve @Valid doğrulaması için; servisler bunları kendi starter'larıyla taşır -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jackson</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

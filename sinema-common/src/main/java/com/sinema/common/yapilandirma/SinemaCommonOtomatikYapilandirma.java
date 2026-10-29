@@ -1,5 +1,6 @@
 package com.sinema.common.yapilandirma;
 
+import com.sinema.common.hata.GlobalHataYoneticisi;
 import com.sinema.common.korelasyon.KorelasyonKimligiFiltresi;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -18,5 +19,11 @@ public class SinemaCommonOtomatikYapilandirma {
     @ConditionalOnMissingBean
     public KorelasyonKimligiFiltresi korelasyonKimligiFiltresi() {
         return new KorelasyonKimligiFiltresi();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public GlobalHataYoneticisi globalHataYoneticisi() {
+        return new GlobalHataYoneticisi();
     }
 }

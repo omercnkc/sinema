@@ -39,6 +39,16 @@ public abstract class ServisAltyapiTesti {
     }
 
     @Test
+    void shouldReturnProblemJsonWithCode_whenPathDoesNotExist() throws Exception {
+        HttpResponse<String> cevap = getIstegiGonder("/olmayan-adres");
+
+        assertThat(cevap.statusCode()).isEqualTo(404);
+        assertThat(cevap.headers().firstValue("Content-Type")).hasValueSatisfying(
+                tip -> assertThat(tip).startsWith("application/problem+json"));
+        assertThat(cevap.body()).contains("\"code\":\"NOT_FOUND\"").contains("\"correlationId\"");
+    }
+
+    @Test
     void shouldApplyBaselineMigration_whenApplicationStarts() {
         Integer basariliSurumSayisi = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '1' AND success = 1", Integer.class);

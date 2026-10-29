@@ -815,6 +815,20 @@ Eski sorular (referans):
 
 **M0 tamamlandı (2026-10-29).**
 
+**§9.3-5 doğrulandı (2026-10-29, spring-cloud-gateway v5.0.4 `RedisRateLimiter` kaynağı):** Redis hatasında `onErrorResume` isteğe izin verir ve `X-RateLimit-Remaining: -1` yazar (bilinçli fail-open). Genel trafik için K38 varsayılanla sağlanır; `/auth/login` ve `/auth/register` için fail-closed, limiter'ı saran bir dekoratörle (Decorator pattern; kalan hak `-1` ise reddet) yapılır.
+
+**M1 alt görevleri (2026-10-29):**
+1. [x] `sinema-common`: ortak hata formatı (RFC 7807 `ProblemDetail` + `code`, `correlationId`, `errors[]`), özel exception hiyerarşisi, global `@RestControllerAdvice`
+2. [ ] auth: `users` tablosu (V2), kayıt (`POST /register`): doğrulama, e-posta normalize, BCrypt(12), rol her zaman USER
+3. [ ] auth: JWT imzalama (private key mount, RS256, `kid`, `sub/role/iss/iat/exp/jti`, 15 dk) + giriş (`POST /login`, genel hata mesajı) + hesap kilidi (5 hata → 5 dk)
+4. [ ] auth: refresh token (V3 `refresh_tokens`: opak, SHA-256 hash, aile, rotasyon, yeniden kullanım tespiti, 10 sn tolerans), HttpOnly cookie, `POST /refresh`, `POST /logout`, `GET /me`
+5. [ ] auth: ilk ADMIN `.env` ile (yalnızca admin yokken), `POST /admin/auth/admins`
+6. [ ] `sinema-common`: servlet servislerde JWT doğrulama (oauth2-resource-server, public key, `iss`, rol → authority, STATELESS, `@PreAuthorize` açık; health herkese açık) — 4 servise uygulanır
+7. [ ] Servis JWT'si: auth `POST /internal/v1/auth/service-token` (client credentials, `aud`, `SERVICE` rolü, 5 dk) + `/internal/**` yalnızca `SERVICE` ve doğru `aud` (çağıran taraftaki Feign interceptor M3'te, ilk Feign çağrısıyla)
+8. [ ] gateway: rotalar (§3.5, §7.7), reaktif JWT ön doğrulama + rota bazlı rol, `/internal/**` yönlendirilmez, korelasyon kimliği üretimi, CORS (izinli origin listesi, credentials) + refresh/logout için `Origin` kontrolü
+9. [ ] gateway: Redis rate limit (genel IP sınırı + login/register/tickets sıkı), auth rotalarında fail-closed dekoratörü; Testcontainers Redis ile Redis açık/kapalı testleri
+10. [ ] compose: anahtar mount'ları (private yalnızca auth'a), admin ve client secret env'leri; gateway üzerinden uçtan uca duman testi (register → login → me → refresh → logout); README
+
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
 2. **Örnek veri** (M2) Flyway migration'ı olarak mı (her ortamda gelir), yoksa yalnızca `dev` profilinde çalışan ayrı bir seed olarak mı? Önerim `dev` seed.
