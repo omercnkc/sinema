@@ -7,9 +7,42 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: 2s
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Rotalar (planlama §3.5, §7.7). /internal/** için rota YOK: iç uçlar dışarıdan erişilemez.
+          # Servis adresleri Docker'da DNS adıyla (http://auth-service:8081) env'den gelir; varsayılan yerel geliştirme
+          routes:
+            - id: auth
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/admin/auth/**
+            - id: catalog
+              uri: ${CATALOG_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/catalog/**,/api/v1/admin/catalog/**
+            - id: booking
+              uri: ${BOOKING_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/bookings/**,/api/v1/tickets/**,/api/v1/admin/bookings/**
+            - id: payment
+              uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/payments/**
 
 server:
   port: ${SERVER_PORT:8080}
+
+sinema:
+  guvenlik:
+    jwt:
+      yayinci: sinema-auth
+      acik-anahtar: file:${JWT_KEYS_DIR:./keys}/jwt-public.pem
+  gateway:
+    cors:
+      # Virgülle ayrılmış liste; Angular dev sunucusu varsayılan
+      izinli-originler: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
 management:
   endpoints:
