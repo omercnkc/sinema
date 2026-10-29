@@ -12,7 +12,9 @@ import com.sinema.auth.AyarlanabilirSaat;
 import com.sinema.auth.kullanici.dto.KayitIstegi;
 import com.sinema.auth.kullanici.service.KullaniciKayitServisi;
 import com.sinema.auth.oturum.service.GirisServisi;
+import com.sinema.auth.oturum.service.YenilemeServisi;
 import com.sinema.testdestegi.MysqlTestYapilandirmasi;
+import jakarta.servlet.http.Cookie;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.UUID;
@@ -37,10 +39,12 @@ import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({MysqlTestYapilandirmasi.class, GirisKontrolcusuEntegrasyonTest.SaatYapilandirmasi.class})
-class GirisKontrolcusuEntegrasyonTest {
+@Import({MysqlTestYapilandirmasi.class, OturumKontrolcusuEntegrasyonTest.SaatYapilandirmasi.class})
+class OturumKontrolcusuEntegrasyonTest {
 
     private static final String GIRIS_ADRESI = "/api/v1/auth/login";
+    private static final String YENILEME_ADRESI = "/api/v1/auth/refresh";
+    private static final String CEREZ_ADI = "sinema_refresh";
     private static final String DOGRU_PAROLA = "Parola123";
     private static final String YANLIS_PAROLA = "Yanlis123";
 
@@ -152,6 +156,101 @@ class GirisKontrolcusuEntegrasyonTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string("WWW-Authenticate", "Bearer"))
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    // ---------- refresh token (alt görev 4) ----------
+
+    @Test
+    void shouldSetHardenedRefreshCookie_whenLoginSucceeds() throws Exception {
+        String setCookie = girisYap(yeniKullanici(), DOGRU_PAROLA).andExpect(status().isOk())
+                .andReturn().getResponse().getHeader("Set-Cookie");
+
+        assertThat(setCookie).startsWith(CEREZ_ADI + "=")
+                .contains("HttpOnly", "Secure", "SameSite=Strict", "Path=/api/v1/auth", "Max-Age=1209600");
+    }
+
+    @Test
+    void shouldRotateRefreshTokenAndReturnNewAccessToken_whenCookieIsValid() throws Exception {
+        Cookie ilk = refreshCerezi(girisYap(yeniKullanici(), DOGRU_PAROLA));
+
+        Cookie ikinci = refreshCerezi(yenile(ilk)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty()));
+
+        assertThat(ikinci.getValue()).isNotEqualTo(ilk.getValue());
+        yenile(ikinci).andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldGiveAccessTokenWithoutRotating_whenOldCookieReusedWithinGracePeriod() throws Exception {
+        Cookie ilk = refreshCerezi(girisYap(yeniKullanici(), DOGRU_PAROLA));
+        yenile(ilk).andExpect(status().isOk());
+
+        // İkinci sekme aynı eski cookie ile hemen geldi: access token alır, cookie değişmez
+        yenile(ilk)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(header().doesNotExist("Set-Cookie"));
+    }
+
+    @Test
+    void shouldRevokeWholeFamily_whenOldCookieReusedAfterGracePeriod() throws Exception {
+        Cookie calinan = refreshCerezi(girisYap(yeniKullanici(), DOGRU_PAROLA));
+        Cookie gercekKullanicininki = refreshCerezi(yenile(calinan));
+
+        saat.ilerlet(Duration.ofSeconds(11));
+        yenile(calinan)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(YenilemeServisi.YENIDEN_KULLANIM_KODU));
+
+        // Aile iptal edildi: gerçek kullanıcının güncel token'ı da artık geçmez (yeniden giriş gerekir)
+        yenile(gercekKullanicininki).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectRefresh_whenCookieMissingOrExpired() throws Exception {
+        mockMvc.perform(post(YENILEME_ADRESI))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(YenilemeServisi.GECERSIZ_YENILEME_KODU));
+
+        Cookie cerez = refreshCerezi(girisYap(yeniKullanici(), DOGRU_PAROLA));
+        saat.ilerlet(Duration.ofDays(14).plusSeconds(1));
+        yenile(cerez).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldClearCookieAndRevokeToken_whenUserLogsOut() throws Exception {
+        Cookie cerez = refreshCerezi(girisYap(yeniKullanici(), DOGRU_PAROLA));
+
+        String setCookie = mockMvc.perform(post("/api/v1/auth/logout").cookie(cerez))
+                .andExpect(status().isNoContent())
+                .andReturn().getResponse().getHeader("Set-Cookie");
+
+        assertThat(setCookie).startsWith(CEREZ_ADI + "=;").contains("Max-Age=0");
+        yenile(cerez)
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(YenilemeServisi.GECERSIZ_YENILEME_KODU));
+    }
+
+    @Test
+    void shouldReturnOwnProfile_whenAccessTokenIsValid() throws Exception {
+        String email = yeniKullanici();
+        String govde = girisYap(email, DOGRU_PAROLA).andReturn().getResponse().getContentAsString();
+
+        mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + JsonPath.read(govde, "$.accessToken")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.role").value("USER"));
+    }
+
+    private ResultActions yenile(Cookie cerez) throws Exception {
+        return mockMvc.perform(post(YENILEME_ADRESI).cookie(cerez));
+    }
+
+    private static Cookie refreshCerezi(ResultActions sonuc) {
+        Cookie cerez = sonuc.andReturn().getResponse().getCookie(CEREZ_ADI);
+        assertThat(cerez).as("Set-Cookie ile refresh cookie dönmeli").isNotNull();
+        return cerez;
     }
 
     private String yeniKullanici() {

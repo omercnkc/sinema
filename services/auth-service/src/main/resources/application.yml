@@ -28,6 +28,17 @@ sinema:
     kilit:
       esik: 5
       sure: 5m
+    yenileme:
+      sure: 14d
+      tolerans: 10s
+      cerez-adi: sinema_refresh
+      cerez-yolu: /api/v1/auth
+      # Tarayıcılar http://localhost'u güvenli sayar, bu yüzden geliştirmede de açık kalabilir
+      guvenli-cerez: ${COOKIE_SECURE:true}
+      temizlik-zamani: "0 30 3 * * *"
+    ilk-admin:
+      email: ${ADMIN_EMAIL:}
+      parola: ${ADMIN_PASSWORD:}
 
 management:
   endpoints:

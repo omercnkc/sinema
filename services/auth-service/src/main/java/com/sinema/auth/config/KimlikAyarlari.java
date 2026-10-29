@@ -15,19 +15,22 @@ import org.springframework.validation.annotation.Validated;
  * Geçersiz değerle servis açılmaz (@Validated).
  *
  * @param bcryptMaliyeti BCrypt iş faktörü; her +1 hesaplama süresini ikiye katlar
+ * @param ilkAdmin       .env'den gelen ilk admin; boşsa oluşturulmaz
  */
 @Validated
 @ConfigurationProperties(prefix = "sinema.auth")
 public record KimlikAyarlari(
         @Min(10) @Max(16) int bcryptMaliyeti,
         @Valid @NotNull Jwt jwt,
-        @Valid @NotNull Kilit kilit) {
+        @Valid @NotNull Kilit kilit,
+        @Valid @NotNull Yenileme yenileme,
+        IlkAdmin ilkAdmin) {
 
     /**
-     * @param yayinci          token'daki "iss"; doğrulayan servisler bunu da kontrol eder
+     * @param yayinci           token'daki "iss"; doğrulayan servisler bunu da kontrol eder
      * @param erisimTokenSuresi access token ömrü (K36: 15 dk)
-     * @param ozelAnahtar      PKCS#8 private key (yalnızca auth-service'te)
-     * @param acikAnahtar      X.509 public key
+     * @param ozelAnahtar       PKCS#8 private key (yalnızca auth-service'te)
+     * @param acikAnahtar       X.509 public key
      */
     public record Jwt(
             @NotBlank String yayinci,
@@ -41,5 +44,30 @@ public record KimlikAyarlari(
      * @param sure kilit ne kadar sürer (K36: 5 dk)
      */
     public record Kilit(@Min(1) int esik, @NotNull Duration sure) {
+    }
+
+    /**
+     * @param sure           refresh token ömrü (K36: 14 gün); her yenilemede yeniden başlar
+     * @param tolerans       iki sekmenin aynı anda yenilemesine izin verilen süre (planlama §5.2: 10 sn)
+     * @param cerezAdi       cookie adı
+     * @param cerezYolu      cookie yalnızca bu yoldaki isteklere gider
+     * @param guvenliCerez   Secure bayrağı
+     * @param temizlikZamani süresi dolmuş token'ları silen job'ın cron ifadesi
+     */
+    public record Yenileme(
+            @NotNull Duration sure,
+            @NotNull Duration tolerans,
+            @NotBlank String cerezAdi,
+            @NotBlank String cerezYolu,
+            boolean guvenliCerez,
+            @NotBlank String temizlikZamani) {
+    }
+
+    public record IlkAdmin(String email, String parola) {
+
+        @Override
+        public String toString() {
+            return "IlkAdmin[email=***, parola=***]";
+        }
     }
 }

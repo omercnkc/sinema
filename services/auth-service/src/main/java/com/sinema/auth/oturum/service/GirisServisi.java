@@ -4,7 +4,6 @@ import com.sinema.auth.config.KimlikAyarlari;
 import com.sinema.auth.kullanici.entity.Kullanici;
 import com.sinema.auth.kullanici.repository.KullaniciRepository;
 import com.sinema.auth.kullanici.service.KullaniciKayitServisi;
-import com.sinema.auth.oturum.dto.GirisCevabi;
 import com.sinema.auth.oturum.dto.GirisIstegi;
 import com.sinema.common.hata.CokFazlaIstekIstisnasi;
 import com.sinema.common.hata.YetkisizIstisnasi;
@@ -34,22 +33,25 @@ public class GirisServisi {
     private final KullaniciRepository kullaniciRepository;
     private final PasswordEncoder parolaKodlayici;
     private final ErisimTokeniUretici erisimTokeniUretici;
+    private final YenilemeServisi yenilemeServisi;
     private final KimlikAyarlari.Kilit kilitAyarlari;
     private final Clock saat;
     // Var olmayan e-postada da bir BCrypt karşılaştırması yapmak için (aşağıya bakın)
     private final String sahteParolaOzeti;
 
     public GirisServisi(KullaniciRepository kullaniciRepository, PasswordEncoder parolaKodlayici,
-            ErisimTokeniUretici erisimTokeniUretici, KimlikAyarlari ayarlar, Clock saat) {
+            ErisimTokeniUretici erisimTokeniUretici, YenilemeServisi yenilemeServisi, KimlikAyarlari ayarlar,
+            Clock saat) {
         this.kullaniciRepository = kullaniciRepository;
         this.parolaKodlayici = parolaKodlayici;
         this.erisimTokeniUretici = erisimTokeniUretici;
+        this.yenilemeServisi = yenilemeServisi;
         this.kilitAyarlari = ayarlar.kilit();
         this.saat = saat;
         this.sahteParolaOzeti = parolaKodlayici.encode(UUID.randomUUID().toString());
     }
 
-    public GirisCevabi girisYap(GirisIstegi istek) {
+    public OturumBilgisi girisYap(GirisIstegi istek) {
         Optional<Kullanici> bulunan = kullaniciRepository.findByEmail(
                 KullaniciKayitServisi.emailNormalizeEt(istek.email()));
         if (bulunan.isEmpty()) {
@@ -68,8 +70,8 @@ public class GirisServisi {
             throw gecersizKimlikBilgisi();
         }
         sayaclarDoluysaSifirla(kullanici);
-        ErisimTokeni token = erisimTokeniUretici.uret(kullanici);
-        return new GirisCevabi(token.deger(), token.gecerlilik().toSeconds());
+        return new OturumBilgisi(erisimTokeniUretici.uret(kullanici),
+                yenilemeServisi.yeniAileBaslat(kullanici.getId()));
     }
 
     // Kilitliyken parola hiç denetlenmez: doğru parola da kilidi kaldırmaz, süre dolmalıdır

@@ -821,8 +821,8 @@ Eski sorular (referans):
 1. [x] `sinema-common`: ortak hata formatı (RFC 7807 `ProblemDetail` + `code`, `correlationId`, `errors[]`), özel exception hiyerarşisi, global `@RestControllerAdvice`
 2. [x] auth: `users` tablosu (V2), kayıt (`POST /register`): doğrulama, e-posta normalize, BCrypt(12), rol her zaman USER
 3. [x] auth: JWT imzalama (private key mount, RS256, `kid`, `sub/role/iss/iat/exp/jti`, 15 dk) + giriş (`POST /login`, genel hata mesajı) + hesap kilidi (5 hata → 5 dk)
-4. [ ] auth: refresh token (V3 `refresh_tokens`: opak, SHA-256 hash, aile, rotasyon, yeniden kullanım tespiti, 10 sn tolerans), HttpOnly cookie, `POST /refresh`, `POST /logout`, `GET /me`
-5. [ ] auth: ilk ADMIN `.env` ile (yalnızca admin yokken), `POST /admin/auth/admins`
+4. [x] auth: refresh token (V3 `refresh_tokens`: opak, SHA-256 hash, aile, rotasyon, yeniden kullanım tespiti, 10 sn tolerans), HttpOnly cookie, `POST /refresh`, `POST /logout`, `GET /me`
+5. [x] auth: ilk ADMIN `.env` ile (yalnızca admin yokken), `POST /admin/auth/admins`
 6. [ ] (401/403 problem+json yazıcıları, `GuvenlikHataYoneticisi` ve auth'un private+public key mount'u alt görev 3'te öne çekildi) `sinema-common`: servlet servislerde JWT doğrulama (oauth2-resource-server, public key, `iss`, rol → authority, STATELESS, `@PreAuthorize` açık; health herkese açık) — 4 servise uygulanır
 7. [ ] Servis JWT'si: auth `POST /internal/v1/auth/service-token` (client credentials, `aud`, `SERVICE` rolü, 5 dk) + `/internal/**` yalnızca `SERVICE` ve doğru `aud` (çağıran taraftaki Feign interceptor M3'te, ilk Feign çağrısıyla)
 8. [ ] gateway: rotalar (§3.5, §7.7), reaktif JWT ön doğrulama + rota bazlı rol, `/internal/**` yönlendirilmez, korelasyon kimliği üretimi, CORS (izinli origin listesi, credentials) + refresh/logout için `Origin` kontrolü

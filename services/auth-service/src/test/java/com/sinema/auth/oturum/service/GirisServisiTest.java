@@ -41,9 +41,10 @@ class GirisServisiTest {
     @BeforeEach
     void kur() {
         when(parolaKodlayici.encode(anyString())).thenReturn(SAHTE_OZET);
-        KimlikAyarlari ayarlar = new KimlikAyarlari(12, null, new KimlikAyarlari.Kilit(5, Duration.ofMinutes(5)));
-        servis = new GirisServisi(kullaniciRepository, parolaKodlayici, tokenUretici, ayarlar,
-                Clock.fixed(SIMDI, ZoneOffset.UTC));
+        KimlikAyarlari ayarlar = new KimlikAyarlari(12, null, new KimlikAyarlari.Kilit(5, Duration.ofMinutes(5)),
+                null, null);
+        servis = new GirisServisi(kullaniciRepository, parolaKodlayici, tokenUretici, mock(YenilemeServisi.class),
+                ayarlar, Clock.fixed(SIMDI, ZoneOffset.UTC));
     }
 
     @Test
