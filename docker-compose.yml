@@ -45,6 +45,9 @@ services:
       context: .
       args: { SERVIS: auth-service }
     image: sinema/auth-service:dev
+    environment:
+      DB_HOST: mysql
+      DB_PASSWORD: ${AUTH_DB_PASSWORD}
     healthcheck: &saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
       interval: 10s
@@ -58,6 +61,9 @@ services:
       context: .
       args: { SERVIS: catalog-service }
     image: sinema/catalog-service:dev
+    environment:
+      DB_HOST: mysql
+      DB_PASSWORD: ${CATALOG_DB_PASSWORD}
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health"]
@@ -68,6 +74,9 @@ services:
       context: .
       args: { SERVIS: booking-service }
     image: sinema/booking-service:dev
+    environment:
+      DB_HOST: mysql
+      DB_PASSWORD: ${BOOKING_DB_PASSWORD}
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health"]
@@ -78,6 +87,9 @@ services:
       context: .
       args: { SERVIS: payment-service }
     image: sinema/payment-service:dev
+    environment:
+      DB_HOST: mysql
+      DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]

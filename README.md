@@ -36,6 +36,7 @@ MySQL 8.4: tek instance, servis başına ayrı şema ve kullanıcı
 sinema/
  ├── pom.xml            # parent POM (sürümler tek yerde)
  ├── sinema-common/     # servlet servislerin ortak altyapısı (korelasyon kimliği vb.)
+ ├── sinema-test-destegi/ # entegrasyon testleri için ortak kurulum (Testcontainers MySQL)
  ├── services/          # api-gateway, auth-service, catalog-service, booking-service, payment-service
  ├── frontend/          # Angular 13 (M5)
  ├── planlama.md, db-planlama.md, memory-bank/
@@ -56,6 +57,11 @@ sinema/
 ```
 
 İlk çalıştırmada wrapper Maven 3.9.16'yı ve bağımlılıkları indirir.
+Entegrasyon testleri Testcontainers ile gerçek bir MySQL başlatır, bu yüzden **Docker'ın çalışıyor olması gerekir**.
+
+Veritabanı şeması yalnızca Flyway ile değişir: her servisin `src/main/resources/db/migration` klasöründeki
+`V<sürüm>__<açıklama>.sql` dosyaları açılışta sırayla uygulanır. Uygulanmış bir migration dosyası değiştirilmez,
+değişiklik için yeni sürüm eklenir.
 
 ## Çalıştırma
 

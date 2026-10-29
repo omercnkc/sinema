@@ -16,3 +16,6 @@ Sabit stack ve tüm kurallar: [rules.md](rules.md). Özet:
 ## Boot 4 notları (3.x'ten farklar, karşılaştıkça eklenir)
 - `spring-boot-autoconfigure` SLF4J'yi geçişli getirmez; doğrudan kullanılan `slf4j-api` açıkça eklenir.
 - Web starter'ı `spring-boot-starter-webmvc`, Flyway için `spring-boot-starter-flyway` (4.1.2'de var, doğrulandı).
+- Boot 4.1.2 BOM: Flyway 12.4.0 (+`flyway-mysql`), Connector/J 9.7.0 (`com.mysql:mysql-connector-j`), Testcontainers 2.0.5.
+- Testcontainers 2: artifact `testcontainers-mysql`, sınıf `org.testcontainers.mysql.MySQLContainer` (generic değil); `@ServiceConnection` ile datasource otomatik bağlanır.
+- Yeni Maven modülü eklenince Dockerfile'daki `COPY` listesine de eklenmeli (parent POM modülü okumak ister).

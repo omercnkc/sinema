@@ -1,6 +1,16 @@
 spring:
   application:
     name: booking-service
+  datasource:
+    # Servis yalnızca kendi şemasına, kendi kullanıcısıyla bağlanır (planlama §6.3). Parolanın varsayılanı yok: eksikse açılmaz.
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/booking_db?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+    username: ${DB_USERNAME:booking_user}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Şemayı yalnızca Flyway değiştirir; Hibernate sadece entity'lerin şemayla uyumunu kontrol eder
+      ddl-auto: validate
 
 server:
   port: ${SERVER_PORT:8083}

@@ -21,6 +21,7 @@
 
     <modules>
         <module>sinema-common</module>
+        <module>sinema-test-destegi</module>
         <module>services/api-gateway</module>
         <module>services/auth-service</module>
         <module>services/catalog-service</module>
@@ -47,6 +48,11 @@
             <dependency>
                 <groupId>com.sinema</groupId>
                 <artifactId>sinema-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sinema</groupId>
+                <artifactId>sinema-test-destegi</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -13,6 +13,8 @@ WORKDIR /kaynak
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
 COPY sinema-common sinema-common
+# Testler atlanır ama parent POM bu modülü listelediği için Maven projeyi okurken ister
+COPY sinema-test-destegi sinema-test-destegi
 COPY services services
 # Maven deposu BuildKit önbelleğinde tutulur; bağımlılıklar her build'de yeniden inmez
 RUN --mount=type=cache,target=/root/.m2 \
