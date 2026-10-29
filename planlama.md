@@ -811,7 +811,9 @@ Eski sorular (referans):
 4. [x] Redis + gateway'in compose'da ayağa kalkması (container sağlığı `/actuator/health/liveness`; Redis düşünce liveness UP kalır, K38 fail-open ile uyumlu)
 5. [x] Flyway altyapısı (her serviste `V1__baslangic.sql`, `ddl-auto=validate`); entegrasyon testleri Testcontainers + gerçek MySQL 8.4.13, ortak kurulum `sinema-test-destegi` modülünde
 6. [x] `.env.example` (M0–M4 tüm secret'lar, milestone etiketli) + `scripts/jwt-anahtar-uret.sh` (RSA 3072, PKCS#8 private + X.509 public, `keys/` gitignore'da). Container mount'ları M1'de (anahtarı kullanan kod gelince). TMDB için `TMDB_API_TOKEN` (v4 Bearer token) kullanılır
-7. [ ] README (kurulum, çalıştırma, env tablosu)
+7. [x] README (hızlı başlangıç, yerel geliştirme, env tablosu, sık sorunlar, yol haritası); sıfırdan kurulum ayrı compose projesiyle ve yerel tek servis çalıştırma denendi
+
+**M0 tamamlandı (2026-10-29).**
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
