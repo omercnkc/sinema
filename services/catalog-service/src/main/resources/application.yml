@@ -23,6 +23,20 @@ sinema:
     # Misafir (token'sız) katalogu görüntüler (K3); listede olmayan her şey token ister
     acik-yollar:
       - GET /api/v1/catalog/**
+  tmdb:
+    taban-adres: https://api.themoviedb.org/3
+    # Boşsa TMDB araması 503 verir, elle film girişi çalışır
+    token: ${TMDB_API_TOKEN:}
+    dil: tr-TR
+    bolge: TR
+    baglanti-zaman-asimi: 2s
+    okuma-zaman-asimi: 5s
+    oyuncu-siniri: 20
+    # K45: TMDB şartları en çok 6 ay saklamaya izin verir; biz 3 ayda bir yenileriz
+    tazelik-suresi: 90d
+    # Her ayın 1'i 04:00 (UTC)
+    yenileme-zamanlamasi: "0 0 4 1 * *"
+    yenileme-paketi: 200
 
 management:
   endpoints:

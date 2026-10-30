@@ -1,6 +1,9 @@
 package com.sinema.catalog.film.repository;
 
 import com.sinema.catalog.film.entity.Film;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +14,16 @@ import org.springframework.data.repository.query.Param;
 public interface FilmRepository extends JpaRepository<Film, Long> {
 
     Optional<Film> findByTmdbId(Long tmdbId);
+
+    /** TMDB araması sonuçlarında "zaten ekli" işareti için. */
+    List<Film> findAllByTmdbIdIn(Collection<Long> tmdbIdleri);
+
+    /** K45: TMDB verisi eşikten eski filmler, en eskisi önce. Elle girilen filmler (tmdb_id NULL) hariç. */
+    @Query("""
+            select f.id from Film f
+            where f.tmdbId is not null and f.tmdbSenkronZamani < :esik
+            order by f.tmdbSenkronZamani""")
+    List<Long> yenilenecekFilmIdleri(@Param("esik") Instant esik, Pageable sayfa);
 
     /**
      * Sayfalı film araması. Boş (null) filtre uygulanmaz. Başlık karşılaştırması büyük/küçük harf ve

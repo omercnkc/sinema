@@ -142,6 +142,20 @@ public class Film {
         koleksiyonuDegistir(akilliIsaretler, bilgiler.akilliIsaretler());
     }
 
+    /** K45 yenilemesi: TMDB'den boş gelen alanlar mevcut değeri korur; çekim anı güncellenir. */
+    public void tmdbIleYenile(FilmBilgileri tmdbBilgileri, Instant cekimZamani) {
+        if (tmdbId == null) {
+            throw new IllegalStateException("Elle girilmiş film TMDB'den yenilenemez: " + id);
+        }
+        bilgileriGuncelle(FilmBilgileri.bosOlmayanlarlaBirlestir(mevcutBilgiler(), tmdbBilgileri));
+        this.tmdbSenkronZamani = cekimZamani;
+    }
+
+    public FilmBilgileri mevcutBilgiler() {
+        return new FilmBilgileri(baslik, ozet, afisYolu, sureDakika, vizyonTarihi, yasSiniri, tmdbPuani, yonetmen,
+                new LinkedHashSet<>(turler), new ArrayList<>(oyuncular), new LinkedHashSet<>(akilliIsaretler));
+    }
+
     public void gorunurlukDegistir(boolean gorunur) {
         this.gorunur = gorunur;
     }
