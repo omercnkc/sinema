@@ -4,6 +4,7 @@ import com.sinema.booking.doluluk.dto.DolulukCevabi;
 import com.sinema.booking.doluluk.dto.DoluKoltuk;
 import com.sinema.booking.koltuk.repository.KoltukKaydiRepository;
 import java.time.Clock;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class DolulukServisi {
         // Değişmez kopya: önbellekteki aynı liste tüm isteklere paylaştırılır
         List<DoluKoltuk> doluKoltuklar = onbellek.getir(seansId,
                 () -> List.copyOf(koltukKaydiRepository.doluKoltuklar(seansId, saat.instant())));
-        return new DolulukCevabi(saat.instant(), doluKoltuklar);
+        // Diğer cevaplarla aynı hassasiyet (DB DATETIME(3))
+        return new DolulukCevabi(saat.instant().truncatedTo(ChronoUnit.MILLIS), doluKoltuklar);
     }
 }

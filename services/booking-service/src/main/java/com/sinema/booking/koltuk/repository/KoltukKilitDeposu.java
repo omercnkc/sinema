@@ -45,6 +45,20 @@ public class KoltukKilitDeposu {
     private static final String TUTMALARI_SIL = """
             DELETE FROM seat_bookings WHERE reservation_id = :rezervasyonId AND status = 'HELD'""";
 
+    // Satış: yalnızca bu rezervasyonun hâlâ geçerli tutmaları (§4.5). Süresi dolmuş tutma satılmaz.
+    private static final String SAT = """
+            UPDATE seat_bookings
+               SET status = 'SOLD', hold_expires_at = NULL, version = version + 1, updated_at = :simdi
+             WHERE reservation_id = :rezervasyonId AND status = 'HELD' AND hold_expires_at > :simdi""";
+
+    private static final String TUTMA_BITISINI_GUNCELLE = """
+            UPDATE seat_bookings
+               SET hold_expires_at = :bitis, version = version + 1, updated_at = :simdi
+             WHERE reservation_id = :rezervasyonId AND status = 'HELD' AND hold_expires_at > :simdi""";
+
+    private static final String SURESI_DOLMUSLARI_SIL = """
+            DELETE FROM seat_bookings WHERE status = 'HELD' AND hold_expires_at <= :simdi LIMIT :parti""";
+
     private final NamedParameterJdbcTemplate jdbc;
 
     /**
@@ -73,6 +87,27 @@ public class KoltukKilitDeposu {
         return jdbc.update(TUTMALARI_SIL, new MapSqlParameterSource("rezervasyonId", rezervasyonId));
     }
 
+    /** HELD → SOLD; dönen sayı rezervasyonun koltuk sayısına eşit değilse çağıran işlemi geri almalı. */
+    public int sat(Long rezervasyonId, Instant simdi) {
+        return jdbc.update(SAT, rezervasyonParametreleri(rezervasyonId, simdi));
+    }
+
+    /** Ödeme penceresi uzatmasında koltuk tutmaları rezervasyonla aynı bitişe çekilir (K32). */
+    public int tutmaBitisiniGuncelle(Long rezervasyonId, Instant bitis, Instant simdi) {
+        return jdbc.update(TUTMA_BITISINI_GUNCELLE,
+                rezervasyonParametreleri(rezervasyonId, simdi).addValue("bitis", Timestamp.from(bitis)));
+    }
+
+    /**
+     * Süre dolumu job'ı: süresi dolmuş tutma satırlarını siler (K43), en çok {@code parti} satır. Koşul aynı
+     * ifadede olduğu için arada devralınmış (bitişi ileri alınmış) satır silinmez.
+     */
+    public int suresiDolmuslariSil(Instant simdi, int parti) {
+        return jdbc.update(SURESI_DOLMUSLARI_SIL, new MapSqlParameterSource()
+                .addValue("simdi", Timestamp.from(simdi))
+                .addValue("parti", parti));
+    }
+
     /** Verilen hücrelerden şu an dolu olanlar (409 cevabında hangi koltukların alındığını göstermek için). */
     public List<Long> doluHucreler(Long seansId, Collection<Long> hucreIdleri, Instant simdi) {
         if (hucreIdleri.isEmpty()) {
@@ -82,6 +117,12 @@ public class KoltukKilitDeposu {
                 .addValue("seansId", seansId)
                 .addValue("hucreIdleri", hucreIdleri)
                 .addValue("simdi", Timestamp.from(simdi)), Long.class);
+    }
+
+    private static MapSqlParameterSource rezervasyonParametreleri(Long rezervasyonId, Instant simdi) {
+        return new MapSqlParameterSource()
+                .addValue("rezervasyonId", rezervasyonId)
+                .addValue("simdi", Timestamp.from(simdi));
     }
 
     private static MapSqlParameterSource parametreler(KoltukTutma tutma) {

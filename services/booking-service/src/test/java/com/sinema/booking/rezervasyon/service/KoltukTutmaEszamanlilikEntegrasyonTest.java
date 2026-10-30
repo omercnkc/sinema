@@ -28,6 +28,12 @@ class KoltukTutmaEszamanlilikEntegrasyonTest extends RezervasyonEntegrasyonTesti
     @Autowired
     private KoltukTutmaServisi koltukTutmaServisi;
 
+    @Autowired
+    private OdemeAkisiServisi odemeAkisiServisi;
+
+    @Autowired
+    private RezervasyonServisi rezervasyonServisi;
+
     @Test
     void shouldGiveSeatToExactlyOneUser_whenManyUsersHoldSameSeatAtOnce() throws Exception {
         long seansId = yeniSeansId();
@@ -93,6 +99,39 @@ class KoltukTutmaEszamanlilikEntegrasyonTest extends RezervasyonEntegrasyonTesti
         assertThat(sonuclar).filteredOn(sonuc -> !sonuc.equals(BASARILI))
                 .containsOnly(KoltukTutmaServisi.AKTIF_REZERVASYON_KODU);
         assertThat(seansinRezervasyonSayisi(seansId)).isEqualTo(1);
+    }
+
+    @Test
+    void shouldApplyExactlyOneOfConfirmAndRelease_whenTheyRace() throws Exception {
+        for (int tur = 0; tur < 10; tur++) {
+            long kullanici = yeniKullaniciId();
+            long seansId = yeniSeansId();
+            long rezervasyonId = tutVeIdAl(kullanici, seansId, "[1, 2]");
+
+            List<String> sonuclar = esZamanliCalistir(2, sira -> sira == 0
+                    ? isKoduIle(() -> odemeAkisiServisi.onayla(rezervasyonId, 1L))
+                    : isKoduIle(() -> rezervasyonServisi.birak(kullanici, rezervasyonId)));
+
+            assertThat(sonuclar).filteredOn(BASARILI::equals).hasSize(1);
+            String durum = rezervasyonDurumu(rezervasyonId);
+            assertThat(durum).isIn("CONFIRMED", "RELEASED");
+            List<String> koltuklar = jdbcTemplate.queryForList(
+                    "SELECT status FROM seat_bookings WHERE reservation_id = ?", String.class, rezervasyonId);
+            if (durum.equals("CONFIRMED")) {
+                assertThat(koltuklar).containsExactly("SOLD", "SOLD");
+            } else {
+                assertThat(koltuklar).isEmpty();
+            }
+        }
+    }
+
+    private static String isKoduIle(Runnable is) {
+        try {
+            is.run();
+            return BASARILI;
+        } catch (SinemaIstisnasi e) {
+            return e.getKod();
+        }
     }
 
     /** Başarıda BASARILI, beklenen iş hatasında hata kodu döner; beklenmeyen hata testi düşürür. */

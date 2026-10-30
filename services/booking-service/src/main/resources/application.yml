@@ -40,6 +40,10 @@ sinema:
       bekleme: 10m
     # K47: seat-status cevabı seans başına en çok bu kadar bellekte tutulur
     doluluk-onbellek-suresi: 2s
+    # Süresi dolan hold'ları kapatan job (koltuk zaten sorgu anında boş sayılır; bu yalnızca düzenleme)
+    sure-dolumu:
+      aralik: 1m
+      parti-boyutu: 500
   guvenlik:
     jwt:
       yayinci: sinema-auth

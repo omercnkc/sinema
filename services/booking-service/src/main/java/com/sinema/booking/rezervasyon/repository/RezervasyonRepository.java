@@ -2,15 +2,18 @@ package com.sinema.booking.rezervasyon.repository;
 
 import com.sinema.booking.rezervasyon.entity.Rezervasyon;
 import com.sinema.booking.rezervasyon.entity.RezervasyonDurumu;
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface RezervasyonRepository extends JpaRepository<Rezervasyon, Long> {
 
@@ -71,4 +74,24 @@ public interface RezervasyonRepository extends JpaRepository<Rezervasyon, Long> 
                      and r.bitis > :pencereBasi and r.bitis <= :simdi))""")
     List<Instant> terkZamanlari(@Param("kullaniciId") Long kullaniciId, @Param("pencereBasi") Instant pencereBasi,
             @Param("simdi") Instant simdi);
+
+    /**
+     * Ödeme akışı (uzatma, onay, ret) rezervasyon satırını kilitleyerek okur: aynı rezervasyon üzerindeki işlemler
+     * (ve koşullu UPDATE ile çalışan bırakma) sırayla uygulanır, ikisi aynı anda karar veremez.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Rezervasyon r where r.id = :id")
+    Optional<Rezervasyon> findKilitliById(@Param("id") Long id);
+
+    /**
+     * Süre dolumu job'ı (§4.6): süresi geçmiş bekleyen işlemleri EXPIRED yapar, en çok {@code parti} satır.
+     * Parti sınırı: tek büyük UPDATE uzun süre kilit tutmasın. Doğruluk buna bağlı değil (sorgular zamanı kontrol eder).
+     */
+    @Transactional
+    @Modifying
+    @Query(value = """
+            UPDATE reservations SET status = 'EXPIRED', updated_at = :simdi
+             WHERE status = 'PENDING_PAYMENT' AND expires_at <= :simdi
+             LIMIT :parti""", nativeQuery = true)
+    int suresiDolanlariKapat(@Param("simdi") Instant simdi, @Param("parti") int parti);
 }

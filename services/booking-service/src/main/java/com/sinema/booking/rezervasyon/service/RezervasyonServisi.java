@@ -1,6 +1,6 @@
 package com.sinema.booking.rezervasyon.service;
 
-import com.sinema.booking.doluluk.service.DolulukOnbellegi;
+import com.sinema.booking.doluluk.service.DolulukTemizleyici;
 import com.sinema.booking.koltuk.repository.KoltukKilitDeposu;
 import com.sinema.booking.rezervasyon.dto.RezervasyonCevabi;
 import com.sinema.booking.rezervasyon.entity.Rezervasyon;
@@ -18,8 +18,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Kullanıcının kendi rezervasyonları: görüntüleme, listeleme ve ödeme öncesi hold'u bırakma (planlama §7.5, K40).
@@ -39,7 +37,7 @@ public class RezervasyonServisi {
 
     private final RezervasyonRepository rezervasyonRepository;
     private final KoltukKilitDeposu kilitDeposu;
-    private final DolulukOnbellegi dolulukOnbellegi;
+    private final DolulukTemizleyici dolulukTemizleyici;
     private final RezervasyonMapper rezervasyonMapper;
     private final Clock saat;
 
@@ -69,7 +67,7 @@ public class RezervasyonServisi {
             return;
         }
         kilitDeposu.tutmalariSil(rezervasyonId);
-        commitSonrasiDolulukOnbelleginiSil(rezervasyon.getSeansId());
+        dolulukTemizleyici.degisti(rezervasyon.getSeansId());
     }
 
     /**
@@ -90,19 +88,6 @@ public class RezervasyonServisi {
             throw new CakismaIstisnasi(ODEME_SURUYOR_KODU, "Ödeme işlemi sürüyor; şu an bırakılamaz.");
         }
         throw new CakismaIstisnasi(AKTIF_DEGIL_KODU, "Bu işlemin süresi dolmuş ya da kapanmış.");
-    }
-
-    /**
-     * Önbellek commit'ten sonra silinir: commit'ten önce silinseydi, arada gelen bir doluluk isteği henüz commit
-     * edilmemiş eski durumu okuyup 2 sn boyunca önbellekte tutabilirdi.
-     */
-    private void commitSonrasiDolulukOnbelleginiSil(Long seansId) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                dolulukOnbellegi.sil(seansId);
-            }
-        });
     }
 
     private Rezervasyon sahibininRezervasyonu(Long kullaniciId, Long rezervasyonId) {

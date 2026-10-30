@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.jayway.jsonpath.JsonPath;
 import com.sinema.booking.rezervasyon.RezervasyonEntegrasyonTesti;
 import java.time.Duration;
 import java.time.Instant;
@@ -120,12 +119,6 @@ class RezervasyonSorguVeBirakmaEntegrasyonTest extends RezervasyonEntegrasyonTes
 
         assertThat(rezervasyonDurumu(rezervasyonId)).isEqualTo("PENDING_PAYMENT");
         assertThat(koltukSahibi(seansId, 1)).isEqualTo(rezervasyonId);
-    }
-
-    private long tutVeIdAl(long kullanici, long seansId, String hucreler) throws Exception {
-        String govde = tut(kullanici, seansId, hucreler).andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return ((Number) JsonPath.read(govde, "$.reservationId")).longValue();
     }
 
     private ResultActions getir(long kullanici, long rezervasyonId) throws Exception {

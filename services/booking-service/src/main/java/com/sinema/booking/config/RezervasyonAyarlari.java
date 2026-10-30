@@ -15,6 +15,7 @@ import org.springframework.validation.annotation.Validated;
  * @param odemePenceresi          ödeme başlatılınca hold'un bir kez uzadığı süre (K32: +2 dk)
  * @param terkKorumasi            K29: art arda terk edilen hold sonrası bekleme
  * @param dolulukOnbellekSuresi   seat-status cevabının bellekte tutulduğu süre (K47: 2 sn)
+ * @param sureDolumu              süresi dolan hold'ları kapatan job (§4.6)
  */
 @Validated
 @ConfigurationProperties(prefix = "sinema.booking")
@@ -23,12 +24,20 @@ public record RezervasyonAyarlari(
         @Min(1) int enFazlaKoltuk,
         @NotNull Duration odemePenceresi,
         @Valid @NotNull TerkKorumasi terkKorumasi,
-        @NotNull Duration dolulukOnbellekSuresi) {
+        @NotNull Duration dolulukOnbellekSuresi,
+        @Valid @NotNull SureDolumu sureDolumu) {
 
     /**
      * K29, K33: son {@code pencere} içinde {@code esik} kadar terk (süresi dolan ya da bırakılan hold) varsa,
      * son terkten {@code bekleme} sonrasına kadar yeni hold açılamaz.
      */
     public record TerkKorumasi(@Min(1) int esik, @NotNull Duration pencere, @NotNull Duration bekleme) {
+    }
+
+    /**
+     * @param aralik      job'ın iki çalışması arasındaki süre (yalnızca düzenleme; doğruluk buna bağlı değil)
+     * @param partiBoyutu tek SQL ifadesinin en çok değiştirdiği satır (uzun kilit tutulmasın)
+     */
+    public record SureDolumu(@NotNull Duration aralik, @Min(1) int partiBoyutu) {
     }
 }

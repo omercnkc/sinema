@@ -4,7 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import com.sinema.booking.katalog.istemci.KatalogIstemcisi;
 import com.sinema.booking.katalog.istemci.KatalogSeansBilgisi;
 import com.sinema.booking.katalog.istemci.KoltukCozumlemeIstegi;
@@ -96,10 +98,11 @@ public abstract class RezervasyonEntegrasyonTesti {
         Timestamp bitisZamani = Timestamp.from(bitis);
         jdbcTemplate.update("""
                 INSERT INTO reservations (user_id, showtime_id, hall_id, status, total_amount, expires_at, released_at,
-                                          movie_title, cinema_name, hall_name, starts_at, created_at, updated_at)
-                VALUES (?, ?, 1, ?, 150.00, ?, ?, 'Film', 'Şube', 'Salon', ?, ?, ?)""",
+                                          movie_title, cinema_name, hall_name, starts_at, sales_close_at,
+                                          created_at, updated_at)
+                VALUES (?, ?, 1, ?, 150.00, ?, ?, 'Film', 'Şube', 'Salon', ?, ?, ?, ?)""",
                 kullaniciId, seansId, durum, bitisZamani, birakilma == null ? null : Timestamp.from(birakilma),
-                bitisZamani, bitisZamani, bitisZamani);
+                bitisZamani, bitisZamani, bitisZamani, bitisZamani);
         return jdbcTemplate.queryForObject(
                 "SELECT id FROM reservations WHERE user_id = ? AND showtime_id = ? ORDER BY id DESC LIMIT 1",
                 Long.class, kullaniciId, seansId);
@@ -111,6 +114,13 @@ public abstract class RezervasyonEntegrasyonTesti {
                 .header("Authorization", yetki(kullaniciId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"showtimeId\":" + seansId + ",\"seatCellIds\":" + hucreler + "}"));
+    }
+
+    /** Tutar (201 beklenir) ve rezervasyon id'sini döner. */
+    protected long tutVeIdAl(long kullaniciId, long seansId, String hucreler) throws Exception {
+        String govde = tut(kullaniciId, seansId, hucreler).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(govde, "$.reservationId")).longValue();
     }
 
     protected static String yetki(long kullaniciId) {

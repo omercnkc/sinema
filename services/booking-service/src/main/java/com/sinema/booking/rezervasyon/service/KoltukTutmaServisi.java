@@ -167,6 +167,6 @@ public class KoltukTutmaServisi {
 
     private static Rezervasyon.SeansKopyasi seansKopyasi(KatalogSeansBilgisi seans) {
         return new Rezervasyon.SeansKopyasi(seans.showtimeId(), seans.hallId(), seans.movieTitle(),
-                seans.cinemaName(), seans.hallName(), seans.startsAt());
+                seans.cinemaName(), seans.hallName(), seans.startsAt(), seans.salesCloseAt());
     }
 }
