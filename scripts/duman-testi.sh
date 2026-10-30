@@ -7,6 +7,7 @@
 #   ./scripts/duman-testi.sh http://localhost:8090    # başka gateway adresi
 #   ORIGIN=http://localhost:4200 ./scripts/duman-testi.sh
 #   ADMIN_EMAIL=... ADMIN_PASSWORD=... ./scripts/duman-testi.sh   # admin katalog adımları da (veri oluşturmaz)
+# Koltuk tutma adımları yeni kullanıcıyla tutup bırakır; kalıcı veri bırakmaz.
 set -uo pipefail
 
 GATEWAY="${1:-http://localhost:8080}"
@@ -104,9 +105,39 @@ else
     echo "  - yarın için seans yok (örnek veri yüklü değil): harita adımları atlandı"
 fi
 
+echo "6. Rezervasyon"
+adim "koltuk tutma token'sız" 401 "$(kod -H 'Content-Type: application/json' \
+    -d '{"showtimeId":1,"seatCellIds":[1]}' "$GATEWAY/api/v1/bookings/reservations")"
+adim "rezervasyon iç ucu dışarıya kapalı" 401 "$(kod "$GATEWAY/internal/v1/bookings/reservations/1/payment-info")"
+if [[ -n "$SEANS_ID" ]]; then
+    DOLULUK="$GATEWAY/api/v1/bookings/showtimes/$SEANS_ID/seat-status"
+    adim "koltuk doluluğu (misafir)" 200 "$(kod "$DOLULUK")"
+    # Haritanın son koltuğu: örnek veride en arka sıra, elle yapılan denemelerle çakışma olasılığı düşük
+    HUCRE=$(curl -s "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID/layout" \
+        | grep -oE '"cellId":[0-9]+,"row":[0-9]+,"col":[0-9]+,"type":"SEAT"' | tail -n1 \
+        | sed -E 's/"cellId":([0-9]+).*/\1/')
+    TUTMA_GOVDESI="{\"showtimeId\":$SEANS_ID,\"seatCellIds\":[$HUCRE]}"
+    TUTMA=$(curl -s -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+        -d "$TUTMA_GOVDESI" "$GATEWAY/api/v1/bookings/reservations")
+    adim "koltuk tutma (hold)" 201 "$(tail -n1 <<<"$TUTMA")"
+    REZERVASYON_ID=$(head -n1 <<<"$TUTMA" | sed -nE 's/.*"reservationId":([0-9]+).*/\1/p')
+    adim "tutulan koltuk doluluğa yansır" 1 "$(curl -s "$DOLULUK" | grep -c "\"cellId\":$HUCRE,")"
+    adim "aynı seansta ikinci aktif işlem" 409 "$(kod -H "Authorization: Bearer $TOKEN" \
+        -H 'Content-Type: application/json' -d "$TUTMA_GOVDESI" "$GATEWAY/api/v1/bookings/reservations")"
+    adim "rezervasyon detayı" 200 "$(kod -H "Authorization: Bearer $TOKEN" \
+        "$GATEWAY/api/v1/bookings/reservations/$REZERVASYON_ID")"
+    adim "rezervasyonlarım (sayfalı)" 200 "$(kod -H "Authorization: Bearer $TOKEN" \
+        "$GATEWAY/api/v1/bookings/reservations?size=5")"
+    adim "hold'u bırakma" 204 "$(kod -X DELETE -H "Authorization: Bearer $TOKEN" \
+        "$GATEWAY/api/v1/bookings/reservations/$REZERVASYON_ID")"
+    adim "bırakılan koltuk hemen boşalır" 0 "$(curl -s "$DOLULUK" | grep -c "\"cellId\":$HUCRE,")"
+else
+    echo "  - seans yok: koltuk tutma adımları atlandı"
+fi
+
 # Admin adımları isteğe bağlı ve veri oluşturmaz (her çalıştırmada örnek veriyi kirletmesin)
 if [[ -n "${ADMIN_EMAIL:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
-    echo "6. Katalog (admin)"
+    echo "7. Katalog (admin)"
     ADMIN_TOKEN=$(curl -s -H 'Content-Type: application/json' \
         -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" "$GATEWAY/api/v1/auth/login" \
         | json_alan accessToken)

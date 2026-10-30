@@ -4,8 +4,9 @@
 Misafirler film, seans ve koltuk doluluğunu görür; üyeler en fazla 5 koltuk tutup iyzico (sandbox) ile satın alır;
 adminler film (TMDB), salon düzeni, seans ve fiyatları yönetir.
 
-> **Durum:** M2 (katalog) tamamlandı. Kimlik doğrulama ve gateway güvenliğinin (M1) üzerine şube, salon, sürümlü salon
-> düzeni, film (TMDB'den doldurma), seans ve örnek veri çalışıyor; koltuk tutma/ödeme sonraki adımlarda.
+> **Durum:** M3 (rezervasyon) tamamlandı. Kimlik/gateway (M1) ve katalog (M2) üzerine koltuk doluluğu, koltuk tutma
+> (çift satış yok), rezervasyonlarım, hold bırakma, terk koruması ve ödeme servisinin kullanacağı onay uçları
+> çalışıyor; ödeme (iyzico) ve bilet doğrulama M4'te.
 > Ayrıntılı plan: [planlama.md](planlama.md), veritabanı: [db-planlama.md](db-planlama.md).
 
 ## Mimari
@@ -173,6 +174,9 @@ $env:DB_PASSWORD = "<.env içindeki CATALOG_DB_PASSWORD>"
 .\mvnw.cmd -pl services/catalog-service spring-boot:run
 ```
 
+booking-service ayrıca `BOOKING_SERVICE_CLIENT_SECRET` ister (auth'tan servis token'ı alıp catalog'u çağırır; auth ve
+catalog varsayılan olarak `localhost:8081` / `localhost:8082`, değiştirmek için `AUTH_SERVICE_URL` / `CATALOG_SERVICE_URL`).
+
 Servisler JWT anahtarlarını `./keys` altında arar (servis klasöründen çalıştırılıyorsa `JWT_KEYS_DIR` ile mutlak yol verin).
 IDE'de çalıştırırken aynı değişkenleri çalıştırma yapılandırmasına ekleyin.
 
@@ -185,6 +189,26 @@ IDE'de çalıştırırken aynı değişkenleri çalıştırma yapılandırmasın
 | payment-service | 8084 | `OdemeServisiUygulamasi` | `payment_user` / `PAYMENT_DB_PASSWORD` |
 
 Port `SERVER_PORT`, DB adresi `DB_HOST` / `DB_PORT` ile değiştirilebilir.
+
+**Rezervasyon (M3)** — giriş zorunlu, doluluk hariç
+
+| Uç | Erişim | Açıklama |
+|---|---|---|
+| `GET /api/v1/bookings/showtimes/{id}/seat-status` | Herkes | Dolu koltuklar `{serverTime, occupied[{cellId, status}]}`; kimin tuttuğu yok, `no-store` |
+| `POST /api/v1/bookings/reservations` | USER/ADMIN | `{showtimeId, seatCellIds[1..5]}` → 201, ödeme bekleyen rezervasyon + `expiresAt` |
+| `GET /api/v1/bookings/reservations/{id}` | Sahibi | Durum, koltuklar, tutar, bilet bilgileri; onaylıysa `ticketCode` |
+| `GET /api/v1/bookings/reservations?page&size` | USER/ADMIN | Kendi rezervasyonları, en yeni önce (`size` ≤ 50) |
+| `DELETE /api/v1/bookings/reservations/{id}` | Sahibi | Ödeme başlamadan hold'u bırakır (204), koltuklar hemen boşalır |
+
+Koltuk tutma hataları: `409 SEATS_UNAVAILABLE` (+`unavailableCellIds`), `409 ACTIVE_RESERVATION_EXISTS` (+`reservationId`),
+`429 HOLD_COOLDOWN` (+`Retry-After`), `422 SALES_CLOSED`, `400 INVALID_SEATS` / `TOO_MANY_SEATS` / `DUPLICATE_SEATS`,
+`503 CATALOG_UNAVAILABLE`. payment-service'in iç uçları (`/internal/v1/bookings/reservations/{id}/payment-info`,
+`extend-payment-window`, `confirm`, `fail`) gateway'den erişilemez.
+
+**Kurallar:** hold 3 dk (satış kapanışını aşmaz); bir işlemde en çok 5 koltuk; kullanıcının seans başına tek aktif işlemi
+olur; ödeme başlayınca hold bir kez 2 dk uzar. Son 30 dk'da ödemeden bırakılan ya da süresi dolan 3 işlem varsa son terkten
+10 dk sonrasına kadar yeni hold açılamaz. Satın alınan bilet iptal edilemez. Doluluk cevabı sunucuda en çok 2 sn
+önbelleklenir; kendi tutma/bırakma işleminiz hemen görünür.
 
 ## Derleme ve test
 
@@ -215,7 +239,7 @@ Hibernate şemayı değiştirmez (`ddl-auto=validate`), yalnızca entity'lerle u
 | `CORS_ALLOWED_ORIGINS` | Gateway'e tarayıcıdan istek atabilecek frontend adresleri, virgülle (varsayılan `http://localhost:4200`) |
 | `JWT_KEYS_DIR` | JWT anahtar klasörü (varsayılan `./keys`, betikle üretilir) |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Sistemde admin yokken açılışta oluşturulan ilk admin; boşsa oluşturulmaz |
-| `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servis token'ı almak için sırlar; boş olan servis token alamaz |
+| `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servis token'ı almak için sırlar; booking bu değer olmadan açılmaz |
 | `CATALOG_PROFILES` | `dev` (varsayılan): katalog boşken örnek veri yüklenir; `default`: yüklenmez |
 | `TMDB_API_TOKEN` | TMDB "API Read Access Token" (v4). Boşsa TMDB araması 503 verir, filmler elle girilir |
 | `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` | iyzico sandbox bilgileri — M4 |
@@ -245,6 +269,10 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | Admin TMDB araması `503 TMDB_UNAVAILABLE` | `TMDB_API_TOKEN` boş/yanlış veya TMDB'ye ulaşılamıyor. Film formu elle doldurulabilir. |
 | Film sayfasında hiç seans yok | Örnek seanslar yüklendiği günden itibaren 7 gün içindir. `docker compose down -v` ile yeniden yükleyin. |
 | Seans eklerken `409 SHOWTIME_OVERLAP` | Salonda bu aralıkta (15 dk ara dahil) başka seans var; cevaptaki `conflictingShowtimeId`'ye bakın. |
+| Koltuk tutarken `503 CATALOG_UNAVAILABLE` | booking catalog'a ulaşamıyor ya da servis token'ı alamıyor: `docker compose ps catalog-service auth-service`, `.env`'de `BOOKING_SERVICE_CLIENT_SECRET` dolu mu, booking loglarına bakın. |
+| booking açılmıyor, `sinema.servis-istemcisi.sir` boş | `.env`'de `BOOKING_SERVICE_CLIENT_SECRET` yok. Değeri verip `docker compose up -d booking-service`. |
+| Koltuk tutarken `429 HOLD_COOLDOWN` | Kısa sürede 3 işlem ödemeden bırakıldı/süresi doldu (terk koruması); `Retry-After` saniye bekleyin. |
+| Koltuk tutarken `409 ACTIVE_RESERVATION_EXISTS` | Bu seansta ödemesi bekleyen işleminiz var; cevaptaki `reservationId`'yi bırakın ya da süresinin dolmasını bekleyin. |
 | `./mvnw: bad interpreter` (Linux container / WSL) | Satır sonları CRLF olmuş. `.gitattributes` bunu önler; `git add --renormalize .` ile düzeltin. |
 
 ## Yol haritası
@@ -254,8 +282,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | M0 | İskelet: servisler, Docker, MySQL, Redis, Flyway, testler | Tamamlandı |
 | M1 | Auth + gateway güvenliği (JWT, refresh, hesap kilidi, admin, servis token'ı, rate limit, CORS) | Tamamlandı |
 | M2 | Catalog: şube, salon, sürümlü düzen, film (TMDB), seans, örnek veri | Tamamlandı |
-| M3 | Booking: koltuk tutma (çift satış yok), rezervasyon | Sırada |
-| M4 | Payment (iyzico sandbox) + bilet doğrulama | |
+| M3 | Booking: koltuk tutma (çift satış yok), doluluk, rezervasyon, terk koruması, ödeme onay uçları | Tamamlandı |
+| M4 | Payment (iyzico sandbox) + bilet doğrulama | Sırada |
 | M5–M7 | Angular frontend, koltuk haritası, admin paneli | |
 | M8 | Salon düzeni değişikliğinde bilet göçü | |
 | M9 | Sertleştirme, güvenlik taraması, demo | |
