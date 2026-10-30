@@ -12,6 +12,9 @@ public interface DuzenHucresiRepository extends JpaRepository<DuzenHucresi, Long
 
     List<DuzenHucresi> findAllByDuzenIdOrderBySatirAscSutunAsc(Long duzenId);
 
+    /** Yalnızca verilen düzene ait hücreler döner; başka düzenin id'si sessizce elenir. */
+    List<DuzenHucresi> findAllByDuzenIdAndIdIn(Long duzenId, Collection<Long> idler);
+
     /** Tek DELETE ifadesi; hemen çalışır, böylece ardından eklenen hücreler eski konumlarla çakışmaz. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("delete from DuzenHucresi h where h.duzenId = :duzenId")

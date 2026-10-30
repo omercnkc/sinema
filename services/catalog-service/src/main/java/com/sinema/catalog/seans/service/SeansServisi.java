@@ -1,6 +1,8 @@
 package com.sinema.catalog.seans.service;
 
 import com.sinema.catalog.config.KatalogAyarlari;
+import com.sinema.catalog.duzen.entity.DuzenHucresi;
+import com.sinema.catalog.duzen.entity.HucreTipi;
 import com.sinema.catalog.duzen.entity.SalonDuzeni;
 import com.sinema.catalog.duzen.mapper.DuzenMapper;
 import com.sinema.catalog.duzen.repository.DuzenHucresiRepository;
@@ -8,6 +10,8 @@ import com.sinema.catalog.duzen.repository.SalonDuzeniRepository;
 import com.sinema.catalog.film.entity.Film;
 import com.sinema.catalog.film.repository.FilmRepository;
 import com.sinema.catalog.film.service.FilmServisi;
+import com.sinema.catalog.seans.dto.IcSeansBilgisi;
+import com.sinema.catalog.seans.dto.KoltukCozumlemeCevabi;
 import com.sinema.catalog.seans.dto.SeansDetayi;
 import com.sinema.catalog.seans.dto.SeansDuzeni;
 import com.sinema.catalog.seans.dto.SeansGuncellemeIstegi;
@@ -25,9 +29,13 @@ import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
@@ -118,6 +126,31 @@ public class SeansServisi {
                 duzen.getSutunSayisi(), hucreRepository.findAllByDuzenIdOrderBySatirAscSutunAsc(duzen.getId()).stream()
                         .map(duzenMapper::hucreCevabi)
                         .toList());
+    }
+
+    @Transactional(readOnly = true)
+    public IcSeansBilgisi icBilgi(Long seansId) {
+        return seansMapper.icSeansBilgisi(seansBul(seansId), saat.instant());
+    }
+
+    /**
+     * İstenen hücreleri seansın mühürlü düzeninde arar. Başka düzenin hücresi (ör. salonun yeni sürümü)
+     * bu seans için geçersizdir; koltuk kimliği yalnızca kendi düzeninde anlamlıdır (K17).
+     */
+    @Transactional(readOnly = true)
+    public KoltukCozumlemeCevabi koltuklariCoz(Long seansId, List<Long> hucreIdleri) {
+        Seans seans = seansRepository.findById(seansId).orElseThrow(SeansServisi::seansYok);
+        Set<Long> istenenler = new LinkedHashSet<>(hucreIdleri);
+        Map<Long, DuzenHucresi> koltuklar = hucreRepository.findAllByDuzenIdAndIdIn(seans.getDuzenId(), istenenler)
+                .stream()
+                .filter(hucre -> hucre.getTip() == HucreTipi.SEAT)
+                .collect(Collectors.toMap(DuzenHucresi::getId, Function.identity()));
+        List<KoltukCozumlemeCevabi.Koltuk> gecerli = istenenler.stream()
+                .filter(koltuklar::containsKey)
+                .map(id -> seansMapper.koltuk(koltuklar.get(id)))
+                .toList();
+        List<Long> gecersiz = istenenler.stream().filter(id -> !koltuklar.containsKey(id)).toList();
+        return new KoltukCozumlemeCevabi(seans.getDuzenId(), gecerli, gecersiz);
     }
 
     public static KaynakBulunamadiIstisnasi seansYok() {

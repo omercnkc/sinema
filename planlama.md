@@ -853,7 +853,7 @@ Eski sorular (referans):
 4. [x] Film: V4 (`movies` + 3 liste tablosu), admin `POST/PUT /movies`, `PATCH /visibility`, halka açık `GET /movies` (sayfalı, tür/arama, gizliler hariç) ve `GET /movies/{id}`; akıllı işaret enum'u
 5. [x] TMDB istemcisi: `RestClient` (spring-web, yeni bağımlılık yok; timeout'lu), `GET /admin/catalog/tmdb/search`, `GET /admin/catalog/tmdb/movies/{tmdbId}` (form ön doldurma, kaydetmez), TR sertifika seçimi, `descriptors` eşlemesi, erişilemezse 503 `TMDB_UNAVAILABLE`; `movies.tmdb_synced_at` + aylık yenileme job'ı (K45); testlerde `MockRestServiceServer`
 6. [x] Seans: V5 (`showtimes`), `POST /showtimes` (salon `FOR UPDATE` + çakışma, `endsAt` = süre + ara payı, fiyat kopyası, düzen mühürü, gizli filme seans yok), `PUT` (fiyat/ofset); halka açık `GET /movies/{id}/showtimes`, `GET /showtimes/{id}` (`salesCloseAt`), `GET /showtimes/{id}/layout` (`ETag`, uzun cache); yayımlamaya K13 kontrolü
-7. [ ] Booking için internal uçlar: `GET /internal/v1/catalog/showtimes/{id}` (başlangıç, kapanış, fiyat, düzen, bilet snapshot alanları) ve hücre doğrulama (`SEAT` mi, bu düzene mi ait, etiketler); `activate` M8'de
+7. [x] Booking için internal uçlar: `GET /internal/v1/catalog/showtimes/{id}` (başlangıç, kapanış, fiyat, düzen, bilet snapshot alanları) ve hücre doğrulama (`SEAT` mi, bu düzene mi ait, etiketler); `activate` M8'de
 8. [ ] `dev` seed: 3 şube (3/4/3 salon), 10 farklı düzen, birkaç film (elle, TMDB'siz), önümüzdeki günlere seanslar; yalnızca boş DB'de çalışır
 9. [ ] compose/README: catalog'a `TMDB_API_TOKEN`, duman testine katalog adımları, M2 kapanışı
 
