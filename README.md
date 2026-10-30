@@ -4,8 +4,8 @@
 Misafirler film, seans ve koltuk doluluğunu görür; üyeler en fazla 5 koltuk tutup iyzico (sandbox) ile satın alır;
 adminler film (TMDB), salon düzeni, seans ve fiyatları yönetir.
 
-> **Durum:** M1 (kimlik doğrulama + gateway güvenliği) tamamlandı. Kayıt, giriş, oturum yenileme, çıkış, admin yönetimi
-> ve servisler arası kimlik çalışıyor; katalog/rezervasyon/ödeme özellikleri sonraki adımlarda.
+> **Durum:** M2 (katalog) tamamlandı. Kimlik doğrulama ve gateway güvenliğinin (M1) üzerine şube, salon, sürümlü salon
+> düzeni, film (TMDB'den doldurma), seans ve örnek veri çalışıyor; koltuk tutma/ödeme sonraki adımlarda.
 > Ayrıntılı plan: [planlama.md](planlama.md), veritabanı: [db-planlama.md](db-planlama.md).
 
 ## Mimari
@@ -73,6 +73,10 @@ docker compose ps                    # hepsi (healthy) olmalı
 bash ./scripts/duman-testi.sh        # gateway üzerinden uçtan uca kontrol
 ```
 
+İlk açılışta catalog `dev` profiliyle örnek veri yükler: 3 şube (Kadıköy 3, Beşiktaş 4, Bakırköy 3 salon), her salonda
+farklı bir düzen, 5 uydurma film ve bugünden itibaren 7 günlük seans. Örnek seanslar biterse veya temiz bir katalogla
+başlamak isterseniz `docker compose down -v` (boş katalog için `.env`'de `CATALOG_PROFILES=default`).
+
 Durdurmak: `docker compose down`. Veritabanını da silip sıfırdan başlamak: `docker compose down -v`.
 
 **Ağ ve portlar**
@@ -114,9 +118,11 @@ auth-service'tedir; diğer servisler ve gateway yalnızca public key ile doğrul
   servise token alabileceği sınırlıdır (booking → catalog, payment → booking).
 - Tüm hata cevapları RFC 7807 `application/problem+json`: `code` (makine okunur), `detail`, `correlationId`, `timestamp`.
 
-## API (M1)
+## API
 
-Gateway üzerinden (`http://localhost:8080`):
+Gateway üzerinden (`http://localhost:8080`). Para tutarları string (`"120.00"`), zamanlar UTC ISO-8601.
+
+**Kimlik (M1)**
 
 | Uç | Erişim | Açıklama |
 |---|---|---|
@@ -128,6 +134,33 @@ Gateway üzerinden (`http://localhost:8080`):
 | `POST /api/v1/admin/auth/admins` | ADMIN | `{email, password}` → 201, yeni admin |
 
 Parola kuralı: en az 8 karakter, en çok 72 bayt (BCrypt sınırı; Türkçe harfler 2 bayt sayılır).
+
+**Katalog (M2), herkese açık**
+
+| Uç | Açıklama |
+|---|---|
+| `GET /api/v1/catalog/cinemas` | Şubeler ve salonları (fiyat yok, fiyat seansta) |
+| `GET /api/v1/catalog/movies?q&genre&page&size` | Görünür filmler, sayfalı (`size` ≤ 50); başlık araması harf/aksan duyarsız |
+| `GET /api/v1/catalog/movies/{id}` | Film detayı (oyuncular, yönetmen, TR yaş sınırı, akıllı işaretler, TMDB puanı) |
+| `GET /api/v1/catalog/movies/{id}/showtimes?date&cinemaId` | O günün seansları (`date` Europe/Istanbul günü, boşsa bugün) |
+| `GET /api/v1/catalog/showtimes/{id}` | Seans: fiyat, `salesCloseAt`, `salesOpen`, `serverTime` |
+| `GET /api/v1/catalog/showtimes/{id}/layout` | Seansın mühürlü koltuk haritası (`ETag` + 5 dk önbellek) |
+
+**Katalog (M2), ADMIN** — hepsi `/api/v1/admin/catalog` altında
+
+| Uç | Açıklama |
+|---|---|
+| `GET/POST /cinemas`, `PUT /cinemas/{id}` | Şube |
+| `POST /halls`, `PUT /halls/{id}` | Salon ve varsayılan bilet fiyatı |
+| `GET/POST /halls/{id}/layouts`, `GET/PUT /halls/{id}/layouts/{layoutId}` | Düzen taslağı (salon başına bir taslak; hatalarda 422 `violations`) |
+| `POST /halls/{id}/layouts/{layoutId}/publish` | Taslağı sürüm yapar, salonun aktif düzeni olur; salonda süren seans varken 409 |
+| `GET/POST /movies`, `GET/PUT /movies/{id}`, `PATCH /movies/{id}/visibility` | Film (silinmez, gizlenir) |
+| `GET /tmdb/search?query`, `GET /tmdb/movies/{tmdbId}` | TMDB araması ve form ön doldurma (kaydetmez); TMDB yoksa 503 |
+| `POST /showtimes`, `PUT /showtimes/{id}` | Seans (çakışma 409, fiyat boşsa salondan); silme/iptal yok |
+
+**Kurallar:** seans bitişi = başlangıç + film süresi + 15 dk ara; satış başlangıçtan 10 dk sonra kapanır (seans bazında
+değiştirilebilir); her seans oluşturulduğu andaki düzen sürümüne bağlı kalır, yeni düzen yalnızca sonraki seanslara
+uygulanır. TMDB'den gelen film verisi 3 ayda bir (ayın 1'i) yenilenir; TMDB'de boş gelen alan admin değerini ezmez.
 
 ## Yerel geliştirme (tek servis IDE'de veya Maven ile)
 
@@ -163,7 +196,8 @@ Port `SERVER_PORT`, DB adresi `DB_HOST` / `DB_PORT` ile değiştirilebilir.
 - Entegrasyon testleri Testcontainers ile gerçek MySQL ve Redis başlatır: **Docker çalışıyor olmalı**.
 - Testler JWT anahtarlarını çalışma anında kendileri üretir; `keys/` gerekmez.
 - Her servlet servisi `ServisAltyapiTesti`'ni miras alır: sağlık kontrolü, Flyway ve 6 güvenlik senaryosu.
-- Çalışan yığın için: `bash ./scripts/duman-testi.sh [gateway-adresi]`.
+- Çalışan yığın için: `bash ./scripts/duman-testi.sh [gateway-adresi]`. `ADMIN_EMAIL`/`ADMIN_PASSWORD` verilirse admin
+  katalog adımları da çalışır (veri oluşturmaz).
 
 **Veritabanı değişiklikleri** yalnızca Flyway ile yapılır: servisin `src/main/resources/db/migration` klasörüne
 `V<sürüm>__<açıklama>.sql` eklenir. Uygulanmış bir migration dosyası değiştirilmez; değişiklik için yeni sürüm eklenir.
@@ -182,7 +216,8 @@ Hibernate şemayı değiştirmez (`ddl-auto=validate`), yalnızca entity'lerle u
 | `JWT_KEYS_DIR` | JWT anahtar klasörü (varsayılan `./keys`, betikle üretilir) |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Sistemde admin yokken açılışta oluşturulan ilk admin; boşsa oluşturulmaz |
 | `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servis token'ı almak için sırlar; boş olan servis token alamaz |
-| `TMDB_API_TOKEN` | TMDB API Read Access Token — M2 |
+| `CATALOG_PROFILES` | `dev` (varsayılan): katalog boşken örnek veri yüklenir; `default`: yüklenmez |
+| `TMDB_API_TOKEN` | TMDB "API Read Access Token" (v4). Boşsa TMDB araması 503 verir, filmler elle girilir |
 | `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` | iyzico sandbox bilgileri — M4 |
 
 Eksik zorunlu bir değişkende `docker compose` hangi değişkenin eksik olduğunu söyleyerek başlamaz.
@@ -207,6 +242,9 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | Servis `unhealthy`, logda `Validate failed: Migrations have failed validation` | Uygulanmış bir migration dosyası değiştirilmiş. Dosyayı geri alın, değişikliği yeni `V<n>__` dosyasıyla yapın. |
 | Yerel çalıştırmada `Could not resolve placeholder 'DB_PASSWORD'` | `DB_PASSWORD` ortam değişkeni verilmemiş (bkz. Yerel geliştirme). |
 | `mvnw verify` testlerde `Could not find a valid Docker environment` | Testcontainers Docker'a ulaşamıyor; Docker Desktop'ı başlatın. |
+| Admin TMDB araması `503 TMDB_UNAVAILABLE` | `TMDB_API_TOKEN` boş/yanlış veya TMDB'ye ulaşılamıyor. Film formu elle doldurulabilir. |
+| Film sayfasında hiç seans yok | Örnek seanslar yüklendiği günden itibaren 7 gün içindir. `docker compose down -v` ile yeniden yükleyin. |
+| Seans eklerken `409 SHOWTIME_OVERLAP` | Salonda bu aralıkta (15 dk ara dahil) başka seans var; cevaptaki `conflictingShowtimeId`'ye bakın. |
 | `./mvnw: bad interpreter` (Linux container / WSL) | Satır sonları CRLF olmuş. `.gitattributes` bunu önler; `git add --renormalize .` ile düzeltin. |
 
 ## Yol haritası
@@ -215,8 +253,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 |---|---|---|
 | M0 | İskelet: servisler, Docker, MySQL, Redis, Flyway, testler | Tamamlandı |
 | M1 | Auth + gateway güvenliği (JWT, refresh, hesap kilidi, admin, servis token'ı, rate limit, CORS) | Tamamlandı |
-| M2 | Catalog: şube, salon, düzen, film (TMDB), seans | Sırada |
-| M3 | Booking: koltuk tutma (çift satış yok), rezervasyon | |
+| M2 | Catalog: şube, salon, sürümlü düzen, film (TMDB), seans, örnek veri | Tamamlandı |
+| M3 | Booking: koltuk tutma (çift satış yok), rezervasyon | Sırada |
 | M4 | Payment (iyzico sandbox) + bilet doğrulama | |
 | M5–M7 | Angular frontend, koltuk haritası, admin paneli | |
 | M8 | Salon düzeni değişikliğinde bilet göçü | |

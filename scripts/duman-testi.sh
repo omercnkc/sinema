@@ -6,6 +6,7 @@
 #   ./scripts/duman-testi.sh                          # http://localhost:8080
 #   ./scripts/duman-testi.sh http://localhost:8090    # başka gateway adresi
 #   ORIGIN=http://localhost:4200 ./scripts/duman-testi.sh
+#   ADMIN_EMAIL=... ADMIN_PASSWORD=... ./scripts/duman-testi.sh   # admin katalog adımları da (veri oluşturmaz)
 set -uo pipefail
 
 GATEWAY="${1:-http://localhost:8080}"
@@ -71,6 +72,53 @@ adim "izinli origin'den preflight" 200 "$(kod -X OPTIONS -H "Origin: $ORIGIN" \
     -H 'Access-Control-Request-Method: POST' "$GATEWAY/api/v1/auth/login")"
 adim "izinsiz origin'den preflight" 403 "$(kod -X OPTIONS -H 'Origin: https://kotu-site.example' \
     -H 'Access-Control-Request-Method: POST' "$GATEWAY/api/v1/auth/login")"
+
+echo "5. Katalog (misafir)"
+adim "şube listesi" 200 "$(kod "$GATEWAY/api/v1/catalog/cinemas")"
+FILMLER=$(curl -s "$GATEWAY/api/v1/catalog/movies?size=1")
+adim "film listesi (sayfalı)" 200 "$(kod "$GATEWAY/api/v1/catalog/movies?size=1")"
+adim "sayfa boyutu sınırı (51)" 400 "$(kod "$GATEWAY/api/v1/catalog/movies?size=51")"
+adim "olmayan film" 404 "$(kod "$GATEWAY/api/v1/catalog/movies/999999999")"
+adim "katalog iç ucu dışarıya kapalı" 401 "$(kod "$GATEWAY/internal/v1/catalog/showtimes/1")"
+adim "katalog admin ucu token'sız" 401 "$(kod "$GATEWAY/api/v1/admin/catalog/cinemas")"
+# Çıkış yapılsa da access token süresi dolana kadar (≤15 dk) geçerlidir (planlama §5.3); rol kontrolü için yeterli
+adim "katalog admin ucu USER ile" 403 "$(kod -H "Authorization: Bearer $TOKEN" "$GATEWAY/api/v1/admin/catalog/cinemas")"
+
+# Örnek veri (dev profili) yüklüyse bir filmin yarınki seansı üzerinden harita akışı denenir
+FILM_ID=$(sed -nE 's/.*"content":\[\{"id":([0-9]+).*/\1/p' <<<"$FILMLER")
+YARIN=$(date -d tomorrow +%F)
+SEANS_ID=""
+if [[ -n "$FILM_ID" ]]; then
+    SEANS_ID=$(curl -s "$GATEWAY/api/v1/catalog/movies/$FILM_ID/showtimes?date=$YARIN" \
+        | sed -nE 's/^\[\{"id":([0-9]+).*/\1/p')
+fi
+if [[ -n "$SEANS_ID" ]]; then
+    adim "film detayı" 200 "$(kod "$GATEWAY/api/v1/catalog/movies/$FILM_ID")"
+    adim "seans detayı" 200 "$(kod "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID")"
+    ETIKET=$(curl -s -D - -o /dev/null "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID/layout" \
+        | sed -nE 's/^[Ee][Tt]ag: *(.*)\r?$/\1/p' | tr -d '\r')
+    adim "koltuk haritası (ETag ile)" 200 "$(kod "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID/layout")"
+    adim "koltuk haritası değişmediyse 304" 304 "$(kod -H "If-None-Match: $ETIKET" \
+        "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID/layout")"
+else
+    echo "  - yarın için seans yok (örnek veri yüklü değil): harita adımları atlandı"
+fi
+
+# Admin adımları isteğe bağlı ve veri oluşturmaz (her çalıştırmada örnek veriyi kirletmesin)
+if [[ -n "${ADMIN_EMAIL:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
+    echo "6. Katalog (admin)"
+    ADMIN_TOKEN=$(curl -s -H 'Content-Type: application/json' \
+        -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" "$GATEWAY/api/v1/auth/login" \
+        | json_alan accessToken)
+    adim "admin şube listesi" 200 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        "$GATEWAY/api/v1/admin/catalog/cinemas")"
+    adim "admin film listesi (gizliler dahil)" 200 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        "$GATEWAY/api/v1/admin/catalog/movies")"
+    adim "geçersiz şube isteği doğrulanır" 400 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' -d '{}' "$GATEWAY/api/v1/admin/catalog/cinemas")"
+else
+    echo "  - ADMIN_EMAIL/ADMIN_PASSWORD verilmedi: admin katalog adımları atlandı"
+fi
 
 if [[ $HATA_SAYISI -gt 0 ]]; then
     echo "SONUÇ: $HATA_SAYISI adım başarısız"
