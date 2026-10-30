@@ -850,7 +850,7 @@ Eski sorular (referans):
 1. [x] Şube + salon: V2 (`cinemas`, `halls`), admin `POST/PUT /cinemas`, `POST/PUT /halls` (varsayılan fiyat), halka açık `GET /cinemas`; MapStruct ilk kez (parent POM'a processor)
 2. [x] Düzen taslağı: V3 (`hall_layouts`, `layout_cells`), `POST /halls/{id}/layouts` (taslak), `PUT` (yalnızca `DRAFT`), `GET /halls/{id}/layouts`; doğrulama (ızgara sınırı, ≥1 `SEAT`, `SCREEN` var, koltuk etiketi benzersiz)
 3. [x] Düzen yayımlama: `POST /halls/{id}/layouts/{layoutId}/publish` (sürüm numarası, `published_at`, salonun `active_layout_id`'si); K13 kontrolü alt görev 6'da seanslarla eklenir
-4. [ ] Film: V4 (`movies` + 3 liste tablosu), admin `POST/PUT /movies`, `PATCH /visibility`, halka açık `GET /movies` (sayfalı, tür/arama, gizliler hariç) ve `GET /movies/{id}`; akıllı işaret enum'u
+4. [x] Film: V4 (`movies` + 3 liste tablosu), admin `POST/PUT /movies`, `PATCH /visibility`, halka açık `GET /movies` (sayfalı, tür/arama, gizliler hariç) ve `GET /movies/{id}`; akıllı işaret enum'u
 5. [ ] TMDB istemcisi: `RestClient` (spring-web, yeni bağımlılık yok; timeout'lu), `GET /admin/catalog/tmdb/search`, `GET /admin/catalog/tmdb/movies/{tmdbId}` (form ön doldurma, kaydetmez), TR sertifika seçimi, `descriptors` eşlemesi, erişilemezse 503 `TMDB_UNAVAILABLE`; `movies.tmdb_synced_at` + aylık yenileme job'ı (K45); testlerde `MockRestServiceServer`
 6. [ ] Seans: V5 (`showtimes`), `POST /showtimes` (salon `FOR UPDATE` + çakışma, `endsAt` = süre + ara payı, fiyat kopyası, düzen mühürü, gizli filme seans yok), `PUT` (fiyat/ofset); halka açık `GET /movies/{id}/showtimes`, `GET /showtimes/{id}` (`salesCloseAt`), `GET /showtimes/{id}/layout` (`ETag`, uzun cache); yayımlamaya K13 kontrolü
 7. [ ] Booking için internal uçlar: `GET /internal/v1/catalog/showtimes/{id}` (başlangıç, kapanış, fiyat, düzen, bilet snapshot alanları) ve hücre doğrulama (`SEAT` mi, bu düzene mi ait, etiketler); `activate` M8'de
@@ -860,6 +860,8 @@ Eski sorular (referans):
 Gruplar (onaylı): [1+2], [3], [4], [5], [6], [7+8], [9].
 
 Notlar (alt görev 1-2): `EMPTY` hücre tipi saklanmaz (hücre yoksa boşluktur; editörde "boş" fırçası silmek demek); salon başına tek taslak `draft_hall_key` üretilmiş kolon + UNIQUE ile DB'de de garanti (K43'teki `active_pending_key` kalıbı); taslak güncellemesi tüm hücreleri silip yeniden yazar (taslakta hücre id'leri değişir, yayımlanınca sabitlenir); `hall_layouts`'a `updated_at` eklendi.
+
+Notlar (alt görev 4): `movies.certification` VARCHAR(30) ("Genel İzleyici Kitlesi" 22 karakter; db-planlama'daki 10 yetmiyordu); yaş sınırı TMDB'nin TR listesiyle doğrulanır; `tmdbId` oluşturulduktan sonra değişmez (`TMDB_ID_IMMUTABLE`); liste alanları `@BatchSize` ile toplu yüklenir (N+1 yok); başlık araması aksan/harf duyarsız (utf8mb4_0900_ai_ci); `SayfaCevabi` şimdilik catalog'da, booking da kullanınca sinema-common'a taşınır.
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
