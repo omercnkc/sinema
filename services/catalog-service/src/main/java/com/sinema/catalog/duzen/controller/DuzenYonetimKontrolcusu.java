@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Salon düzeni sürümleri (planlama §7.4). Yayımlama alt görev 3'te eklenir. */
+/** Salon düzeni sürümleri (planlama §7.4): taslak hazırlanır, yayımlanınca sürüm olur ve değişmez. */
 @RestController
 @RequestMapping("/api/v1/admin/catalog/halls/{salonId}/layouts")
 @PreAuthorize("hasRole('ADMIN')")
@@ -47,5 +47,11 @@ public class DuzenYonetimKontrolcusu {
     public DuzenCevabi taslakGuncelle(@PathVariable Long salonId, @PathVariable Long duzenId,
             @Valid @RequestBody DuzenIstegi istek) {
         return duzenServisi.taslakGuncelle(salonId, duzenId, istek);
+    }
+
+    /** Gövdesiz eylem ucu: taslağı sürümleyip salonun aktif düzeni yapar. */
+    @PostMapping("/{duzenId}/publish")
+    public DuzenCevabi yayimla(@PathVariable Long salonId, @PathVariable Long duzenId) {
+        return duzenServisi.yayimla(salonId, duzenId);
     }
 }

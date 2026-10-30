@@ -77,6 +77,11 @@ public class Salon {
         this.varsayilanBiletFiyati = varsayilanBiletFiyati.setScale(FIYAT_ONDALIK_BASAMAGI, RoundingMode.UNNECESSARY);
     }
 
+    /** Yeni seanslar bu düzen sürümüyle oluşturulur; mevcut seanslar kendi mühürlü sürümünde kalır (K17). */
+    public void aktifDuzeniDegistir(Long duzenId) {
+        this.aktifDuzenId = duzenId;
+    }
+
     @Override
     public boolean equals(Object diger) {
         if (this == diger) {

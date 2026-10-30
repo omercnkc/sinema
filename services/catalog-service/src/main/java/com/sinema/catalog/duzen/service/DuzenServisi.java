@@ -17,6 +17,7 @@ import com.sinema.catalog.sube.service.SubeServisi;
 import com.sinema.common.hata.CakismaIstisnasi;
 import com.sinema.common.hata.IsKuraliIstisnasi;
 import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
+import java.time.Clock;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class DuzenServisi {
     public static final String DUZEN_YOK_KODU = "LAYOUT_NOT_FOUND";
     public static final String TASLAK_VAR_KODU = "DRAFT_ALREADY_EXISTS";
     public static final String DUZENLENEMEZ_KODU = "LAYOUT_NOT_EDITABLE";
+    public static final String YAYIMLANMIS_KODU = "LAYOUT_ALREADY_PUBLISHED";
     public static final String GECERSIZ_DUZEN_KODU = "LAYOUT_INVALID";
     public static final String IHLALLER_ALANI = "violations";
     private static final Comparator<DuzenHucresi> KONUM_SIRASI =
@@ -47,6 +49,7 @@ public class DuzenServisi {
     private final DuzenHucresiRepository hucreRepository;
     private final DuzenDogrulayici dogrulayici;
     private final DuzenMapper duzenMapper;
+    private final Clock saat;
 
     @Transactional
     public DuzenCevabi taslakOlustur(Long salonId, DuzenIstegi istek) {
@@ -74,6 +77,24 @@ public class DuzenServisi {
         duzen.boyutuGuncelle(istek.gridRows(), istek.gridCols());
         hucreRepository.duzeninHucreleriniSil(duzenId);
         return cevapOlustur(duzenBul(salonId, duzenId), hucreleriKaydet(duzenId, istek.cells()), salon);
+    }
+
+    /**
+     * Taslağı bir sonraki sürüm numarasıyla yayımlar ve salonun aktif düzeni yapar. Yeni seanslar bu sürümü
+     * kullanır, mevcut seanslar eski sürümde kalır (K17). Seansı olan salonda yayımlama kuralı (K13)
+     * seanslar geldiğinde (alt görev 6) buraya eklenir; mevcut biletlerin yeni düzene göçü M8'de (K35).
+     */
+    @Transactional
+    public DuzenCevabi yayimla(Long salonId, Long duzenId) {
+        Salon salon = salonuKilitle(salonId);
+        SalonDuzeni duzen = duzenBul(salonId, duzenId);
+        if (!duzen.taslakMi()) {
+            throw new CakismaIstisnasi(YAYIMLANMIS_KODU, "Bu düzen zaten yayımlanmış.");
+        }
+        duzen.yayimla(duzenRepository.sonSurum(salonId) + 1, saat.instant());
+        salon.aktifDuzeniDegistir(duzen.getId());
+        duzenRepository.flush();
+        return cevapOlustur(duzen, hucreRepository.findAllByDuzenIdOrderBySatirAscSutunAsc(duzenId), salon);
     }
 
     @Transactional(readOnly = true)

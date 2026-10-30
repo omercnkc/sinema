@@ -849,7 +849,7 @@ Eski sorular (referans):
 **M2 alt görevleri (2026-10-30, onaylandı):**
 1. [x] Şube + salon: V2 (`cinemas`, `halls`), admin `POST/PUT /cinemas`, `POST/PUT /halls` (varsayılan fiyat), halka açık `GET /cinemas`; MapStruct ilk kez (parent POM'a processor)
 2. [x] Düzen taslağı: V3 (`hall_layouts`, `layout_cells`), `POST /halls/{id}/layouts` (taslak), `PUT` (yalnızca `DRAFT`), `GET /halls/{id}/layouts`; doğrulama (ızgara sınırı, ≥1 `SEAT`, `SCREEN` var, koltuk etiketi benzersiz)
-3. [ ] Düzen yayımlama: `POST /halls/{id}/layouts/{layoutId}/publish` (sürüm numarası, `published_at`, salonun `active_layout_id`'si); K13 kontrolü alt görev 6'da seanslarla eklenir
+3. [x] Düzen yayımlama: `POST /halls/{id}/layouts/{layoutId}/publish` (sürüm numarası, `published_at`, salonun `active_layout_id`'si); K13 kontrolü alt görev 6'da seanslarla eklenir
 4. [ ] Film: V4 (`movies` + 3 liste tablosu), admin `POST/PUT /movies`, `PATCH /visibility`, halka açık `GET /movies` (sayfalı, tür/arama, gizliler hariç) ve `GET /movies/{id}`; akıllı işaret enum'u
 5. [ ] TMDB istemcisi: `RestClient` (spring-web, yeni bağımlılık yok; timeout'lu), `GET /admin/catalog/tmdb/search`, `GET /admin/catalog/tmdb/movies/{tmdbId}` (form ön doldurma, kaydetmez), TR sertifika seçimi, `descriptors` eşlemesi, erişilemezse 503 `TMDB_UNAVAILABLE`; `movies.tmdb_synced_at` + aylık yenileme job'ı (K45); testlerde `MockRestServiceServer`
 6. [ ] Seans: V5 (`showtimes`), `POST /showtimes` (salon `FOR UPDATE` + çakışma, `endsAt` = süre + ara payı, fiyat kopyası, düzen mühürü, gizli filme seans yok), `PUT` (fiyat/ofset); halka açık `GET /movies/{id}/showtimes`, `GET /showtimes/{id}` (`salesCloseAt`), `GET /showtimes/{id}/layout` (`ETag`, uzun cache); yayımlamaya K13 kontrolü

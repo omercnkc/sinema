@@ -137,6 +137,52 @@ class DuzenYonetimKontrolcusuEntegrasyonTest {
                 .andExpect(jsonPath("$.code").value("HALL_NOT_FOUND"));
     }
 
+    @Test
+    void shouldAssignVersionOneAndActivate_whenFirstDraftPublished() throws Exception {
+        long taslakId = taslakOlustur(GECERLI_DUZEN);
+
+        yonetim(post(duzenAdresi + "/" + taslakId + "/publish"), null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.version").value(1))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.publishedAt").isNotEmpty())
+                .andExpect(jsonPath("$.cells", hasSize(6)));
+    }
+
+    @Test
+    void shouldIncrementVersionAndMoveActiveFlag_whenSecondDraftPublished() throws Exception {
+        long birinci = taslakOlustur(GECERLI_DUZEN);
+        yonetim(post(duzenAdresi + "/" + birinci + "/publish"), null).andExpect(status().isOk());
+        // Yayımdan sonra taslak kalmaz; yeni taslak açılabilir
+        long ikinci = taslakOlustur(KUCUK_DUZEN);
+
+        yonetim(post(duzenAdresi + "/" + ikinci + "/publish"), null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(2));
+        yonetim(get(duzenAdresi), null)
+                .andExpect(jsonPath("$[0].id").value(ikinci))
+                .andExpect(jsonPath("$[0].active").value(true))
+                .andExpect(jsonPath("$[1].id").value(birinci))
+                .andExpect(jsonPath("$[1].version").value(1))
+                .andExpect(jsonPath("$[1].active").value(false));
+    }
+
+    @Test
+    void shouldRejectChanges_whenLayoutAlreadyPublished() throws Exception {
+        long taslakId = taslakOlustur(GECERLI_DUZEN);
+        yonetim(post(duzenAdresi + "/" + taslakId + "/publish"), null).andExpect(status().isOk());
+
+        yonetim(post(duzenAdresi + "/" + taslakId + "/publish"), null)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("LAYOUT_ALREADY_PUBLISHED"));
+        yonetim(put(duzenAdresi + "/" + taslakId), KUCUK_DUZEN)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("LAYOUT_NOT_EDITABLE"));
+        yonetim(get(duzenAdresi + "/" + taslakId), null)
+                .andExpect(jsonPath("$.cells", hasSize(6)));
+    }
+
     private long taslakOlustur(String govde) throws Exception {
         return idOku(yonetim(post(duzenAdresi), govde).andExpect(status().isCreated()));
     }

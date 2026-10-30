@@ -77,11 +77,23 @@ public class SalonDuzeni {
 
     /** Yayımlanmış düzen değişmez; bu kuralı çağıranın unutmaması için entity de korur. */
     public void boyutuGuncelle(int satirSayisi, int sutunSayisi) {
+        taslakOldugunuDogrula();
+        this.satirSayisi = satirSayisi;
+        this.sutunSayisi = sutunSayisi;
+    }
+
+    /** Taslağı sürüm numarasıyla mühürler; bundan sonra düzen ve hücreleri değişmez (K17, §2.4-6). */
+    public void yayimla(int surum, Instant yayimlanmaZamani) {
+        taslakOldugunuDogrula();
+        this.durum = DuzenDurumu.PUBLISHED;
+        this.surum = surum;
+        this.yayimlanmaZamani = yayimlanmaZamani;
+    }
+
+    private void taslakOldugunuDogrula() {
         if (!taslakMi()) {
             throw new IllegalStateException("Yayımlanmış düzen değiştirilemez: " + id);
         }
-        this.satirSayisi = satirSayisi;
-        this.sutunSayisi = sutunSayisi;
     }
 
     @Override
