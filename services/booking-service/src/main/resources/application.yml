@@ -11,6 +11,16 @@ spring:
     hibernate:
       # Şemayı yalnızca Flyway değiştirir; Hibernate sadece entity'lerin şemayla uyumunu kontrol eder
       ddl-auto: validate
+  cloud:
+    openfeign:
+      # Feign çağrıları devre kesiciden geçer; başarısızlıkta istemcinin fallbackFactory'si çalışır
+      circuitbreaker:
+        enabled: true
+    circuitbreaker:
+      resilience4j:
+        # Çağrı aynı thread'de kalsın (MDC'deki korelasyon kimliği taşınsın); zaman sınırı Feign'in okuma zaman aşımı
+        disable-thread-pool: true
+        disable-time-limiter: true
 
 server:
   port: ${SERVER_PORT:8083}
@@ -24,6 +34,13 @@ sinema:
     acik-yollar:
       - GET /api/v1/bookings/showtimes/*/seat-status
       - GET /api/v1/tickets/*
+  # Servis token'ı (auth) + Feign altyapısı: sinema-common SinemaServisIstemcisiOtomatikYapilandirma
+  servis-istemcisi:
+    auth-adresi: ${AUTH_SERVICE_URL:http://localhost:8081}
+    # Varsayılanı yok: eksikse servis açılmaz (fail fast)
+    sir: ${BOOKING_SERVICE_CLIENT_SECRET}
+  servisler:
+    catalog-adresi: ${CATALOG_SERVICE_URL:http://localhost:8082}
 
 management:
   endpoints:

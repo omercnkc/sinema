@@ -96,6 +96,9 @@ services:
       DB_HOST: mysql
       DB_PASSWORD: ${BOOKING_DB_PASSWORD}
       JWT_KEYS_DIR: /run/secrets/jwt
+      AUTH_SERVICE_URL: http://auth-service:8081
+      CATALOG_SERVICE_URL: http://catalog-service:8082
+      BOOKING_SERVICE_CLIENT_SECRET: ${BOOKING_SERVICE_CLIENT_SECRET}
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health"]
