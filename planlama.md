@@ -56,6 +56,7 @@
 | K32 | **Geç gelen ödeme: P2 (ödeme penceresi).** Ödeme başlatılınca hold bir kez sabit kısa süre uzar (varsayılan +2 dk, yapılandırılabilir), satış kapanışını aşmaz; terk edilen ödemeler K29'a sayılır (§4.12). |
 | K33 | **K29 penceresi W = 30 dk.** Polling aralığı **5 sn** (yapılandırılabilir). |
 | K34 | **Seans iptali / toplu iade kapsam dışı** (varsayılan; kullanıcı cevabı düzen göçüne odaklandı, bkz. K35). |
+| K47 | **Koltuk doluluğu önbelleği (2026-10-30):** seat-status cevabı booking içinde **bellek önbelleğinde** seans başına en çok 2 sn tutulur (`sinema.booking.doluluk-onbellek-suresi`). Arka plan zamanlayıcısı yok: kayıt yoksa/eskiyse o istek DB'ye gider (aynı anda gelenler tek sorguyu bekler), kimse bakmayan seans için sorgu atılmaz. Hold, onay ve bırakmada o seansın kaydı silinir (kullanıcı kendi işlemini hemen görür). Doğruluk kaynağı MySQL'de kalır (K9); Redis kullanılmaz (§4.2-C). Arayüz arkasında: çoklu booking kopyasında gerekirse Redis'e geçiş yalnızca gerçekleştirme sınıfını değiştirir. Yeni bağımlılık yok. |
 | K46 | **Akıllı işaretler enum'u (2026-10-30):** `SIDDET_KORKU`, `CINSELLIK`, `OLUMSUZ_ORNEK` (TMDB TR `descriptors` değerleri `Violence / Horror`, `Sexuality`, `Negative examples` ile birebir eşlenir). |
 | K45 | **TMDB verisi tazeliği (2026-10-30):** şartlar 6 ay üst sınır koyuyor, biz **3 ay** uygularız: `movies.tmdb_synced_at`; ayda bir çalışan job, son çekimi 3 aydan eski TMDB kaynaklı filmleri TMDB'den yeniden çeker (elle girilen filmlere dokunmaz; TMDB'ye ulaşılamazsa sonraki çalışmada tekrar dener). Süre ve zamanlama konfigürasyondan. |
 | K44 | **Sürümler (2026-10-29):** Spring Boot 3.x'in ücretsiz desteği 30.06.2026'da bittiği için **Spring Boot 4.1.2 + Spring Cloud 2025.1.4** (Maven Central'dan doğrulandı). Build: Maven Wrapper (Maven 3.9.16). Kodlamaya geçildi (M0). |
@@ -872,6 +873,19 @@ Notlar (alt görev 6): seans bitişi = başlangıç + süre + 15 dk (K26), çak�
 Notlar (alt görev 7-9): iç uçlar `GET /internal/v1/catalog/showtimes/{id}` ve `POST .../seats/resolve` (geçersiz hücreler hata değil liste; başka düzenin hücresi geçersiz, K17). `dev` seed: `OrnekVeriYukleyici` (yalnızca boş katalogda, tek transaction, admin servislerinden geçer), 10 düzen `OrnekDuzenUretici` şablonlarından, 5 uydurma film (TMDB içeriği repoya kopyalanmaz, K45), 7 günlük seans (~400). compose: `CATALOG_PROFILES` (varsayılan dev). Duman testi 29 adım (katalog misafir + isteğe bağlı admin, admin adımları veri oluşturmaz); hem mevcut yığında hem sıfırdan kurulan ayrı yığında geçti.
 
 **M2 tamamlandı (2026-10-30).** Ertelenen notlar: geçersiz kodlanmış sorgu parametresi 500 (M9); örnek seanslar 7 gün sonra biter (`docker compose down -v`); admin seans listesi (salon/gün bazında) M7'de admin paneliyle; `SayfaCevabi` booking'de de gerekince sinema-common'a taşınır.
+
+**M3 alt görevleri (TASLAK, onay bekliyor):**
+1. [ ] Feign altyapısı: `sinema-common`'a servis token sağlayıcı (auth'tan alır, süresi dolmadan yeniler) + Feign `RequestInterceptor` (Bearer + korelasyon kimliği) + ortak `ErrorDecoder`; booking'de `KatalogIstemcisi` (seans bilgisi, koltuk çözümleme) + Resilience4j (timeout, retry yalnızca GET, circuit breaker) + fallback → 503 `CATALOG_UNAVAILABLE`. Bağımlılık sürümleri ve Boot 4 uyumu önce doğrulanır
+2. [ ] Booking şeması: V2 `reservations` (snapshot alanları, `active_pending_key` üretilmiş kolon + UNIQUE, K43), `reservation_seats`, `seat_bookings` (**UNIQUE(showtime_id, layout_cell_id)**, K9) + entity'ler; booking ayarları (`sinema.booking.*`: hold 3 dk, en çok 5 koltuk, ödeme penceresi +2 dk, K29 eşikleri, önbellek 2 sn)
+3. [ ] Koltuk tutma: `POST /api/v1/bookings/reservations` — ön kontroller (≤5, tek aktif rezervasyon 409, satış açık mı 422, hücreler koltuk mu 400), tek transaction'da hücre id sırasıyla INSERT / süresi dolmuşu koşullu UPDATE ile devralma, hepsi-ya-da-hiçbiri, 409 `SEATS_UNAVAILABLE` + `unavailableCellIds`; `expiresAt = min(şimdi + 3 dk, satış kapanışı)`; snapshot. **§4.10 eşzamanlılık testleri 1-4** (N paralel istek → tam 1 başarı, devralma yarışı, kısmi doluluk, ters sıra deadlock yok)
+4. [ ] Doluluk: `GET /api/v1/bookings/showtimes/{id}/seat-status` (misafir, `serverTime`, `no-store`) + **K47 bellek önbelleği** (arayüz + gerçekleştirme, eşzamanlı ilk yükleme, süre dolumu, temizlik, işlemlerde silme)
+5. [ ] Rezervasyonlarım: `GET /reservations/{id}` (yalnızca sahibi, değilse 404), `GET /reservations` (sayfalı; `SayfaCevabi` sinema-common'a taşınır), `DELETE /reservations/{id}` (hold bırakma, `RELEASED`, K40)
+6. [ ] K29 terk koruması: son 30 dk'da 3 terk (`EXPIRED`/`RELEASED`) → son terkten 10 dk sonrasına kadar 429 `HOLD_COOLDOWN` + `Retry-After` (türetilmiş, ek tablo yok, §4.7)
+7. [ ] Süre dolumu job'ı: süresi dolan `HELD` satırları silinir, `PENDING_PAYMENT` → `EXPIRED` (doğruluk job'a bağlı değil, §4.6)
+8. [ ] Payment için iç uçlar: `payment-info`, `extend-payment-window` (K32, bir kez, satış kapanışını aşmaz), `confirm` (HELD→SOLD koşullu UPDATE, idempotent, rastgele `ticket_code`), `fail`; **§4.10 testleri 5** (süre dolunca onay reddi, çift onay idempotent)
+9. [ ] compose (booking'e catalog/auth adresleri ve client secret), duman testine koltuk tutma/bırakma adımları, README, M3 kapanışı
+
+Gruplar (öneri): [1], [2+3], [4], [5+6], [7+8], [9]. Kapsam dışı (planlandığı gibi): bilet doğrulama ucu `/tickets/{kod}` M4'te; bildirimler, göç tabloları ve bakım kilidi M8'de.
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
