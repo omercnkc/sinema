@@ -26,6 +26,20 @@ server:
   port: ${SERVER_PORT:8083}
 
 sinema:
+  booking:
+    # K11: koltuk tutma süresi; satış kapanışını aşamaz
+    hold-suresi: 3m
+    # K24: bir işlemde en çok koltuk
+    en-fazla-koltuk: 5
+    # K32: ödeme başlatılınca hold bir kez bu kadar uzar
+    odeme-penceresi: 2m
+    # K29/K33: son 30 dk'da 3 terk → son terkten 10 dk sonrasına kadar yeni hold yok
+    terk-korumasi:
+      esik: 3
+      pencere: 30m
+      bekleme: 10m
+    # K47: seat-status cevabı seans başına en çok bu kadar bellekte tutulur
+    doluluk-onbellek-suresi: 2s
   guvenlik:
     jwt:
       yayinci: sinema-auth
