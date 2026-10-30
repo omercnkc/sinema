@@ -23,6 +23,12 @@ sinema:
     # Misafir (token'sız) katalogu görüntüler (K3); listede olmayan her şey token ister
     acik-yollar:
       - GET /api/v1/catalog/**
+  katalog:
+    # K26: seans bitişi = başlangıç + film süresi + bu pay
+    seans-arasi-payi: 15m
+    # K10: satış seans başladıktan 10 dk sonra kapanır (negatif = başlamadan önce)
+    varsayilan-satis-kapanis-ofseti: 10m
+    is-saat-dilimi: Europe/Istanbul
   tmdb:
     taban-adres: https://api.themoviedb.org/3
     # Boşsa TMDB araması 503 verir, elle film girişi çalışır

@@ -852,18 +852,22 @@ Eski sorular (referans):
 3. [x] Düzen yayımlama: `POST /halls/{id}/layouts/{layoutId}/publish` (sürüm numarası, `published_at`, salonun `active_layout_id`'si); K13 kontrolü alt görev 6'da seanslarla eklenir
 4. [x] Film: V4 (`movies` + 3 liste tablosu), admin `POST/PUT /movies`, `PATCH /visibility`, halka açık `GET /movies` (sayfalı, tür/arama, gizliler hariç) ve `GET /movies/{id}`; akıllı işaret enum'u
 5. [x] TMDB istemcisi: `RestClient` (spring-web, yeni bağımlılık yok; timeout'lu), `GET /admin/catalog/tmdb/search`, `GET /admin/catalog/tmdb/movies/{tmdbId}` (form ön doldurma, kaydetmez), TR sertifika seçimi, `descriptors` eşlemesi, erişilemezse 503 `TMDB_UNAVAILABLE`; `movies.tmdb_synced_at` + aylık yenileme job'ı (K45); testlerde `MockRestServiceServer`
-6. [ ] Seans: V5 (`showtimes`), `POST /showtimes` (salon `FOR UPDATE` + çakışma, `endsAt` = süre + ara payı, fiyat kopyası, düzen mühürü, gizli filme seans yok), `PUT` (fiyat/ofset); halka açık `GET /movies/{id}/showtimes`, `GET /showtimes/{id}` (`salesCloseAt`), `GET /showtimes/{id}/layout` (`ETag`, uzun cache); yayımlamaya K13 kontrolü
+6. [x] Seans: V5 (`showtimes`), `POST /showtimes` (salon `FOR UPDATE` + çakışma, `endsAt` = süre + ara payı, fiyat kopyası, düzen mühürü, gizli filme seans yok), `PUT` (fiyat/ofset); halka açık `GET /movies/{id}/showtimes`, `GET /showtimes/{id}` (`salesCloseAt`), `GET /showtimes/{id}/layout` (`ETag`, uzun cache); yayımlamaya K13 kontrolü
 7. [ ] Booking için internal uçlar: `GET /internal/v1/catalog/showtimes/{id}` (başlangıç, kapanış, fiyat, düzen, bilet snapshot alanları) ve hücre doğrulama (`SEAT` mi, bu düzene mi ait, etiketler); `activate` M8'de
 8. [ ] `dev` seed: 3 şube (3/4/3 salon), 10 farklı düzen, birkaç film (elle, TMDB'siz), önümüzdeki günlere seanslar; yalnızca boş DB'de çalışır
 9. [ ] compose/README: catalog'a `TMDB_API_TOKEN`, duman testine katalog adımları, M2 kapanışı
 
 Gruplar (onaylı): [1+2], [3], [4], [5], [6], [7+8], [9].
 
+**Test düzeni (2026-10-30 güncellemesi):** her alt görevde yalnızca değişen servis (`-pl services/<servis> -am`); tam `mvnw verify` yalnızca ortak modüller (`sinema-common`, `sinema-test-destegi`, parent POM) değişince ve milestone sonunda; Docker uçtan uca yalnızca Dockerfile/compose/migration değişince ve milestone sonunda.
+
 Notlar (alt görev 1-2): `EMPTY` hücre tipi saklanmaz (hücre yoksa boşluktur; editörde "boş" fırçası silmek demek); salon başına tek taslak `draft_hall_key` üretilmiş kolon + UNIQUE ile DB'de de garanti (K43'teki `active_pending_key` kalıbı); taslak güncellemesi tüm hücreleri silip yeniden yazar (taslakta hücre id'leri değişir, yayımlanınca sabitlenir); `hall_layouts`'a `updated_at` eklendi.
 
 Notlar (alt görev 4): `movies.certification` VARCHAR(30) ("Genel İzleyici Kitlesi" 22 karakter; db-planlama'daki 10 yetmiyordu); yaş sınırı TMDB'nin TR listesiyle doğrulanır; `tmdbId` oluşturulduktan sonra değişmez (`TMDB_ID_IMMUTABLE`); liste alanları `@BatchSize` ile toplu yüklenir (N+1 yok); başlık araması aksan/harf duyarsız (utf8mb4_0900_ai_ci); `SayfaCevabi` şimdilik catalog'da, booking da kullanınca sinema-common'a taşınır.
 
 Notlar (alt görev 5): TMDB istemcisi `RestClient` (yeni bağımlılık yok, 2 sn bağlantı / 5 sn okuma zaman aşımı); 404 → `TMDB_MOVIE_NOT_FOUND`, diğer her hata → 503 `TMDB_UNAVAILABLE` (sinema-common'a `BagimlilikKullanilamazIstisnasi` eklendi); önizleme FilmIstegi biçiminde (düzenlemeden kaydedilebilir), aramada ekli filmler `movieId` ile işaretli. K45 yenilemesi: ayın 1'i 04:00 UTC, en çok 200 film, her film ayrı transaction; **TMDB'den boş gelen alan mevcut (admin) değeri ezmez**, dolu gelen alan güncellenir. Gerçek TMDB ile gateway üzerinden denendi (arama + Oppenheimer önizlemesi: 13+, CINSELLIK/OLUMSUZ_ORNEK). compose: catalog'a `TMDB_API_TOKEN` (alt görev 9'dan öne çekildi). **M9 notu:** geçersiz kodlanmış sorgu parametresi (Tomcat `InvalidParameterException`) 400 yerine 500 dönüyor.
+
+Notlar (alt görev 6): seans bitişi = başlangıç + süre + 15 dk (K26), çakışma yarı açık aralık [başlangıç, bitiş) ve salon kilidi altında; ofset aralığı -120..+120 dk; geçmişe, gizli filme ve düzeni olmayan salona seans eklenmez; `?date` Europe/Istanbul gününe göre (`sinema.katalog.is-saat-dilimi`); düzen ucu `Cache-Control: max-age=300` + ETag (`layout-{id}`; M8 göçü düzeni değiştirebildiği için uzun önbellek yok); K13 = salonda süren seans varken yayım 409 `HALL_SHOWTIME_IN_PROGRESS`. Test MySQL bağlantısı da `connectionTimeZone=UTC` (üretimle aynı; JdbcTemplate ile yazılan zamanlar 3 saat kaymasın).
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?

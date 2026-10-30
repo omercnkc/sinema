@@ -11,6 +11,7 @@ import com.sinema.catalog.duzen.mapper.DuzenMapper;
 import com.sinema.catalog.duzen.repository.DuzenHucresiRepository;
 import com.sinema.catalog.duzen.repository.DuzenHucresiRepository.KoltukSayisi;
 import com.sinema.catalog.duzen.repository.SalonDuzeniRepository;
+import com.sinema.catalog.seans.repository.SeansRepository;
 import com.sinema.catalog.sube.entity.Salon;
 import com.sinema.catalog.sube.repository.SalonRepository;
 import com.sinema.catalog.sube.service.SubeServisi;
@@ -18,6 +19,7 @@ import com.sinema.common.hata.CakismaIstisnasi;
 import com.sinema.common.hata.IsKuraliIstisnasi;
 import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ public class DuzenServisi {
     public static final String TASLAK_VAR_KODU = "DRAFT_ALREADY_EXISTS";
     public static final String DUZENLENEMEZ_KODU = "LAYOUT_NOT_EDITABLE";
     public static final String YAYIMLANMIS_KODU = "LAYOUT_ALREADY_PUBLISHED";
+    public static final String SUREN_SEANS_KODU = "HALL_SHOWTIME_IN_PROGRESS";
     public static final String GECERSIZ_DUZEN_KODU = "LAYOUT_INVALID";
     public static final String IHLALLER_ALANI = "violations";
     private static final Comparator<DuzenHucresi> KONUM_SIRASI =
@@ -49,6 +52,7 @@ public class DuzenServisi {
     private final DuzenHucresiRepository hucreRepository;
     private final DuzenDogrulayici dogrulayici;
     private final DuzenMapper duzenMapper;
+    private final SeansRepository seansRepository;
     private final Clock saat;
 
     @Transactional
@@ -81,8 +85,8 @@ public class DuzenServisi {
 
     /**
      * Taslağı bir sonraki sürüm numarasıyla yayımlar ve salonun aktif düzeni yapar. Yeni seanslar bu sürümü
-     * kullanır, mevcut seanslar eski sürümde kalır (K17). Seansı olan salonda yayımlama kuralı (K13)
-     * seanslar geldiğinde (alt görev 6) buraya eklenir; mevcut biletlerin yeni düzene göçü M8'de (K35).
+     * kullanır, mevcut seanslar eski sürümde kalır (K17). K13: salonda süren bir seans varken yayımlanmaz
+     * (değişiklik seanssız aralıkta yapılır). Mevcut biletlerin yeni düzene göçü M8'de (K35).
      */
     @Transactional
     public DuzenCevabi yayimla(Long salonId, Long duzenId) {
@@ -91,7 +95,12 @@ public class DuzenServisi {
         if (!duzen.taslakMi()) {
             throw new CakismaIstisnasi(YAYIMLANMIS_KODU, "Bu düzen zaten yayımlanmış.");
         }
-        duzen.yayimla(duzenRepository.sonSurum(salonId) + 1, saat.instant());
+        Instant simdi = saat.instant();
+        if (seansRepository.surenSeansVarMi(salonId, simdi)) {
+            throw new CakismaIstisnasi(SUREN_SEANS_KODU,
+                    "Salonda süren bir seans var; düzen seanssız aralıkta yayımlanabilir (K13).");
+        }
+        duzen.yayimla(duzenRepository.sonSurum(salonId) + 1, simdi);
         salon.aktifDuzeniDegistir(duzen.getId());
         duzenRepository.flush();
         return cevapOlustur(duzen, hucreRepository.findAllByDuzenIdOrderBySatirAscSutunAsc(duzenId), salon);
