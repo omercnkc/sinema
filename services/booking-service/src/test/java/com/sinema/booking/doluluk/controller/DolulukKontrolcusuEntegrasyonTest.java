@@ -4,25 +4,17 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sinema.booking.rezervasyon.RezervasyonEntegrasyonTesti;
-import com.sinema.testdestegi.TestTokenUretici;
 import java.sql.Timestamp;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 class DolulukKontrolcusuEntegrasyonTest extends RezervasyonEntegrasyonTesti {
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Test
     void shouldListSoldAndActiveHeldSeatsForGuest_withoutHolderAndWithoutCaching() throws Exception {
@@ -73,13 +65,6 @@ class DolulukKontrolcusuEntegrasyonTest extends RezervasyonEntegrasyonTesti {
 
     private ResultActions doluluk(long seansId) throws Exception {
         return mockMvc.perform(get("/api/v1/bookings/showtimes/{id}/seat-status", seansId));
-    }
-
-    private ResultActions tut(long kullaniciId, long seansId, String hucreler) throws Exception {
-        return mockMvc.perform(post("/api/v1/bookings/reservations")
-                .header("Authorization", "Bearer " + TestTokenUretici.kullaniciTokeni(kullaniciId, "USER"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"showtimeId\":" + seansId + ",\"seatCellIds\":" + hucreler + "}"));
     }
 
     private void satilmisKoltukEkle(long seansId, long hucreId) {

@@ -41,6 +41,10 @@ public class KoltukKilitDeposu {
                AND (status = 'SOLD' OR hold_expires_at > :simdi)
              ORDER BY layout_cell_id""";
 
+    // Yalnızca bu rezervasyonun tutmaları: süresi dolup başkasının devraldığı satırın reservation_id'si artık farklıdır
+    private static final String TUTMALARI_SIL = """
+            DELETE FROM seat_bookings WHERE reservation_id = :rezervasyonId AND status = 'HELD'""";
+
     private final NamedParameterJdbcTemplate jdbc;
 
     /**
@@ -62,6 +66,11 @@ public class KoltukKilitDeposu {
         } catch (DuplicateKeyException e) {
             return false;
         }
+    }
+
+    /** Rezervasyonun tutmalarını siler; koltuklar hemen boşalır (bırakma, K40). SOLD satırlara dokunmaz (K6). */
+    public int tutmalariSil(Long rezervasyonId) {
+        return jdbc.update(TUTMALARI_SIL, new MapSqlParameterSource("rezervasyonId", rezervasyonId));
     }
 
     /** Verilen hücrelerden şu an dolu olanlar (409 cevabında hangi koltukların alındığını göstermek için). */

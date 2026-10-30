@@ -14,10 +14,15 @@ public interface RezervasyonMapper {
     @Mapping(target = "reservationId", source = "rezervasyon.id")
     @Mapping(target = "showtimeId", source = "rezervasyon.seansId")
     @Mapping(target = "status", source = "rezervasyon.durum")
+    @Mapping(target = "movieTitle", source = "rezervasyon.filmAdi")
+    @Mapping(target = "cinemaName", source = "rezervasyon.subeAdi")
+    @Mapping(target = "hallName", source = "rezervasyon.salonAdi")
+    @Mapping(target = "startsAt", source = "rezervasyon.seansBaslangici")
     @Mapping(target = "expiresAt", source = "rezervasyon.bitis")
     @Mapping(target = "serverTime", source = "simdi")
     @Mapping(target = "seats", source = "rezervasyon.koltuklar")
     @Mapping(target = "totalAmount", source = "rezervasyon.toplamTutar")
+    @Mapping(target = "ticketCode", source = "rezervasyon.biletKodu")
     RezervasyonCevabi cevap(Rezervasyon rezervasyon, Instant simdi);
 
     @Mapping(target = "cellId", source = "hucreId")

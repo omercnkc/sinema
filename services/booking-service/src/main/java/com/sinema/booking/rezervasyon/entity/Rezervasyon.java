@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -84,7 +85,9 @@ public class Rezervasyon {
     @Column(name = "starts_at", nullable = false, updatable = false)
     private Instant seansBaslangici;
 
+    // Listede her rezervasyonun koltukları tek tek değil toplu yüklenir (N+1 yok)
     @ElementCollection
+    @BatchSize(size = 50)
     @CollectionTable(name = "reservation_seats", joinColumns = @JoinColumn(name = "reservation_id"))
     @OrderBy("hucreId")
     private List<RezervasyonKoltugu> koltuklar = new ArrayList<>();

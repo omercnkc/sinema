@@ -3,12 +3,14 @@ package com.sinema.booking.rezervasyon;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.sinema.booking.katalog.istemci.KatalogIstemcisi;
 import com.sinema.booking.katalog.istemci.KatalogSeansBilgisi;
 import com.sinema.booking.katalog.istemci.KoltukCozumlemeIstegi;
 import com.sinema.booking.katalog.istemci.KoltukCozumlemeSonucu;
 import com.sinema.testdestegi.MysqlTestYapilandirmasi;
+import com.sinema.testdestegi.TestTokenUretici;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -23,8 +25,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 /**
  * Rezervasyon entegrasyon testlerinin ortak tabanı: gerçek MySQL, sahte catalog. Alt sınıflar aynı Spring
@@ -41,12 +46,17 @@ public abstract class RezervasyonEntegrasyonTesti {
 
     protected static final BigDecimal BILET_FIYATI = new BigDecimal("150.00");
     private static final AtomicLong SEANS_SAYACI = new AtomicLong(System.currentTimeMillis() % 1_000_000 * 1_000);
+    // K29 kullanıcı bazlıdır: terk sayacını ölçen testler başka testlerin kullanıcılarından etkilenmesin
+    private static final AtomicLong KULLANICI_SAYACI = new AtomicLong(1_000_000);
 
     @MockitoBean
     protected KatalogIstemcisi katalogIstemcisi;
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    protected MockMvc mockMvc;
 
     protected final Map<Long, Instant> satisKapanislari = new ConcurrentHashMap<>();
     protected final Set<Long> gecersizHucreler = ConcurrentHashMap.newKeySet();
@@ -59,6 +69,10 @@ public abstract class RezervasyonEntegrasyonTesti {
 
     protected static long yeniSeansId() {
         return SEANS_SAYACI.incrementAndGet();
+    }
+
+    protected static long yeniKullaniciId() {
+        return KULLANICI_SAYACI.incrementAndGet();
     }
 
     /** Başka bir kullanıcının, süresi dolmuş ama job'ın henüz temizlemediği tutmasını DB'ye yazar. */
@@ -74,14 +88,33 @@ public abstract class RezervasyonEntegrasyonTesti {
     }
 
     protected long bekleyenRezervasyonEkle(long seansId, long kullaniciId, Timestamp bitis) {
+        return rezervasyonEkle(seansId, kullaniciId, "PENDING_PAYMENT", bitis.toInstant(), null);
+    }
+
+    /** Geçmişi elle kurmak için (K29 terkleri, onaylı bilet...): koltuk satırı eklemez. */
+    protected long rezervasyonEkle(long seansId, long kullaniciId, String durum, Instant bitis, Instant birakilma) {
+        Timestamp bitisZamani = Timestamp.from(bitis);
         jdbcTemplate.update("""
-                INSERT INTO reservations (user_id, showtime_id, hall_id, status, total_amount, expires_at,
+                INSERT INTO reservations (user_id, showtime_id, hall_id, status, total_amount, expires_at, released_at,
                                           movie_title, cinema_name, hall_name, starts_at, created_at, updated_at)
-                VALUES (?, ?, 1, 'PENDING_PAYMENT', 150.00, ?, 'Film', 'Şube', 'Salon', ?, ?, ?)""",
-                kullaniciId, seansId, bitis, bitis, bitis, bitis);
+                VALUES (?, ?, 1, ?, 150.00, ?, ?, 'Film', 'Şube', 'Salon', ?, ?, ?)""",
+                kullaniciId, seansId, durum, bitisZamani, birakilma == null ? null : Timestamp.from(birakilma),
+                bitisZamani, bitisZamani, bitisZamani);
         return jdbcTemplate.queryForObject(
                 "SELECT id FROM reservations WHERE user_id = ? AND showtime_id = ? ORDER BY id DESC LIMIT 1",
                 Long.class, kullaniciId, seansId);
+    }
+
+    /** POST /api/v1/bookings/reservations; hucreler JSON dizi metni, ör. "[1, 2]". */
+    protected ResultActions tut(long kullaniciId, long seansId, String hucreler) throws Exception {
+        return mockMvc.perform(post("/api/v1/bookings/reservations")
+                .header("Authorization", yetki(kullaniciId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"showtimeId\":" + seansId + ",\"seatCellIds\":" + hucreler + "}"));
+    }
+
+    protected static String yetki(long kullaniciId) {
+        return "Bearer " + TestTokenUretici.kullaniciTokeni(kullaniciId, "USER");
     }
 
     protected String rezervasyonDurumu(long rezervasyonId) {

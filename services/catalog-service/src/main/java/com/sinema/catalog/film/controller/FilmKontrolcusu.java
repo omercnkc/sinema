@@ -2,8 +2,8 @@ package com.sinema.catalog.film.controller;
 
 import com.sinema.catalog.film.dto.FilmDetayi;
 import com.sinema.catalog.film.dto.FilmOzeti;
-import com.sinema.catalog.film.dto.SayfaCevabi;
 import com.sinema.catalog.film.service.FilmServisi;
+import com.sinema.common.sayfa.SayfaCevabi;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;

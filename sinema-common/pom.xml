@@ -65,6 +65,12 @@
             <artifactId>spring-cloud-circuitbreaker-resilience4j</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- SayfaCevabi Spring Data Page'inden üretilir; JPA kullanan servis bunu zaten taşır -->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-commons</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- Filtre içinden (MVC dışında) JSON yazmak için; Boot 4 = Jackson 3 -->
         <dependency>
             <groupId>tools.jackson.core</groupId>

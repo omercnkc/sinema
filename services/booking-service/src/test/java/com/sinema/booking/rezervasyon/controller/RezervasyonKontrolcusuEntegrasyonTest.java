@@ -8,24 +8,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.sinema.booking.rezervasyon.RezervasyonEntegrasyonTesti;
-import com.sinema.testdestegi.TestTokenUretici;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 
 class RezervasyonKontrolcusuEntegrasyonTest extends RezervasyonEntegrasyonTesti {
 
     private static final String YOL = "/api/v1/bookings/reservations";
     private static final long KULLANICI = 41;
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Test
     void shouldHoldSeatsWithSnapshotAndExpiry_whenSeatsFree() throws Exception {
@@ -151,10 +144,4 @@ class RezervasyonKontrolcusuEntegrasyonTest extends RezervasyonEntegrasyonTesti 
                 .andExpect(status().isUnauthorized());
     }
 
-    private ResultActions tut(long kullaniciId, long seansId, String hucreler) throws Exception {
-        return mockMvc.perform(post(YOL)
-                .header("Authorization", "Bearer " + TestTokenUretici.kullaniciTokeni(kullaniciId, "USER"))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"showtimeId\":" + seansId + ",\"seatCellIds\":" + hucreler + "}"));
-    }
 }
