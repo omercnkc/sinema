@@ -847,8 +847,8 @@ Eski sorular (referans):
 - Hız sınırı ~40 istek/sn (sabit değil); 429'a uyulur. Admin akışında tek tek istek olduğundan sorun değil.
 
 **M2 alt görevleri (2026-10-30, onaylandı):**
-1. [ ] Şube + salon: V2 (`cinemas`, `halls`), admin `POST/PUT /cinemas`, `POST/PUT /halls` (varsayılan fiyat), halka açık `GET /cinemas`; MapStruct ilk kez (parent POM'a processor)
-2. [ ] Düzen taslağı: V3 (`hall_layouts`, `layout_cells`), `POST /halls/{id}/layouts` (taslak), `PUT` (yalnızca `DRAFT`), `GET /halls/{id}/layouts`; doğrulama (ızgara sınırı, ≥1 `SEAT`, `SCREEN` var, koltuk etiketi benzersiz)
+1. [x] Şube + salon: V2 (`cinemas`, `halls`), admin `POST/PUT /cinemas`, `POST/PUT /halls` (varsayılan fiyat), halka açık `GET /cinemas`; MapStruct ilk kez (parent POM'a processor)
+2. [x] Düzen taslağı: V3 (`hall_layouts`, `layout_cells`), `POST /halls/{id}/layouts` (taslak), `PUT` (yalnızca `DRAFT`), `GET /halls/{id}/layouts`; doğrulama (ızgara sınırı, ≥1 `SEAT`, `SCREEN` var, koltuk etiketi benzersiz)
 3. [ ] Düzen yayımlama: `POST /halls/{id}/layouts/{layoutId}/publish` (sürüm numarası, `published_at`, salonun `active_layout_id`'si); K13 kontrolü alt görev 6'da seanslarla eklenir
 4. [ ] Film: V4 (`movies` + 3 liste tablosu), admin `POST/PUT /movies`, `PATCH /visibility`, halka açık `GET /movies` (sayfalı, tür/arama, gizliler hariç) ve `GET /movies/{id}`; akıllı işaret enum'u
 5. [ ] TMDB istemcisi: `RestClient` (spring-web, yeni bağımlılık yok; timeout'lu), `GET /admin/catalog/tmdb/search`, `GET /admin/catalog/tmdb/movies/{tmdbId}` (form ön doldurma, kaydetmez), TR sertifika seçimi, `descriptors` eşlemesi, erişilemezse 503 `TMDB_UNAVAILABLE`; `movies.tmdb_synced_at` + aylık yenileme job'ı (K45); testlerde `MockRestServiceServer`
@@ -857,7 +857,9 @@ Eski sorular (referans):
 8. [ ] `dev` seed: 3 şube (3/4/3 salon), 10 farklı düzen, birkaç film (elle, TMDB'siz), önümüzdeki günlere seanslar; yalnızca boş DB'de çalışır
 9. [ ] compose/README: catalog'a `TMDB_API_TOKEN`, duman testine katalog adımları, M2 kapanışı
 
-Gruplar (öneri): [1+2], [3], [4], [5], [6], [7+8], [9].
+Gruplar (onaylı): [1+2], [3], [4], [5], [6], [7+8], [9].
+
+Notlar (alt görev 1-2): `EMPTY` hücre tipi saklanmaz (hücre yoksa boşluktur; editörde "boş" fırçası silmek demek); salon başına tek taslak `draft_hall_key` üretilmiş kolon + UNIQUE ile DB'de de garanti (K43'teki `active_pending_key` kalıbı); taslak güncellemesi tüm hücreleri silip yeniden yazar (taslakta hücre id'leri değişir, yayımlanınca sabitlenir); `hall_layouts`'a `updated_at` eklendi.
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
