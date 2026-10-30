@@ -1,6 +1,7 @@
 package com.sinema.booking.rezervasyon.service;
 
 import com.sinema.booking.config.RezervasyonAyarlari;
+import com.sinema.booking.doluluk.service.DolulukOnbellegi;
 import com.sinema.booking.katalog.istemci.KatalogIstemcisi;
 import com.sinema.booking.katalog.istemci.KatalogSeansBilgisi;
 import com.sinema.booking.katalog.istemci.KoltukCozumlemeIstegi;
@@ -55,6 +56,7 @@ public class KoltukTutmaServisi {
     private final KoltukKilitDeposu kilitDeposu;
     private final RezervasyonRepository rezervasyonRepository;
     private final RezervasyonMapper rezervasyonMapper;
+    private final DolulukOnbellegi dolulukOnbellegi;
     private final RezervasyonAyarlari ayarlar;
     private final Clock saat;
 
@@ -68,6 +70,8 @@ public class KoltukTutmaServisi {
         Instant simdi = saat.instant().truncatedTo(ChronoUnit.MILLIS);
         Instant bitis = tutmaBitisi(seans, simdi);
         Rezervasyon rezervasyon = kaydet(kullaniciId, seans, koltuklar, bitis, simdi);
+        // K47: kullanıcı kendi tutmasını haritada hemen görsün (2 sn'lik önbelleği beklemeden)
+        dolulukOnbellegi.sil(seans.showtimeId());
         return rezervasyonMapper.cevap(rezervasyon, simdi);
     }
 
@@ -147,6 +151,8 @@ public class KoltukTutmaServisi {
         if (alinamayanHucre != null) {
             dolu.add(alinamayanHucre);
         }
+        // İstemci 409 sonrası haritayı hemen yeniler (§8.5); eski önbellekle "boş" görmesin
+        dolulukOnbellegi.sil(seansId);
         return new CakismaIstisnasi(KOLTUK_DOLU_KODU, "Seçtiğiniz koltuklardan bazıları az önce alındı.",
                 Map.of("unavailableCellIds", new ArrayList<>(dolu)));
     }
