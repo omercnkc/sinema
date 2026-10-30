@@ -33,7 +33,7 @@ import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 /**
- * Koltuk tutma akışı (planlama §4.3): ucuz kontroller → catalog (seans, koltuklar) → tek transaction'da tutma.
+ * Koltuk tutma akışı (planlama §4.3): ucuz kontroller (sınır, aktif işlem, K29) → catalog (seans, koltuklar) → tek transaction'da tutma.
  * Kontroller "fail fast" içindir; asıl güvence veritabanıdır (K9 UNIQUE, K24 active_pending_key), bu yüzden
  * kontrolle yazma arasındaki yarışlar da doğru hata koduna çevrilir.
  *
@@ -53,6 +53,7 @@ public class KoltukTutmaServisi {
 
     private final KatalogIstemcisi katalogIstemcisi;
     private final KoltukTutmaIslemi tutmaIslemi;
+    private final TerkKorumaDenetcisi terkKorumaDenetcisi;
     private final KoltukKilitDeposu kilitDeposu;
     private final RezervasyonRepository rezervasyonRepository;
     private final RezervasyonMapper rezervasyonMapper;
@@ -62,7 +63,9 @@ public class KoltukTutmaServisi {
 
     public RezervasyonCevabi tut(Long kullaniciId, KoltukTutmaIstegi istek) {
         Set<Long> hucreler = hucreleriDogrula(istek.seatCellIds());
-        aktifRezervasyonVarsaReddet(kullaniciId, istek.showtimeId(), saat.instant());
+        Instant istekAni = saat.instant();
+        aktifRezervasyonVarsaReddet(kullaniciId, istek.showtimeId(), istekAni);
+        terkKorumaDenetcisi.denetle(kullaniciId, istekAni); // K29, catalog'a gitmeden (fail fast)
         KatalogSeansBilgisi seans = katalogIstemcisi.seansBilgisi(istek.showtimeId());
         List<RezervasyonKoltugu> koltuklar = koltuklariCoz(seans, hucreler);
         // Catalog çağrıları zaman aldı; süre hesabı yazma anından. Milisaniyeye yuvarlanır: DB DATETIME(3) saklar,
