@@ -56,6 +56,8 @@
 | K32 | **Geç gelen ödeme: P2 (ödeme penceresi).** Ödeme başlatılınca hold bir kez sabit kısa süre uzar (varsayılan +2 dk, yapılandırılabilir), satış kapanışını aşmaz; terk edilen ödemeler K29'a sayılır (§4.12). |
 | K33 | **K29 penceresi W = 30 dk.** Polling aralığı **5 sn** (yapılandırılabilir). |
 | K34 | **Seans iptali / toplu iade kapsam dışı** (varsayılan; kullanıcı cevabı düzen göçüne odaklandı, bkz. K35). |
+| K46 | **Akıllı işaretler enum'u (2026-10-30):** `SIDDET_KORKU`, `CINSELLIK`, `OLUMSUZ_ORNEK` (TMDB TR `descriptors` değerleri `Violence / Horror`, `Sexuality`, `Negative examples` ile birebir eşlenir). |
+| K45 | **TMDB verisi tazeliği (2026-10-30):** şartlar 6 ay üst sınır koyuyor, biz **3 ay** uygularız: `movies.tmdb_synced_at`; ayda bir çalışan job, son çekimi 3 aydan eski TMDB kaynaklı filmleri TMDB'den yeniden çeker (elle girilen filmlere dokunmaz; TMDB'ye ulaşılamazsa sonraki çalışmada tekrar dener). Süre ve zamanlama konfigürasyondan. |
 | K44 | **Sürümler (2026-10-29):** Spring Boot 3.x'in ücretsiz desteği 30.06.2026'da bittiği için **Spring Boot 4.1.2 + Spring Cloud 2025.1.4** (Maven Central'dan doğrulandı). Build: Maven Wrapper (Maven 3.9.16). Kodlamaya geçildi (M0). |
 | K43 | **DB planı onaylandı** ([db-planlama.md](db-planlama.md) §9): film listeleri ayrı tablolar; `active_pending_key` üretilmiş kolon + UNIQUE; süresi dolan `HELD` satırlar silinir, `SOLD` kalır; ham callback logu 90 gün (yapılandırılabilir). |
 | K42 | **Milestone sırası M0→M9 onaylandı** (M5 paralel olabilir, M8 düzen göçü sonda); örnek veri `dev` seed; her milestone başlarken alt görevlere bölünür (§9.5). |
@@ -791,7 +793,7 @@ Eski sorular (referans):
 
 ### 9.3 Kodlamadan önce kapanacak doğrulamalar
 1. Spring Boot 3.x ile Spring Cloud sürüm uyumluluk tablosu; sabit Docker image tag'leri (JRE 21, MySQL 8.4, Redis, nginx).
-2. TMDB: `descriptors` alanının TR için dolu gelip gelmediği, `append_to_response`, atıf ve hotlink şartları.
+2. ~~TMDB: `descriptors` alanının TR için dolu gelip gelmediği, `append_to_response`, atıf ve hotlink şartları.~~ Doğrulandı (2026-10-29, bkz. §9.5 M2 notu).
 3. iyzico: token ömrü, `retrieve` yanıt `signature` hesabı.
 4. `angularx-qrcode` ve `ng-bootstrap` (12.x) Angular 13 uyumlu sürümleri ve peer bağımlılıkları; `DatePipe` `'+0300'` davranışı.
 5. Redis erişilemezken Spring Cloud Gateway `RequestRateLimiter` varsayılan davranışı.
@@ -832,6 +834,30 @@ Eski sorular (referans):
 10. [x] compose: anahtar mount'ları (private yalnızca auth'a), admin ve client secret env'leri; gateway üzerinden uçtan uca duman testi (register → login → me → refresh → logout); README. `scripts/duman-testi.sh` (15 adım) hem mevcut yığında hem sıfırdan kurulan ayrı yığında geçti.
 
 **M1 tamamlandı (2026-10-29).** Ertelenen notlar: Feign servis-token interceptor'ı M3'te (ilk Feign çağrısıyla); Redis kesintisinde RedisRateLimiter'ın her istekte stack trace loglaması ve gateway önüne proxy konursa güvenilen X-Forwarded-For ayarı M9'da.
+
+**§9.3-2 TMDB doğrulaması (2026-10-29, developer.themoviedb.org + API kullanım şartları):**
+- `append_to_response`: film detayında desteklenir, değerler virgülle ayrılır, her ek istek cevaba ayrı JSON nesnesi olarak eklenir → `GET /3/movie/{id}?language=tr-TR&append_to_response=release_dates,credits` tek istekte yeterli (K22 doğrulandı). Dokümanda sayı sınırı belirtilmiyor.
+- `release_dates`: `results[{iso_3166_1, release_dates[{certification, descriptors[], type, release_date, note}]}]`; `type` 1 Premiere, 2 sınırlı sinema, 3 sinema, 4 dijital, 5 fiziksel, 6 TV. TR sertifikaları: `Genel İzleyici Kitlesi, 6A, 6+, 10A, 10+, 13A, 13+, 16+, 18+`. Seçim: TR kayıtlarından önce `type=3`, yoksa boş olmayan ilk sertifika.
+- **`descriptors` (gerçek API ile denendi, 2026-10-30):** dokümanda öğe tanımı yok ama TR kaydında **bazen dolu** geliyor: Dövüş Kulübü `["Violence / Horror", "Sexuality", "Negative examples"]`, Oppenheimer `["Sexuality", "Negative examples"]`; Başlangıç ve Ters Yüz 2'de boş. Eşleme: `Violence / Horror` → `SIDDET_KORKU`, `Sexuality` → `CINSELLIK`, `Negative examples` → `OLUMSUZ_ORNEK`; bilinmeyen değer atlanır (log). Boşsa admin listeden seçer (K21 aynen).
+- Aynı denemede TR kaydı birden fazla olabildi (ör. biri boş sertifikalı) → boş olmayan `type=3` önce.
+- Görsel: `https://image.tmdb.org/t/p/{boyut}{poster_path}` (ör. `w500`); yalnızca `poster_path` saklanır, taban adres ve boyut konfigürasyondan (K41 hotlink). Şartlar hotlink'i yasaklamıyor, yalnızca TMDB'yi reklam/grafik barındırma hizmeti gibi kullanmayı yasaklıyor.
+- Atıf: TMDB'nin onaylı logosu (renk/oran değiştirilmeden) + "This product uses the TMDB API but is not endorsed or certified by TMDB." metni (Türkçesi yanında) görünür yerde (footer / Hakkında) → M5.
+- Ticari kullanım yazılı anlaşma ister; proje ticari değil (K18).
+- **Şartlar §1.C, TMDB'den alınan bilginin 6 aydan uzun önbelleklenmesini yasaklıyor.** Filmleri DB'ye kopyaladığımız için (K18) → **K45**.
+- Hız sınırı ~40 istek/sn (sabit değil); 429'a uyulur. Admin akışında tek tek istek olduğundan sorun değil.
+
+**M2 alt görevleri (2026-10-30, onaylandı):**
+1. [ ] Şube + salon: V2 (`cinemas`, `halls`), admin `POST/PUT /cinemas`, `POST/PUT /halls` (varsayılan fiyat), halka açık `GET /cinemas`; MapStruct ilk kez (parent POM'a processor)
+2. [ ] Düzen taslağı: V3 (`hall_layouts`, `layout_cells`), `POST /halls/{id}/layouts` (taslak), `PUT` (yalnızca `DRAFT`), `GET /halls/{id}/layouts`; doğrulama (ızgara sınırı, ≥1 `SEAT`, `SCREEN` var, koltuk etiketi benzersiz)
+3. [ ] Düzen yayımlama: `POST /halls/{id}/layouts/{layoutId}/publish` (sürüm numarası, `published_at`, salonun `active_layout_id`'si); K13 kontrolü alt görev 6'da seanslarla eklenir
+4. [ ] Film: V4 (`movies` + 3 liste tablosu), admin `POST/PUT /movies`, `PATCH /visibility`, halka açık `GET /movies` (sayfalı, tür/arama, gizliler hariç) ve `GET /movies/{id}`; akıllı işaret enum'u
+5. [ ] TMDB istemcisi: `RestClient` (spring-web, yeni bağımlılık yok; timeout'lu), `GET /admin/catalog/tmdb/search`, `GET /admin/catalog/tmdb/movies/{tmdbId}` (form ön doldurma, kaydetmez), TR sertifika seçimi, `descriptors` eşlemesi, erişilemezse 503 `TMDB_UNAVAILABLE`; `movies.tmdb_synced_at` + aylık yenileme job'ı (K45); testlerde `MockRestServiceServer`
+6. [ ] Seans: V5 (`showtimes`), `POST /showtimes` (salon `FOR UPDATE` + çakışma, `endsAt` = süre + ara payı, fiyat kopyası, düzen mühürü, gizli filme seans yok), `PUT` (fiyat/ofset); halka açık `GET /movies/{id}/showtimes`, `GET /showtimes/{id}` (`salesCloseAt`), `GET /showtimes/{id}/layout` (`ETag`, uzun cache); yayımlamaya K13 kontrolü
+7. [ ] Booking için internal uçlar: `GET /internal/v1/catalog/showtimes/{id}` (başlangıç, kapanış, fiyat, düzen, bilet snapshot alanları) ve hücre doğrulama (`SEAT` mi, bu düzene mi ait, etiketler); `activate` M8'de
+8. [ ] `dev` seed: 3 şube (3/4/3 salon), 10 farklı düzen, birkaç film (elle, TMDB'siz), önümüzdeki günlere seanslar; yalnızca boş DB'de çalışır
+9. [ ] compose/README: catalog'a `TMDB_API_TOKEN`, duman testine katalog adımları, M2 kapanışı
+
+Gruplar (öneri): [1+2], [3], [4], [5], [6], [7+8], [9].
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
