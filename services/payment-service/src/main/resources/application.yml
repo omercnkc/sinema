@@ -27,8 +27,9 @@ server:
 
 sinema:
   payment:
-    # K49: IYZICO (varsayılan) ya da MOCK (anahtarsız yerel deneme, sahte ödeme sayfası)
-    saglayici: ${PAYMENT_PROVIDER:IYZICO}
+    # K49: IYZICO ya da MOCK (anahtarsız yerel deneme, sahte ödeme sayfası).
+    # GEÇİCİ: iyzico adaptörü M4 alt görev 8'de gelene kadar varsayılan MOCK; sonra IYZICO olur
+    saglayici: ${PAYMENT_PROVIDER:MOCK}
     # Sağlayıcı ödeme sonrası tarayıcıyı buraya yönlendirir (gateway üzerinden, K39)
     callback-adresi: ${PAYMENT_CALLBACK_URL:http://localhost:8080/api/v1/payments/callback/iyzico}
     # Callback işlenince tarayıcının gittiği ön yüz sayfası (?reservationId= eklenir)
@@ -42,6 +43,9 @@ sinema:
       yedek-ad: Sinema
       yedek-soyad: Musterisi
       yedek-telefon: "+905350000000"
+    mock:
+      # Sahte ödeme sayfası (gateway üzerinden); yalnızca saglayici=MOCK iken
+      sayfa-adresi: ${PAYMENT_MOCK_PAGE_URL:http://localhost:8080/api/v1/payments/mock/checkout}
   # Servis token'ı (auth) + Feign altyapısı: sinema-common SinemaServisIstemcisiOtomatikYapilandirma
   servis-istemcisi:
     auth-adresi: ${AUTH_SERVICE_URL:http://localhost:8081}
@@ -56,6 +60,9 @@ sinema:
     # iyzico ödeme sonrası tarayıcıyı buraya form POST'uyla yönlendirir; JWT taşımaz, sonuç retrieve ile doğrulanır (K39)
     acik-yollar:
       - POST /api/v1/payments/callback/iyzico
+      # Sahte ödeme sayfası (K49): tarayıcı yönlendirmesi, giriş yok; yalnızca MOCK seçiliyken uç vardır, yoksa 404
+      - GET /api/v1/payments/mock/checkout/*
+      - POST /api/v1/payments/mock/checkout/*/complete
 
 management:
   endpoints:

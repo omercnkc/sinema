@@ -116,8 +116,8 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       BOOKING_SERVICE_URL: http://booking-service:8083
       PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET}
-      # K49: IYZICO (varsayılan) ya da MOCK
-      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-IYZICO}
+      # K49: IYZICO ya da MOCK. GEÇİCİ: iyzico adaptörü (M4 alt görev 8) gelene kadar varsayılan MOCK
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-MOCK}
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]

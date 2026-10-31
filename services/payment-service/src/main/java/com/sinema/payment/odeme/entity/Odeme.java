@@ -21,7 +21,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Bir rezervasyonun ödemesi (payments). Rezervasyon başına tek kayıt (UNIQUE reservation_id): tekrar gelen "öde"
  * isteği yeni ödeme açmaz, aynısını döner (§7.2). Tutar booking'den alınır; istemciden gelmez (§4.8).
- * Durum geçişleri sonraki alt görevlerde (başlatma, callback, mutabakat) bu sınıfa metot olarak eklenir.
+ * Durum geçişleri iş kuralı olarak bu sınıfın metotlarındadır (callback ve mutabakat geçişleri sonraki alt görevlerde).
  */
 @Entity
 @Table(name = "payments")
@@ -65,6 +65,9 @@ public class Odeme {
     @Column(name = "provider_token_expires_at")
     private Instant tokenBitisi;
 
+    @Column(name = "payment_page_url", length = 500)
+    private String odemeSayfasi;
+
     @Column(name = "provider_payment_id", length = 64)
     private String saglayiciOdemeKimligi;
 
@@ -102,6 +105,22 @@ public class Odeme {
         odeme.durum = OdemeDurumu.INITIATED;
         odeme.bookingSenkronDurumu = BookingSenkronDurumu.NOT_NEEDED;
         return odeme;
+    }
+
+    /** Sağlayıcıda ödeme sayfası açıldı: kullanıcı ödeme yapana kadar PENDING. Yalnızca INITIATED'dan. */
+    public void saglayicidaBaslatildi(String token, Instant tokenBitisi, String odemeSayfasi) {
+        if (durum != OdemeDurumu.INITIATED) {
+            throw new IllegalStateException("Ödeme yalnızca INITIATED durumundayken başlatılabilir: " + durum);
+        }
+        this.saglayiciTokeni = token;
+        this.tokenBitisi = tokenBitisi;
+        this.odemeSayfasi = odemeSayfasi;
+        this.durum = OdemeDurumu.PENDING;
+    }
+
+    /** Ödeme sayfası hâlâ kullanılabilir mi (tekrar gelen "öde" isteği aynı sayfaya dönebilir). */
+    public boolean sayfaGecerliMi(Instant simdi) {
+        return durum == OdemeDurumu.PENDING && tokenBitisi != null && tokenBitisi.isAfter(simdi);
     }
 
     @Override
