@@ -90,7 +90,8 @@ Durdurmak: `docker compose down`. Veritabanını da silip sıfırdan başlamak: 
 |---|---|---|
 | frontend (nginx) | `http://localhost:4200` | Yalnızca statik Angular dosyaları; tarayıcı API'ye gateway üzerinden ayrı origin olarak gider |
 | api-gateway | `http://localhost:8080` | Tek API giriş noktası, yalnızca bu bilgisayardan |
-| MySQL | `127.0.0.1:3306` | IDE'de çalışan servisler ve DB araçları için |
+| MySQL | `127.0.0.1:3306` | IDE'de çalışan servisler ve DB araçları için (tarayıcıyla açılmaz, HTTP değildir) |
+| Adminer | `http://localhost:8088` | Veritabanını tarayıcıdan görmek (geliştirme). Sunucu `mysql` dolu gelir; kullanıcı `root` (`MYSQL_ROOT_PASSWORD`) ya da servis kullanıcıları (`auth_user`, `catalog_user`, `booking_user`, `payment_user`) |
 | auth / catalog / booking / payment | yok | Yalnızca iç ağda (`sinema-ag`), Docker DNS adıyla |
 | Redis | yok | Yalnızca gateway kullanır, kalıcı veri tutmaz |
 
@@ -291,6 +292,7 @@ Hibernate şemayı değiştirmez (`ddl-auto=validate`), yalnızca entity'lerle u
 | `REDIS_PASSWORD` | Redis parolası (gateway rate limit) |
 | `GATEWAY_HOST_PORT` | Gateway'in bilgisayarda açılacağı port (varsayılan 8080) |
 | `CORS_ALLOWED_ORIGINS` | Gateway'e tarayıcıdan istek atabilecek frontend adresleri, virgülle (varsayılan `http://localhost:4200`) |
+| `ADMINER_HOST_PORT` | Adminer'in bilgisayarda açılacağı port (varsayılan 8088) |
 | `FRONTEND_HOST_PORT` | Ön yüzün bilgisayarda açılacağı port (varsayılan 4200). Değiştirilirse `CORS_ALLOWED_ORIGINS` da güncellenmeli |
 | `JWT_KEYS_DIR` | JWT anahtar klasörü (varsayılan `./keys`, betikle üretilir) |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Sistemde admin yokken açılışta oluşturulan ilk admin; boşsa oluşturulmaz |

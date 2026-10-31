@@ -200,6 +200,28 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
       start_period: 5s
 
+  # Veritabanını tarayıcıdan görmek için Adminer (yalnızca geliştirme; yalnızca bu bilgisayardan). Giriş ekranında
+  # sunucu "mysql" dolu gelir; kullanıcı root (MYSQL_ROOT_PASSWORD) ya da servis kullanıcıları (ör. booking_user).
+  adminer:
+    image: adminer:6.2.0
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    ports:
+      - "127.0.0.1:${ADMINER_HOST_PORT:-8088}:8080"
+    networks: [sinema-ag]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    healthcheck:
+      <<: *saglik
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/') === false ? 1 : 0);"]
+      start_period: 5s
+
 networks:
   sinema-ag:
 
