@@ -47,3 +47,12 @@ export function gorunenDurum(rezervasyon: Rezervasyon, sunucuSimdi: number): Gor
       return Date.parse(rezervasyon.expiresAt) <= sunucuSimdi ? 'SURESI_DOLDU' : 'ODEME_BEKLIYOR';
   }
 }
+
+/** Ekrandaki durum adı ve rozet rengi (Bootstrap 5.1 sınıfları). */
+export const DURUM_ROZETLERI: Readonly<Record<GorunenDurum, { readonly ad: string; readonly sinif: string }>> = {
+  ODEME_BEKLIYOR: { ad: 'Ödeme bekliyor', sinif: 'bg-warning text-dark' },
+  ONAYLANDI: { ad: 'Onaylandı', sinif: 'bg-success' },
+  SURESI_DOLDU: { ad: 'Süresi doldu', sinif: 'bg-secondary' },
+  BIRAKILDI: { ad: 'Vazgeçildi', sinif: 'bg-secondary' },
+  BASARISIZ: { ad: 'Ödeme başarısız', sinif: 'bg-danger' },
+};

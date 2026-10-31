@@ -56,6 +56,7 @@ describe('HeaderComponent', () => {
     fixture.detectChanges();
 
     expect(oturumAlani().querySelector('#kullanici-menusu')?.textContent?.trim()).toBe('Ayşe');
+    expect(oturumAlani().querySelector('a[ngbDropdownItem]')?.getAttribute('href')).toBe('/rezervasyonlarim');
     fixture.componentInstance.cikisYap();
 
     expect(oturum.cikisYap).toHaveBeenCalled();

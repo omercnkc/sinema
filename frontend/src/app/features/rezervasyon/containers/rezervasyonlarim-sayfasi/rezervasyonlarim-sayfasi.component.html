@@ -1,0 +1,44 @@
+<h1 class="h3 mb-4">Rezervasyonlarım</h1>
+
+<ng-container *ngIf="durum$ | async as durum">
+  <app-yukleniyor *ngIf="durum.yukleniyor" etiket="Rezervasyonlar yükleniyor…"></app-yukleniyor>
+
+  <app-hata-mesaji *ngIf="durum.hata as hata" [mesaj]="hata.mesaj" [tekrarDenenebilir]="true" (tekrarDene)="tekrarDene()"></app-hata-mesaji>
+
+  <ng-container *ngIf="durum.veri as sayfa">
+    <div *ngIf="!sayfa.totalElements" class="text-muted" role="status">
+      Henüz rezervasyonunuz yok. <a routerLink="/filmler">Filmlere göz atın.</a>
+    </div>
+
+    <div class="list-group">
+      <a
+        *ngFor="let satir of sayfa.content; trackBy: satirIzle"
+        class="list-group-item list-group-item-action py-3"
+        [routerLink]="['/rezervasyonlarim', satir.rezervasyon.reservationId]"
+      >
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+          <strong class="me-auto">{{ satir.rezervasyon.movieTitle }}</strong>
+          <span class="badge" [ngClass]="rozetler[satir.durum].sinif">{{ rozetler[satir.durum].ad }}</span>
+        </div>
+        <div class="small text-muted">
+          {{ satir.rezervasyon.startsAt | date: 'd MMMM EEEE, HH:mm':saatDilimi }} ·
+          {{ satir.rezervasyon.cinemaName }} · {{ satir.rezervasyon.hallName }}
+        </div>
+        <div class="small">
+          {{ satir.koltuklar }} · {{ satir.rezervasyon.totalAmount | currency: 'TRY':'symbol-narrow':'1.2-2' }}
+        </div>
+      </a>
+    </div>
+
+    <nav *ngIf="sayfa.totalPages > 1" class="d-flex justify-content-center mt-4" aria-label="Rezervasyon sayfaları">
+      <ngb-pagination
+        [collectionSize]="sayfa.totalElements"
+        [pageSize]="sayfaBoyutu"
+        [page]="sayfa.page + 1"
+        [maxSize]="5"
+        [rotate]="true"
+        (pageChange)="sayfaDegisti($event)"
+      ></ngb-pagination>
+    </nav>
+  </ng-container>
+</ng-container>
