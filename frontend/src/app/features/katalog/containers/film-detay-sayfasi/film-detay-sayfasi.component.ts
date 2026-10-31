@@ -12,7 +12,7 @@ const FILM_YOK = new UygulamaHatasi(HttpStatusCode.NotFound, 'MOVIE_NOT_FOUND', 
 
 /**
  * /filmler/:id (smart): filmin tüm bilgileri (K16). Puan, film TMDB'den geldiyse "TMDB puanı" olarak etiketlenir
- * (atıf şartı, §9.3-2). Bulunamayan ya da gizlenmiş film için "tekrar dene" gösterilmez; seanslar alt görev 8'de.
+ * (atıf şartı, §9.3-2). Bulunamayan ya da gizlenmiş film için "tekrar dene" gösterilmez. Altında seans seçimi.
  */
 @Component({
   selector: 'app-film-detay-sayfasi',

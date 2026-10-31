@@ -1,0 +1,40 @@
+<ng-container *ngIf="durum$ | async as durum">
+  <app-yukleniyor *ngIf="durum.yukleniyor" etiket="Seans yükleniyor…"></app-yukleniyor>
+
+  <ng-container *ngIf="durum.hata as hata">
+    <app-hata-mesaji
+      [mesaj]="hata.mesaj"
+      [tekrarDenenebilir]="tekrarDenenebilir(hata)"
+      (tekrarDene)="tekrarDene()"
+    ></app-hata-mesaji>
+    <a routerLink="/filmler" class="btn btn-outline-dark">Filmlere dön</a>
+  </ng-container>
+
+  <ng-container *ngIf="durum.veri as seans">
+    <nav aria-label="Konum">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/filmler">Filmler</a></li>
+        <li class="breadcrumb-item"><a [routerLink]="['/filmler', seans.movieId]">{{ seans.movieTitle }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Koltuk seçimi</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex gap-3 align-items-start mb-4">
+      <app-film-afisi class="flex-shrink-0 seans-sayfasi__afis" [afisYolu]="seans.posterPath" [baslik]="seans.movieTitle"></app-film-afisi>
+      <div>
+        <h1 class="h3 mb-1">
+          {{ seans.movieTitle }}
+          <span *ngIf="seans.certification" class="badge bg-dark align-middle fs-6">{{ seans.certification }}</span>
+        </h1>
+        <p class="mb-1">{{ seans.startsAt | date: 'd MMMM EEEE, HH:mm':saatDilimi }}</p>
+        <p class="mb-1 text-muted">{{ seans.cinemaName }} · {{ seans.hallName }}</p>
+        <p class="mb-0">Bilet: <strong>{{ seans.ticketPrice | currency: 'TRY':'symbol-narrow':'1.0-2' }}</strong></p>
+      </div>
+    </div>
+
+    <div *ngIf="!seans.salesOpen" class="alert alert-secondary" role="status">Bu seansın satışı kapandı.</div>
+    <div *ngIf="seans.salesOpen" class="alert alert-info" role="status">
+      Satış kapanışı: {{ seans.salesCloseAt | date: 'HH:mm':saatDilimi }}. Koltuk seçimi yakında bu sayfada olacak.
+    </div>
+  </ng-container>
+</ng-container>

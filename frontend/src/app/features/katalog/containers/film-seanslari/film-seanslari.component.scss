@@ -1,0 +1,23 @@
+@import "tema";
+
+.film-seanslari {
+  &__sube {
+    width: auto;
+  }
+
+  // Küçük ekranda günler yatay kayar, satır kırılmaz
+  &__gunler {
+    overflow-x: auto;
+    padding-bottom: map-get($spacers, 1);
+  }
+
+  &__seans {
+    min-width: 7rem;
+    line-height: $line-height-sm;
+  }
+
+  &__saat {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+  }
+}

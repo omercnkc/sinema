@@ -1,3 +1,4 @@
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -24,6 +25,8 @@ describe('FilmDetaySayfasiComponent', () => {
         { provide: FilmService, useValue: filmService },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id })) } },
       ],
+      // Seans seçimi (app-film-seanslari) kendi testinde
+      schemas: [NO_ERRORS_SCHEMA],
     });
     const fixture = TestBed.createComponent(FilmDetaySayfasiComponent);
     fixture.detectChanges();

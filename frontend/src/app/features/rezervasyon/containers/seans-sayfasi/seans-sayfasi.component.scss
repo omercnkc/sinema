@@ -1,0 +1,9 @@
+@import "tema";
+
+.seans-sayfasi__afis {
+  width: 6rem;
+
+  @include media-breakpoint-up(md) {
+    width: 8rem;
+  }
+}

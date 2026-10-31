@@ -1,0 +1,71 @@
+<section class="film-seanslari" aria-labelledby="seanslar-basligi">
+  <ng-container *ngIf="gorunum$ | async as gorunum">
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+      <h2 id="seanslar-basligi" class="h4 mb-0 me-auto">Seanslar</h2>
+      <ng-container *ngIf="subeler$ | async as subeler">
+        <ng-container *ngIf="subeler.length">
+          <label for="seans-subesi" class="visually-hidden">Şube</label>
+          <select id="seans-subesi" #subeSecimi class="form-select film-seanslari__sube" (change)="subeSecildi(subeSecimi.value)">
+            <option value="">Tüm şubeler</option>
+            <option
+              *ngFor="let sube of subeler; trackBy: subeIzle"
+              [value]="sube.id"
+              [selected]="sube.id === gorunum.secim.subeId"
+            >
+              {{ sube.name }}
+            </option>
+          </select>
+        </ng-container>
+      </ng-container>
+    </div>
+
+    <div class="d-flex gap-2 mb-4 film-seanslari__gunler" role="group" aria-label="Gün">
+      <button
+        *ngFor="let gun of gunler; trackBy: gunIzle"
+        type="button"
+        class="btn btn-sm text-nowrap"
+        [class.btn-dark]="gun.tarih === gorunum.secim.gun"
+        [class.btn-outline-dark]="gun.tarih !== gorunum.secim.gun"
+        [attr.aria-pressed]="gun.tarih === gorunum.secim.gun"
+        (click)="gunSecildi(gun.tarih)"
+      >
+        {{ gun.etiket }}
+      </button>
+    </div>
+
+    <app-yukleniyor *ngIf="gorunum.durum.yukleniyor" etiket="Seanslar yükleniyor…"></app-yukleniyor>
+
+    <app-hata-mesaji
+      *ngIf="gorunum.durum.hata as hata"
+      [mesaj]="hata.mesaj"
+      [tekrarDenenebilir]="true"
+      (tekrarDene)="tekrarDene()"
+    ></app-hata-mesaji>
+
+    <ng-container *ngIf="gorunum.durum.veri as gruplar">
+      <p *ngIf="!gruplar.length" class="text-muted" role="status">Bu gün için seans yok.</p>
+
+      <div *ngFor="let grup of gruplar; trackBy: grupIzle" class="mb-4">
+        <h3 class="h6 text-uppercase text-muted mb-2">{{ grup.subeAdi }}</h3>
+        <ul class="list-unstyled d-flex flex-wrap gap-2 mb-0">
+          <li *ngFor="let seans of grup.seanslar; trackBy: seansIzle">
+            <a
+              *ngIf="seans.salesOpen; else kapali"
+              class="btn btn-outline-primary film-seanslari__seans"
+              [routerLink]="['/seans', seans.id]"
+            >
+              <span class="film-seanslari__saat">{{ seans.startsAt | date: 'HH:mm':saatDilimi }}</span>
+              <small class="d-block">{{ seans.hallName }} · {{ seans.ticketPrice | currency: 'TRY':'symbol-narrow':'1.0-2' }}</small>
+            </a>
+            <ng-template #kapali>
+              <span class="btn btn-outline-secondary disabled film-seanslari__seans" aria-disabled="true">
+                <span class="film-seanslari__saat">{{ seans.startsAt | date: 'HH:mm':saatDilimi }}</span>
+                <small class="d-block">{{ seans.hallName }} · Satış kapandı</small>
+              </span>
+            </ng-template>
+          </li>
+        </ul>
+      </div>
+    </ng-container>
+  </ng-container>
+</section>

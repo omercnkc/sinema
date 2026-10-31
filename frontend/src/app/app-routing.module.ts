@@ -6,6 +6,7 @@ import { SayfaBulunamadiComponent } from './layout/sayfa-bulunamadi/sayfa-buluna
 const rotalar: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'filmler' },
   { path: 'filmler', loadChildren: () => import('./features/katalog/katalog.module').then((m) => m.KatalogModule) },
+  { path: 'seans', loadChildren: () => import('./features/rezervasyon/rezervasyon.module').then((m) => m.RezervasyonModule) },
   // /giris ve /kayit: kök düzeyde iki yol, tek tembel modül (yollar modülün içinde)
   { path: '', loadChildren: () => import('./features/hesap/hesap.module').then((m) => m.HesapModule) },
   { path: '**', component: SayfaBulunamadiComponent },
