@@ -37,3 +37,4 @@ Planlama aşaması, adım adım ilerliyoruz. Kod YOK. Konu: sinema koltuk seçim
 - 2026-10-31: M6 alt görev 2 bitti (seçim ≤5, özet, tutma exhaustMap, 409/429 yolları, hemenYenile$). Sıradaki: alt görev 3 (tutma ekranı, geri sayım, ServerClockService, vazgeç).
 - 2026-10-31: M6 alt görev 3 bitti (RezervasyonModule kökte; /rezervasyonlarim/:id tutma ekranı, SunucuSaati, GeriSayimComponent, vazgeç). Sıradaki: alt görev 4 (ödeme yönlendirmesi + /odeme/sonuc).
 - 2026-10-31: M6 alt görev 4 bitti (Öde → SayfaYonlendirici http(s) denetimli; öde/vazgeç tek exhaustMap; /odeme/sonuc yoklama 15x2 sn, iade bilgisi). Sıradaki: grup [5+7] (rezervasyonlarım listesi + /bilet/:kod doğrulama).
+- 2026-10-31: M6 grup [5+7] bitti (/rezervasyonlarim listesi + menü bağlantısı; /bilet/:kod ayrı BiletDogrulamaModule). Sıradaki: alt görev 6 (bilet + QR, angularx-qrcode kurulumu).

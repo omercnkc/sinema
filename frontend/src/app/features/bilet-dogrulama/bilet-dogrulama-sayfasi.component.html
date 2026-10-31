@@ -1,0 +1,44 @@
+<div class="row justify-content-center" *ngIf="durum$ | async as durum">
+  <div class="col-md-8 col-lg-6">
+    <h1 class="h3 mb-3">Bilet doğrulama</h1>
+
+    <app-yukleniyor *ngIf="durum.yukleniyor" etiket="Bilet kontrol ediliyor…"></app-yukleniyor>
+
+    <ng-container *ngIf="durum.hata as hata">
+      <div *ngIf="gecersiz(hata); else hataVar" class="alert alert-danger d-flex align-items-center gap-3" role="status">
+        <span class="fs-2" aria-hidden="true">✕</span>
+        <div>
+          <strong class="d-block">Geçersiz bilet</strong>
+          Bu kodla onaylanmış bir bilet yok.
+        </div>
+      </div>
+      <ng-template #hataVar>
+        <app-hata-mesaji [mesaj]="hata.mesaj" [tekrarDenenebilir]="true" (tekrarDene)="tekrarDene()"></app-hata-mesaji>
+      </ng-template>
+    </ng-container>
+
+    <div *ngIf="durum.veri as bilet" class="card border-success">
+      <div class="card-header bg-success text-white d-flex align-items-center gap-2">
+        <span class="fs-4" aria-hidden="true">✓</span>
+        <strong>Geçerli bilet</strong>
+      </div>
+      <div class="card-body">
+        <h2 class="h5 card-title">{{ bilet.movieTitle }}</h2>
+        <dl class="row mb-0">
+          <dt class="col-4">Tarih</dt>
+          <dd class="col-8">{{ bilet.startsAt | date: 'd MMMM EEEE, HH:mm':saatDilimi }}</dd>
+          <dt class="col-4">Şube</dt>
+          <dd class="col-8">{{ bilet.cinemaName }}</dd>
+          <dt class="col-4">Salon</dt>
+          <dd class="col-8">{{ bilet.hallName }}</dd>
+          <dt class="col-4">Koltuklar</dt>
+          <dd class="col-8 mb-0">
+            <span *ngFor="let koltuk of bilet.seats; trackBy: koltukIzle; let son = last" class="fw-bold"
+              >{{ koltuk }}{{ son ? '' : ', ' }}</span
+            >
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
