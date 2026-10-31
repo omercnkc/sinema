@@ -21,7 +21,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Bir rezervasyonun ödemesi (payments). Rezervasyon başına tek kayıt (UNIQUE reservation_id): tekrar gelen "öde"
  * isteği yeni ödeme açmaz, aynısını döner (§7.2). Tutar booking'den alınır; istemciden gelmez (§4.8).
- * Durum geçişleri iş kuralı olarak bu sınıfın metotlarındadır (callback ve mutabakat geçişleri sonraki alt görevlerde).
+ * Durum geçişleri iş kuralı olarak bu sınıfın metotlarındadır; geçersiz geçiş IllegalStateException fırlatır.
  */
 @Entity
 @Table(name = "payments")
@@ -116,6 +116,65 @@ public class Odeme {
         this.tokenBitisi = tokenBitisi;
         this.odemeSayfasi = odemeSayfasi;
         this.durum = OdemeDurumu.PENDING;
+    }
+
+    /** Sağlayıcı ödemeyi onayladı ve kendi kaydımızla eşleşti: booking'e onay iletilecek (§4.5). */
+    public void basariliOldu(String saglayiciOdemeKimligi) {
+        sonucBekleniyorOlmali();
+        this.saglayiciOdemeKimligi = saglayiciOdemeKimligi;
+        this.durum = OdemeDurumu.SUCCEEDED;
+        this.bookingSenkronDurumu = BookingSenkronDurumu.PENDING;
+    }
+
+    /** Ödeme reddedildi: booking'e ret iletilecek, koltuklar boşalacak. */
+    public void basarisizOldu(String hataKodu) {
+        sonucBekleniyorOlmali();
+        this.durum = OdemeDurumu.FAILED;
+        this.hataKodu = hataKodu;
+        this.bookingSenkronDurumu = BookingSenkronDurumu.PENDING;
+    }
+
+    /**
+     * Para alındı ama bilet verilemez (§4.8): sağlayıcı sonucu kendi kaydımızla eşleşmedi ya da booking onayı reddetti
+     * (süre doldu). İade mutabakat job'ında yapılır; booking'e artık iletilecek bir şey yoktur.
+     */
+    public void iadeGerekli(String hataKodu) {
+        if (durum != OdemeDurumu.PENDING && durum != OdemeDurumu.SUCCEEDED) {
+            throw new IllegalStateException("İade yalnızca bekleyen ya da başarılı ödemede gerekebilir: " + durum);
+        }
+        this.durum = OdemeDurumu.REFUND_REQUIRED;
+        this.hataKodu = hataKodu;
+        this.bookingSenkronDurumu = BookingSenkronDurumu.FAILED;
+    }
+
+    /** İade bu kimlikle yapılır; bir kez yazılır (sonradan gelen bir değer mevcut kimliği ezmez). */
+    public void saglayiciOdemeKimliginiKaydet(String kimlik) {
+        if (this.saglayiciOdemeKimligi == null) {
+            this.saglayiciOdemeKimligi = kimlik;
+        }
+    }
+
+    /** Sonuç booking'e iletildi (onay ya da ret). */
+    public void bookingSenkronlandi() {
+        this.bookingSenkronDurumu = BookingSenkronDurumu.DONE;
+        this.sonrakiDeneme = null;
+    }
+
+    /** booking'e ulaşılamadı: mutabakat job'ı sonrakiDeneme anında yeniden dener. */
+    public void bookingSenkronuErtelendi(Instant sonrakiDeneme) {
+        this.bookingSenkronDenemesi++;
+        this.sonrakiDeneme = sonrakiDeneme;
+    }
+
+    /** Sağlayıcı sonucu henüz uygulanmadı mı (kullanıcı ödeme sayfasında ya da sonuç gelmedi). */
+    public boolean sonucBekleniyorMu() {
+        return durum == OdemeDurumu.PENDING;
+    }
+
+    private void sonucBekleniyorOlmali() {
+        if (!sonucBekleniyorMu()) {
+            throw new IllegalStateException("Sonuç yalnızca bekleyen ödemeye uygulanabilir: " + durum);
+        }
     }
 
     /** Ödeme sayfası hâlâ kullanılabilir mi (tekrar gelen "öde" isteği aynı sayfaya dönebilir). */

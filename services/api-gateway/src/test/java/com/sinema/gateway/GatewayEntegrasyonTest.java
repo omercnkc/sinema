@@ -156,6 +156,14 @@ class GatewayEntegrasyonTest {
         assertThat(ARKA_UCA_GELENLER).hasSize(1);
     }
 
+    @Test
+    void shouldForwardMockCheckoutPage_withoutToken() {
+        istemci.get().uri("/api/v1/payments/mock/checkout/abc-123").exchange().expectStatus().isOk();
+        istemci.post().uri("/api/v1/payments/mock/checkout/abc-123/complete").exchange().expectStatus().isOk();
+        assertThat(ARKA_UCA_GELENLER).hasSize(2);
+        istemci.get().uri("/api/v1/payments/by-reservation/1").exchange().expectStatus().isUnauthorized();
+    }
+
     private int durum(String yol, String token) {
         WebTestClient.RequestHeadersSpec<?> istek = istemci.get().uri(yol);
         if (token != null) {

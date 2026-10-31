@@ -41,6 +41,8 @@ public class GatewayGuvenlikYapilandirmasi {
     private static final String KULLANICI = "USER";
     private static final String ADMIN = "ADMIN";
     private static final String ODEME_DONUS_YOLU = "/api/v1/payments/callback/iyzico";
+    // K49: sahte ödeme sayfası (yalnızca payment MOCK seçiliyken vardır; değilse payment 404 döner)
+    private static final String SAHTE_ODEME_SAYFASI = "/api/v1/payments/mock/checkout/*";
 
     @Bean
     public SecurityWebFilterChain gatewayGuvenlikZinciri(ServerHttpSecurity http, ReactiveJwtDecoder jwtDecoder) {
@@ -58,7 +60,9 @@ public class GatewayGuvenlikYapilandirmasi {
                         // Misafir görüntüleme (K3): katalog, koltuk doluluğu; QR bilet doğrulama (K30)
                         .pathMatchers(HttpMethod.GET, "/api/v1/catalog/**",
                                 "/api/v1/bookings/showtimes/*/seat-status", "/api/v1/tickets/*").permitAll()
-                        .pathMatchers(HttpMethod.POST, ODEME_DONUS_YOLU).permitAll()
+                        // Ödeme sağlayıcısının tarayıcı yönlendirmeleri: JWT yok, güvence sonucun sorgulanması (K39)
+                        .pathMatchers(HttpMethod.POST, ODEME_DONUS_YOLU, SAHTE_ODEME_SAYFASI + "/complete").permitAll()
+                        .pathMatchers(HttpMethod.GET, SAHTE_ODEME_SAYFASI).permitAll()
                         .pathMatchers("/api/v1/admin/**").hasRole(ADMIN)
                         // SERVICE token'ı gateway'den geçemez: servisler birbirine iç ağdan gider
                         .pathMatchers("/api/v1/**").hasAnyRole(KULLANICI, ADMIN)
