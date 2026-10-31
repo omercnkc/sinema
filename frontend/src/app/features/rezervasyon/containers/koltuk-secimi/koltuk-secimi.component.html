@@ -19,5 +19,39 @@
     Koltuk durumu güncellenemedi; yeniden deneniyor. Harita birkaç saniye eski olabilir.
   </p>
 
-  <app-koltuk-haritasi *ngIf="gorunum.harita as harita" [gorunum]="harita"></app-koltuk-haritasi>
+  <app-koltuk-haritasi
+    *ngIf="gorunum.harita as harita"
+    [gorunum]="harita"
+    (koltukTiklandi)="koltukTiklandi($event, gorunum.kullanici)"
+  ></app-koltuk-haritasi>
+
+  <div *ngIf="gorunum.kullanici && gorunum.harita" class="card mt-4">
+    <div class="card-body d-flex flex-wrap align-items-center gap-3">
+      <p class="mb-0 me-auto" aria-live="polite">
+        <ng-container *ngIf="gorunum.secilenler.length; else secimYok">
+          <strong>{{ gorunum.secilenler.length }} koltuk:</strong> {{ gorunum.secilenEtiketleri }} ·
+          <strong>{{ gorunum.toplamTutar | currency: 'TRY':'symbol-narrow':'1.0-2' }}</strong>
+        </ng-container>
+        <ng-template #secimYok>
+          <span class="text-muted">Haritadan en çok 5 koltuk seçin.</span>
+        </ng-template>
+      </p>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!gorunum.secilenler.length || gorunum.tutma.gonderiliyor"
+        (click)="devam(gorunum.secilenler)"
+      >
+        <span *ngIf="gorunum.tutma.gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Devam
+      </button>
+    </div>
+
+    <div *ngIf="gorunum.tutma.hata as hata" class="alert alert-danger mx-3 mb-3" role="alert">
+      {{ hata.mesaj }}
+      <a *ngIf="hata.bekleyenRezervasyonId !== null" class="alert-link ms-1" [routerLink]="['/rezervasyonlarim', hata.bekleyenRezervasyonId]"
+        >Bekleyen işleme git</a
+      >
+    </div>
+  </div>
 </section>

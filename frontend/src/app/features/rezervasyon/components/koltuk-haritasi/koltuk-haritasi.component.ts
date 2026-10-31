@@ -31,7 +31,8 @@ interface PerdeBandi {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KoltukHaritasiComponent {
-  @Output() readonly koltukTiklandi = new EventEmitter<number>();
+  /** Tıklanan koltuk durumuyla birlikte; seçilip seçilemeyeceğine kapsayıcı karar verir. */
+  @Output() readonly koltukTiklandi = new EventEmitter<HaritaHucresi>();
 
   readonly durumSiniflari: Readonly<Record<KoltukDurumu, string>> = {
     BOS: 'koltuk--bos',
@@ -64,7 +65,7 @@ export class KoltukHaritasiComponent {
 
   tikla(koltuk: HaritaHucresi): void {
     this.odakKimligi = koltuk.hucre.cellId;
-    this.koltukTiklandi.emit(koltuk.hucre.cellId);
+    this.koltukTiklandi.emit(koltuk);
   }
 
   tusaBasildi(olay: KeyboardEvent, koltuk: HaritaHucresi): void {

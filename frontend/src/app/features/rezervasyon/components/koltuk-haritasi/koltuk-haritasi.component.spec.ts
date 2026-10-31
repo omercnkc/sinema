@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { haritaKur } from '../../models/koltuk-haritasi.models';
+import { HaritaHucresi, haritaKur } from '../../models/koltuk-haritasi.models';
 import { ornekDuzen } from '../../models/koltuk-haritasi.models.spec';
 import { KoltukHaritasiComponent } from './koltuk-haritasi.component';
 
@@ -39,13 +39,14 @@ describe('KoltukHaritasiComponent', () => {
     expect(koltuk(20).classList).toContain('koltuk--engelli');
   });
 
-  it('should emit clicked seat id', () => {
-    let tiklanan: number | undefined;
-    fixture.componentInstance.koltukTiklandi.subscribe((id: number) => (tiklanan = id));
+  it('should emit clicked seat with its state', () => {
+    const tiklananlar: string[] = [];
+    fixture.componentInstance.koltukTiklandi.subscribe((h: HaritaHucresi) => tiklananlar.push(`${h.hucre.cellId}:${h.durum}`));
 
     koltuk(10).click();
+    koltuk(11).click();
 
-    expect(tiklanan).toBe(10);
+    expect(tiklananlar).toEqual(['10:BOS', '11:SATILDI']);
   });
 
   it('should have a single tab stop and move with arrow keys', () => {

@@ -35,7 +35,7 @@
     <div *ngIf="!seans.salesOpen" class="alert alert-secondary" role="status">Bu seansın satışı kapandı.</div>
     <ng-container *ngIf="seans.salesOpen">
       <p class="text-muted small">Satış kapanışı: {{ seans.salesCloseAt | date: 'HH:mm':saatDilimi }}</p>
-      <app-koltuk-secimi [seansId]="seans.id"></app-koltuk-secimi>
+      <app-koltuk-secimi [seans]="seans"></app-koltuk-secimi>
     </ng-container>
   </ng-container>
 </ng-container>
