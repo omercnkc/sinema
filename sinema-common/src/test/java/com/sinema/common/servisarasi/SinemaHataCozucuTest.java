@@ -3,6 +3,8 @@ package com.sinema.common.servisarasi;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sinema.common.hata.BagimlilikKullanilamazIstisnasi;
+import com.sinema.common.hata.CakismaIstisnasi;
+import com.sinema.common.hata.IsKuraliIstisnasi;
 import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import com.sinema.common.hata.SinemaIstisnasi;
 import feign.FeignException;
@@ -32,6 +34,23 @@ class SinemaHataCozucuTest {
 
         assertThat(hata).isInstanceOf(KaynakBulunamadiIstisnasi.class);
         assertThat(((SinemaIstisnasi) hata).getKod()).isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void shouldCarryCalleeCode_whenConflictOrBusinessRuleViolation() {
+        Exception cakisma = cozucu.decode("x", cevap(409, "{\"code\":\"RESERVATION_NOT_ACTIVE\",\"detail\":\"Süre doldu.\"}"));
+        Exception kural = cozucu.decode("x", cevap(422, "{\"code\":\"SALES_CLOSED\"}"));
+
+        assertThat(cakisma).isInstanceOf(CakismaIstisnasi.class).hasMessage("Süre doldu.");
+        assertThat(((SinemaIstisnasi) cakisma).getKod()).isEqualTo("RESERVATION_NOT_ACTIVE");
+        assertThat(kural).isInstanceOf(IsKuraliIstisnasi.class);
+        assertThat(((SinemaIstisnasi) kural).getKod()).isEqualTo("SALES_CLOSED");
+    }
+
+    @Test
+    void shouldLeaveOtherClientErrorsToFeign_whenStatusIs400Or403() {
+        assertThat(cozucu.decode("x", cevap(400, "{}"))).isInstanceOf(FeignException.class);
+        assertThat(cozucu.decode("x", cevap(403, "{}"))).isInstanceOf(FeignException.class);
     }
 
     @Test

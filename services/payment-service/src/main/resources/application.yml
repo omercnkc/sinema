@@ -11,11 +11,44 @@ spring:
     hibernate:
       # Şemayı yalnızca Flyway değiştirir; Hibernate sadece entity'lerin şemayla uyumunu kontrol eder
       ddl-auto: validate
+  cloud:
+    openfeign:
+      # Feign çağrıları devre kesiciden geçer; başarısızlıkta istemcinin fallbackFactory'si çalışır
+      circuitbreaker:
+        enabled: true
+    circuitbreaker:
+      resilience4j:
+        # Çağrı aynı thread'de kalsın (MDC'deki korelasyon kimliği taşınsın); zaman sınırı Feign'in okuma zaman aşımı
+        disable-thread-pool: true
+        disable-time-limiter: true
 
 server:
   port: ${SERVER_PORT:8084}
 
 sinema:
+  payment:
+    # K49: IYZICO (varsayılan) ya da MOCK (anahtarsız yerel deneme, sahte ödeme sayfası)
+    saglayici: ${PAYMENT_PROVIDER:IYZICO}
+    # Sağlayıcı ödeme sonrası tarayıcıyı buraya yönlendirir (gateway üzerinden, K39)
+    callback-adresi: ${PAYMENT_CALLBACK_URL:http://localhost:8080/api/v1/payments/callback/iyzico}
+    # Callback işlenince tarayıcının gittiği ön yüz sayfası (?reservationId= eklenir)
+    sonuc-adresi: ${PAYMENT_RESULT_URL:http://localhost:4200/odeme/sonuc}
+    # K48: toplanmayan ama iyzico'nun zorunlu tuttuğu alanlar (yalnızca sandbox) ve kişi bilgisi olmayan hesaplar için yedekler
+    alici:
+      kimlik-no: "11111111111"
+      adres: "Kadıköy, İstanbul"
+      sehir: Istanbul
+      ulke: Turkey
+      yedek-ad: Sinema
+      yedek-soyad: Musterisi
+      yedek-telefon: "+905350000000"
+  # Servis token'ı (auth) + Feign altyapısı: sinema-common SinemaServisIstemcisiOtomatikYapilandirma
+  servis-istemcisi:
+    auth-adresi: ${AUTH_SERVICE_URL:http://localhost:8081}
+    # Varsayılanı yok: eksikse servis açılmaz (fail fast)
+    sir: ${PAYMENT_SERVICE_CLIENT_SECRET}
+  servisler:
+    booking-adresi: ${BOOKING_SERVICE_URL:http://localhost:8083}
   guvenlik:
     jwt:
       yayinci: sinema-auth

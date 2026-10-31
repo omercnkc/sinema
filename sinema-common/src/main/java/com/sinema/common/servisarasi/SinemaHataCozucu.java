@@ -1,11 +1,15 @@
 package com.sinema.common.servisarasi;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.sinema.common.hata.CakismaIstisnasi;
+import com.sinema.common.hata.IsKuraliIstisnasi;
 import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
@@ -13,14 +17,20 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Çağrılan servisin hata cevabını (ortak problem+json biçimi) bu servisin istisnasına çevirir.
  *
- * 404 bir iş sonucudur ("seans yok"): çağrılan servisin kodu ve kullanıcıya gösterilebilir mesajı aynen taşınır,
- * devre kesici bunu hata saymaz. Diğer her durum (5xx, beklenmeyen 4xx = bizim hatamız) Feign'in varsayılan
- * istisnasına bırakılır; istemcinin fallback'i onu 503'e çevirir (BagimlilikHatalari).
+ * 404 (kayıt yok), 409 (çakışma, ör. "rezervasyonun süresi doldu") ve 422 (iş kuralı) birer iş sonucudur: çağrılan
+ * servisin kodu ve kullanıcıya gösterilebilir mesajı aynen taşınır, devre kesici bunları hata saymaz. Çağıran bu
+ * sonuçlara göre karar verir (ör. payment, onay 409 alırsa iade başlatır). Diğer her durum (5xx, beklenmeyen 4xx =
+ * bizim hatamız) Feign'in varsayılan istisnasına bırakılır; istemcinin fallback'i onu 503'e çevirir.
  */
 public class SinemaHataCozucu implements ErrorDecoder {
 
-    private static final String VARSAYILAN_BULUNAMADI_KODU = "NOT_FOUND";
-    private static final String VARSAYILAN_BULUNAMADI_MESAJI = "Aranan kayıt bulunamadı.";
+    private static final Set<HttpStatus> IS_SONUCU_DURUMLARI =
+            Set.of(HttpStatus.NOT_FOUND, HttpStatus.CONFLICT, HttpStatus.UNPROCESSABLE_CONTENT);
+    // Gövde problem+json değilse (ör. ara katmandan gelen HTML) kullanılan genel mesajlar
+    private static final Map<HttpStatus, String> VARSAYILAN_MESAJLAR = Map.of(
+            HttpStatus.NOT_FOUND, "Aranan kayıt bulunamadı.",
+            HttpStatus.CONFLICT, "İşlem şu anki durumla çakışıyor.",
+            HttpStatus.UNPROCESSABLE_CONTENT, "İşlem kurallara uymuyor.");
     // Hata gövdesi küçük olmalı; beklenmedik büyük gövde belleği doldurmasın
     private static final int EN_FAZLA_GOVDE_BAYTI = 16 * 1024;
 
@@ -29,13 +39,18 @@ public class SinemaHataCozucu implements ErrorDecoder {
 
     @Override
     public Exception decode(String metotAnahtari, Response cevap) {
-        if (cevap.status() == HttpStatus.NOT_FOUND.value()) {
-            ProblemOzeti problem = problemOku(cevap);
-            return new KaynakBulunamadiIstisnasi(
-                    problem.code() != null ? problem.code() : VARSAYILAN_BULUNAMADI_KODU,
-                    problem.detail() != null ? problem.detail() : VARSAYILAN_BULUNAMADI_MESAJI);
+        HttpStatus durum = HttpStatus.resolve(cevap.status());
+        if (durum == null || !IS_SONUCU_DURUMLARI.contains(durum)) {
+            return varsayilan.decode(metotAnahtari, cevap);
         }
-        return varsayilan.decode(metotAnahtari, cevap);
+        ProblemOzeti problem = problemOku(cevap);
+        String kod = problem.code() != null ? problem.code() : durum.name();
+        String mesaj = problem.detail() != null ? problem.detail() : VARSAYILAN_MESAJLAR.get(durum);
+        return switch (durum) {
+            case NOT_FOUND -> new KaynakBulunamadiIstisnasi(kod, mesaj);
+            case CONFLICT -> new CakismaIstisnasi(kod, mesaj);
+            default -> new IsKuraliIstisnasi(kod, mesaj);
+        };
     }
 
     private ProblemOzeti problemOku(Response cevap) {

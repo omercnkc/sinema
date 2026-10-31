@@ -1,4 +1,4 @@
-package com.sinema.booking.katalog.istemci;
+package com.sinema.testdestegi;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -13,17 +13,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 
 /**
- * Feign istemcisini gerçek HTTP üzerinden test etmek için auth ve catalog'un yerine geçen küçük sunucu.
+ * Feign istemcilerini gerçek HTTP üzerinden test etmek için çağrılan servislerin (auth, catalog, booking) yerine
+ * geçen küçük sunucu.
  * JDK'nın yerleşik HttpServer'ı: yeni test bağımlılığı (WireMock vb.) gerekmez.
  * Her yol için cevap testte ayarlanır; gelen istekler (başlık + gövde) kaydedilir.
  */
-final class SahteServisSunucusu {
+public final class SahteServisSunucusu {
 
     private final HttpServer sunucu;
     private final Map<String, Cevap> cevaplar = new ConcurrentHashMap<>();
     private final List<GelenIstek> gelenIstekler = new CopyOnWriteArrayList<>();
 
-    SahteServisSunucusu() throws IOException {
+    public SahteServisSunucusu() throws IOException {
         sunucu = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
         sunucu.createContext("/", this::isle);
         // Zaman aşımı testinde bekleyen istek diğerlerini tıkamasın
@@ -31,28 +32,28 @@ final class SahteServisSunucusu {
         sunucu.start();
     }
 
-    String adres() {
+    public String adres() {
         return "http://localhost:" + sunucu.getAddress().getPort();
     }
 
-    void cevapla(String yol, int durum, String jsonGovde) {
+    public void cevapla(String yol, int durum, String jsonGovde) {
         cevaplar.put(yol, new Cevap(durum, jsonGovde, 0));
     }
 
-    void gecikmeliCevapla(String yol, long gecikmeMs) {
+    public void gecikmeliCevapla(String yol, long gecikmeMs) {
         cevaplar.put(yol, new Cevap(200, "{}", gecikmeMs));
     }
 
-    List<GelenIstek> istekler(String yol) {
+    public List<GelenIstek> istekler(String yol) {
         return gelenIstekler.stream().filter(istek -> istek.yol().equals(yol)).toList();
     }
 
-    void sifirla() {
+    public void sifirla() {
         cevaplar.clear();
         gelenIstekler.clear();
     }
 
-    void durdur() {
+    public void durdur() {
         sunucu.stop(0);
     }
 
@@ -85,7 +86,7 @@ final class SahteServisSunucusu {
         }
     }
 
-    record GelenIstek(String yol, String metot, String yetki, String korelasyonKimligi, String govde) {
+    public record GelenIstek(String yol, String metot, String yetki, String korelasyonKimligi, String govde) {
     }
 
     private record Cevap(int durum, String govde, long gecikmeMs) {

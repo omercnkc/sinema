@@ -113,6 +113,11 @@ services:
       DB_HOST: mysql
       DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
       JWT_KEYS_DIR: /run/secrets/jwt
+      AUTH_SERVICE_URL: http://auth-service:8081
+      BOOKING_SERVICE_URL: http://booking-service:8083
+      PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET}
+      # K49: IYZICO (varsayılan) ya da MOCK
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-IYZICO}
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]

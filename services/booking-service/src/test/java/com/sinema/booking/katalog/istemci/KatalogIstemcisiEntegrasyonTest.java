@@ -7,6 +7,7 @@ import com.sinema.common.hata.BagimlilikKullanilamazIstisnasi;
 import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import com.sinema.common.korelasyon.KorelasyonKimligi;
 import com.sinema.testdestegi.MysqlTestYapilandirmasi;
+import com.sinema.testdestegi.SahteServisSunucusu;
 import com.sinema.testdestegi.TestJwtAnahtarBaslaticisi;
 import java.io.IOException;
 import java.math.BigDecimal;
