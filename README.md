@@ -45,6 +45,7 @@ sinema/
  ├── services/
  │    ├── api-gateway/       # reaktif, tek giriş noktası
  │    └── auth-service/  catalog-service/  booking-service/  payment-service/
+ ├── frontend/               # Angular 13 SPA (Node 14.18.1, .nvmrc), kendi Dockerfile'ı (nginx) ile
  ├── docker/mysql/init/      # ilk açılışta şema + kullanıcı oluşturan betik
  ├── scripts/                # JWT anahtar üretimi, duman testi
  ├── Dockerfile              # tüm Java servisleri için tek, multi-stage
@@ -61,7 +62,7 @@ sinema/
 | Docker Desktop (Compose v2) | Çalışıyor olmalı; testler de Docker kullanır |
 | Git Bash (Windows) | Betikler için (`openssl`, `curl` içerir) |
 | Maven | **Gerekmez**, proje Maven Wrapper ile gelir |
-| nvm + Node 16 | Yalnızca frontend için (M5'ten itibaren) |
+| Node 14.18.1 (nvm) | Yalnızca ön yüzü Docker dışında geliştirirken (`frontend/.nvmrc`); Docker yığını gerektirmez |
 
 ## Hızlı başlangıç (Docker)
 
@@ -75,6 +76,8 @@ docker compose ps                    # hepsi (healthy) olmalı
 bash ./scripts/duman-testi.sh        # gateway üzerinden uçtan uca kontrol
 ```
 
+Uygulama: **http://localhost:4200** (`127.0.0.1:4200` değil; o ayrı bir origin sayılır ve gateway CORS ile reddeder).
+
 İlk açılışta catalog `dev` profiliyle örnek veri yükler: 3 şube (Kadıköy 3, Beşiktaş 4, Bakırköy 3 salon), her salonda
 farklı bir düzen, 5 uydurma film ve bugünden itibaren 7 günlük seans. Örnek seanslar biterse veya temiz bir katalogla
 başlamak isterseniz `docker compose down -v` (boş katalog için `.env`'de `CATALOG_PROFILES=default`).
@@ -85,6 +88,7 @@ Durdurmak: `docker compose down`. Veritabanını da silip sıfırdan başlamak: 
 
 | Bileşen | Bilgisayardan erişim | Not |
 |---|---|---|
+| frontend (nginx) | `http://localhost:4200` | Yalnızca statik Angular dosyaları; tarayıcı API'ye gateway üzerinden ayrı origin olarak gider |
 | api-gateway | `http://localhost:8080` | Tek API giriş noktası, yalnızca bu bilgisayardan |
 | MySQL | `127.0.0.1:3306` | IDE'de çalışan servisler ve DB araçları için |
 | auth / catalog / booking / payment | yok | Yalnızca iç ağda (`sinema-ag`), Docker DNS adıyla |
@@ -143,6 +147,7 @@ Parola kuralı: en az 8 karakter, en çok 72 bayt (BCrypt sınırı; Türkçe ha
 |---|---|
 | `GET /api/v1/catalog/cinemas` | Şubeler ve salonları (fiyat yok, fiyat seansta) |
 | `GET /api/v1/catalog/movies?q&genre&page&size` | Görünür filmler, sayfalı (`size` ≤ 50); başlık araması harf/aksan duyarsız |
+| `GET /api/v1/catalog/movies/genres` | Görünür filmlerdeki türler, alfabetik (ön yüzdeki tür filtresi) |
 | `GET /api/v1/catalog/movies/{id}` | Film detayı (oyuncular, yönetmen, TR yaş sınırı, akıllı işaretler, TMDB puanı) |
 | `GET /api/v1/catalog/movies/{id}/showtimes?date&cinemaId` | O günün seansları (`date` Europe/Istanbul günü, boşsa bugün) |
 | `GET /api/v1/catalog/showtimes/{id}` | Seans: fiyat, `salesCloseAt`, `salesOpen`, `serverTime` |
@@ -163,6 +168,27 @@ Parola kuralı: en az 8 karakter, en çok 72 bayt (BCrypt sınırı; Türkçe ha
 **Kurallar:** seans bitişi = başlangıç + film süresi + 15 dk ara; satış başlangıçtan 10 dk sonra kapanır (seans bazında
 değiştirilebilir); her seans oluşturulduğu andaki düzen sürümüne bağlı kalır, yeni düzen yalnızca sonraki seanslara
 uygulanır. TMDB'den gelen film verisi 3 ayda bir (ayın 1'i) yenilenir; TMDB'de boş gelen alan admin değerini ezmez.
+
+## Ön yüz geliştirme (Angular 13)
+
+Ön yüz Node **14.18.1** ister (Angular 13; `frontend/.nvmrc`). Sistemdeki Node sürümünü değiştirmeden:
+
+```bash
+cd frontend
+nvm use                     # ya da: PATH="<nvm>/v14.18.1:$PATH" (Windows'ta sistem Node'u değiştirmeden)
+npm ci
+npm start                   # http://localhost:4200, değişiklikte yeniden derler; API: http://localhost:8080
+npm run test:ci             # birim testleri (Jasmine/Karma, ChromeHeadless)
+npm run lint                # angular-eslint
+npx ng build                # üretim derlemesi (dist/sinema-frontend)
+```
+
+- `npm start` ile frontend container'ı aynı anda çalışamaz (ikisi de 4200): `docker compose stop frontend`.
+- API adresi `src/environments/` altında; Docker imajında `GATEWAY_HOST_PORT`'tan derleme sırasında gömülür.
+- Yapı: `core/` (oturum, hata yönetimi, bildirim; yalnızca AppModule), `shared/` (ortak bileşen, pipe, form doğrulayıcıları),
+  `layout/` (üst menü, alt bilgi), `features/` (tembel yüklenen modüller: `katalog`, `hesap`, `rezervasyon`).
+- Access token yalnızca bellekte tutulur; sayfa yenilenince HttpOnly refresh cookie'si ile oturum sessizce geri kurulur.
+- nginx: SPA yönlendirmesi, içerik özetli dosyalara uzun önbellek, `index.html`'e `no-cache`, CSP ve güvenlik başlıkları.
 
 ## Yerel geliştirme (tek servis IDE'de veya Maven ile)
 
@@ -229,7 +255,7 @@ job'ı (dakikada bir) yarım kalanları tamamlar: tarayıcı kapanırsa sonucu i
 
 **iyzico sandbox ile deneme:** `.env`'de `IYZICO_API_KEY` / `IYZICO_SECRET_KEY` dolu olmalı. Ödeme sayfasında test
 kartı `5528 7900 0000 0008`, son kullanma gelecekte herhangi bir tarih, CVC herhangi 3 hane. Ödeme sonrası tarayıcı
-`http://localhost:4200/odeme/sonuc` adresine gider (ön yüz M5'te). Anahtarsız denemek için `PAYMENT_PROVIDER=MOCK`.
+`http://localhost:4200/odeme/sonuc` adresine gider (sonuç sayfası M6'da). Anahtarsız denemek için `PAYMENT_PROVIDER=MOCK`.
 
 ## Derleme ve test
 
@@ -259,6 +285,7 @@ Hibernate şemayı değiştirmez (`ddl-auto=validate`), yalnızca entity'lerle u
 | `REDIS_PASSWORD` | Redis parolası (gateway rate limit) |
 | `GATEWAY_HOST_PORT` | Gateway'in bilgisayarda açılacağı port (varsayılan 8080) |
 | `CORS_ALLOWED_ORIGINS` | Gateway'e tarayıcıdan istek atabilecek frontend adresleri, virgülle (varsayılan `http://localhost:4200`) |
+| `FRONTEND_HOST_PORT` | Ön yüzün bilgisayarda açılacağı port (varsayılan 4200). Değiştirilirse `CORS_ALLOWED_ORIGINS` da güncellenmeli |
 | `JWT_KEYS_DIR` | JWT anahtar klasörü (varsayılan `./keys`, betikle üretilir) |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Sistemde admin yokken açılışta oluşturulan ilk admin; boşsa oluşturulmaz |
 | `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servis token'ı almak için sırlar; booking bu değer olmadan açılmaz |
@@ -299,7 +326,10 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | payment açılmıyor, `sinema.payment.iyzico.api-anahtari` boş | `PAYMENT_PROVIDER=IYZICO` ama iyzico anahtarları `.env`'de yok. Anahtarları girin ya da `PAYMENT_PROVIDER=MOCK`. |
 | Ödeme başlatırken `503 PAYMENT_PROVIDER_UNAVAILABLE` | iyzico'ya ulaşılamadı. Docker Desktop'tan iyzico'ya bağlantı arada bir kopabiliyor (istek bir kez kendiliğinden yeniden denenir); birkaç saniye sonra tekrar deneyin, payment loglarına bakın. |
 | iyzico sayfasında "Geçersiz token" | Token kullanılmış (ödeme tamamlanmış) ya da 30 dk'lık süresi dolmuş. Durumu `GET /api/v1/payments/by-reservation/{id}` ile kontrol edin. |
-| Ödemeden sonra tarayıcı `localhost:4200`'e gidip açılamıyor | Ön yüz henüz yok (M5); ödeme yine de işlenir. Rezervasyonun durumuna API'den bakın. |
+| Ödemeden sonra `localhost:4200/odeme/sonuc` "Sayfa bulunamadı" | Sonuç sayfası M6'da; ödeme yine de işlenir. Rezervasyonun durumuna API'den bakın. |
+| Ön yüzde istekler başarısız, konsolda CORS hatası | Sayfa `127.0.0.1:4200` ile açılmış ya da port değişmiş: `http://localhost:4200` kullanın veya `CORS_ALLOWED_ORIGINS`'i güncelleyin. |
+| frontend `port is already allocated` (4200) | `npm start` (ng serve) çalışıyor; birini kapatın ya da `FRONTEND_HOST_PORT` değiştirin. |
+| Ön yüz yeni sürümde eski görünüyor | Tarayıcı eski `index.html`'i tutuyor olamaz (`no-cache`); imaj yeniden derlenmemiş olabilir: `docker compose up -d --build frontend`. |
 | `./mvnw: bad interpreter` (Linux container / WSL) | Satır sonları CRLF olmuş. `.gitattributes` bunu önler; `git add --renormalize .` ile düzeltin. |
 
 ## Yol haritası
@@ -311,7 +341,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | M2 | Catalog: şube, salon, sürümlü düzen, film (TMDB), seans, örnek veri | Tamamlandı |
 | M3 | Booking: koltuk tutma (çift satış yok), doluluk, rezervasyon, terk koruması, ödeme onay uçları | Tamamlandı |
 | M4 | Payment (iyzico sandbox + sahte sağlayıcı), mutabakat/iade, QR bilet doğrulama | Tamamlandı |
-| M5–M7 | Angular frontend, koltuk haritası, admin paneli | Sırada (M5) |
+| M5 | Angular ön yüz: oturum, giriş/kayıt, film listesi/detayı, seans seçimi, nginx container'ı | Tamamlandı |
+| M6–M7 | Koltuk haritası → ödeme → bilet, admin paneli | Sırada (M6) |
 | M8 | Salon düzeni değişikliğinde bilet göçü | |
 | M9 | Sertleştirme, güvenlik taraması, demo | |
 

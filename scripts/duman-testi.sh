@@ -6,6 +6,7 @@
 #   ./scripts/duman-testi.sh                          # http://localhost:8080
 #   ./scripts/duman-testi.sh http://localhost:8090    # başka gateway adresi
 #   ORIGIN=http://localhost:4200 ./scripts/duman-testi.sh
+#   FRONTEND=http://localhost:4300 ./scripts/duman-testi.sh     # ön yüz başka portta (varsayılan ORIGIN)
 #   ADMIN_EMAIL=... ADMIN_PASSWORD=... ./scripts/duman-testi.sh   # admin katalog adımları da (veri oluşturmaz)
 # Koltuk tutma adımları yeni kullanıcıyla tutup bırakır. Ödeme adımları MOCK sağlayıcıda bir koltuk satın alır
 # (örnek veride kalıcı bir satış bırakır); iyzico seçiliyse yalnızca ödeme sayfasının açıldığı denetlenir.
@@ -13,6 +14,7 @@ set -uo pipefail
 
 GATEWAY="${1:-http://localhost:8080}"
 ORIGIN="${ORIGIN:-http://localhost:4200}"
+FRONTEND="${FRONTEND:-$ORIGIN}"
 EMAIL="duman-$(date +%s)-$RANDOM@ornek.com"
 PAROLA="DumanTesti123"
 CEREZ_DOSYASI="$(mktemp)"
@@ -83,6 +85,7 @@ adim "şube listesi" 200 "$(kod "$GATEWAY/api/v1/catalog/cinemas")"
 FILMLER=$(curl -s "$GATEWAY/api/v1/catalog/movies?size=1")
 adim "film listesi (sayfalı)" 200 "$(kod "$GATEWAY/api/v1/catalog/movies?size=1")"
 adim "sayfa boyutu sınırı (51)" 400 "$(kod "$GATEWAY/api/v1/catalog/movies?size=51")"
+adim "tür listesi (filtre seçenekleri)" 200 "$(kod "$GATEWAY/api/v1/catalog/movies/genres")"
 adim "olmayan film" 404 "$(kod "$GATEWAY/api/v1/catalog/movies/999999999")"
 adim "katalog iç ucu dışarıya kapalı" 401 "$(kod "$GATEWAY/internal/v1/catalog/showtimes/1")"
 adim "katalog admin ucu token'sız" 401 "$(kod "$GATEWAY/api/v1/admin/catalog/cinemas")"
@@ -195,6 +198,14 @@ if [[ -n "${ADMIN_EMAIL:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
 else
     echo "  - ADMIN_EMAIL/ADMIN_PASSWORD verilmedi: admin katalog adımları atlandı"
 fi
+
+echo "9. Ön yüz (nginx)"
+adim "ana sayfa" 200 "$(kod "$FRONTEND/")"
+adim "uygulama içi derin yol index.html'e düşer" 200 "$(kod "$FRONTEND/filmler/1")"
+adim "olmayan dosya 404 (index.html değil)" 404 "$(kod "$FRONTEND/assets/olmayan-dosya.png")"
+BASLIKLAR=$(curl -s -D - -o /dev/null "$FRONTEND/")
+adim "güvenlik başlığı: Content-Security-Policy" "var"     "$(grep -qi '^content-security-policy:.*script-src .self.' <<<"$BASLIKLAR" && echo var || echo yok)"
+adim "index.html önbelleğe alınmaz" "var" "$(grep -qi '^cache-control: no-cache' <<<"$BASLIKLAR" && echo var || echo yok)"
 
 if [[ $HATA_SAYISI -gt 0 ]]; then
     echo "SONUÇ: $HATA_SAYISI adım başarısız"

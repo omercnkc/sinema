@@ -3,7 +3,7 @@
 Sabit stack ve tüm kurallar: [rules.md](rules.md). Özet:
 
 - Backend: Java 21, **Spring Boot 4.1.2 + Spring Cloud 2025.1.4** (K44), MySQL, JPA/Hibernate, Spring Security + JWT (oauth2-resource-server), OpenFeign (+Resilience4j), Maven 3.9.16 (Maven Wrapper `mvnw`, multi-module, parent POM), Docker/Compose, Flyway, MapStruct, Lombok, springdoc
-- Frontend: Angular 13 (NgModule, class-based), Node 16 via nvm (.nvmrc), RxJS, SCSS, Bootstrap + ng-bootstrap
+- Frontend: Angular 13 (NgModule, class-based), Node 14.18.1 (K50, .nvmrc), RxJS, SCSS, Bootstrap 5.1 (kısmi SCSS) + ng-bootstrap 12; Docker'da nginx-unprivileged (CSP)
 - Repo: monorepo, API Gateway önünde, her servis kendi DB/şeması
 
 ## Development setup

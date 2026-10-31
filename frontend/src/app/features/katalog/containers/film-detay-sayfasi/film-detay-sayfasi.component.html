@@ -33,7 +33,7 @@
         </p>
 
         <p *ngIf="film.voteAverage !== null" class="mb-3">
-          <strong>{{ film.tmdbId !== null ? 'TMDB puanı' : 'Puan' }}:</strong> <span aria-hidden="true" class="film-detayi__yildiz">★</span>
+          <strong>{{ film.tmdbId !== null ? 'TMDB puanı' : 'Puan' }}:</strong>&ngsp;<span aria-hidden="true" class="film-detayi__yildiz">★</span>
           {{ film.voteAverage | number: '1.1-1' }} / 10
         </p>
 

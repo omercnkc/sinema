@@ -1,7 +1,37 @@
 // Genel stiller: önce değişken ezmeleri, sonra Bootstrap (yalnızca CSS; Bootstrap'in JS'i ve jQuery kullanılmaz,
 // etkileşimli bileşenler ng-bootstrap'ten gelir, K41).
+//
+// Bootstrap'in tamamı değil, yalnızca kullanılan parçaları içe aktarılır (ilk yükün CSS'i, M5 alt görev 9 ölçümü).
+// Sıra bootstrap/scss/bootstrap.scss ile aynıdır. Yeni bir Bootstrap bileşeni (ör. modal, tablo) kullanılmaya
+// başlanınca ilgili satır buraya eklenir.
 @import "variables";
-@import "bootstrap/scss/bootstrap";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+@import "bootstrap/scss/root";
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/type";
+@import "bootstrap/scss/images";
+@import "bootstrap/scss/containers";
+@import "bootstrap/scss/grid";
+@import "bootstrap/scss/forms";
+@import "bootstrap/scss/buttons";
+@import "bootstrap/scss/transitions";
+@import "bootstrap/scss/dropdown";
+@import "bootstrap/scss/button-group";
+@import "bootstrap/scss/nav";
+@import "bootstrap/scss/navbar";
+@import "bootstrap/scss/card";
+@import "bootstrap/scss/breadcrumb";
+@import "bootstrap/scss/pagination";
+@import "bootstrap/scss/badge";
+@import "bootstrap/scss/alert";
+@import "bootstrap/scss/close";
+@import "bootstrap/scss/toasts";
+@import "bootstrap/scss/spinners";
+@import "bootstrap/scss/helpers";
+@import "bootstrap/scss/utilities/api";
 
 body {
   min-height: 100vh;

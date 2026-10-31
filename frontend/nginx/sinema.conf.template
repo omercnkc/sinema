@@ -1,0 +1,41 @@
+# Angular SPA sunumu. envsubst yalnızca tanımlı ortam değişkenlerini değiştirir; nginx'in kendi $değişkenleri
+# (ör. $uri) olduğu gibi kalır (resmi imaj NGINX_ENVSUBST_FILTER olmadan yalnızca ortamdaki adları değiştirir).
+
+# Kalıp tırnak içinde: süslü parantez ({16,}) tırnaksız yazılırsa nginx blok başlangıcı sanır.
+# Adında içerik özeti olan dosyalar (main.abc123.js) değişmez: uzun önbellek. index.html her seferinde doğrulanır,
+# yoksa yeni sürüm yayınlanınca tarayıcı eski dosyalara işaret eden sayfayı kullanmaya devam eder.
+map $uri $sinema_onbellek {
+    "~*\.[0-9a-f]{16,}\.(js|css)$"  "public, max-age=31536000, immutable";
+    default                       "no-cache";
+}
+
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    server_tokens off;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Başlıklar yalnızca burada (server düzeyinde); location içinde add_header kullanılırsa bunlar miras alınmaz.
+    add_header Cache-Control $sinema_onbellek always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    # Betik yalnızca kendi kökenimizden; API gateway'e; afiş TMDB'den (K41 hotlink). Angular bileşen stilleri satır
+    # içi <style> ürettiği için style-src 'unsafe-inline' gerekir.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://image.tmdb.org; connect-src 'self' ${API_KOKENI}; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+
+    # Olmayan görsel/dosya için index.html değil 404
+    location /assets/ {
+        try_files $uri =404;
+    }
+
+    # SPA: uygulama içi yollar (/filmler/3, /seans/12) index.html'e düşer, yönlendirmeyi Angular yapar
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

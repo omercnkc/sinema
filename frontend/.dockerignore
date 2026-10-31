@@ -1,0 +1,7 @@
+# Derleme bağlamına yalnızca kaynak girsin (hız; yerel node_modules Windows'ta derlenmiş olabilir)
+node_modules/
+dist/
+.angular/
+coverage/
+.vscode/
+*.log

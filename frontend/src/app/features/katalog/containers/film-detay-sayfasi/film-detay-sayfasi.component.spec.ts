@@ -43,7 +43,8 @@ describe('FilmDetaySayfasiComponent', () => {
 
     expect(filmService.getir).toHaveBeenCalledWith(3);
     expect(kok.querySelector('h1')?.textContent).toBe('Oppenheimer');
-    expect(kok.textContent).toContain('TMDB puanı:');
+    // Etiket ile yıldız arasındaki boşluk (&ngsp;) şablon derlemesinde silinmemeli
+    expect(kok.textContent).toContain('TMDB puanı: ★');
     expect(kok.textContent).toContain('Christopher Nolan');
     expect(kok.textContent).toContain('Cillian Murphy, Emily Blunt');
     const isaretler = Array.from(kok.querySelectorAll('[aria-label="Akıllı işaretler"] .badge')).map((e) => e.textContent);
