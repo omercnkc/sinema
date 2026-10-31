@@ -7,7 +7,8 @@
 #   ./scripts/duman-testi.sh http://localhost:8090    # başka gateway adresi
 #   ORIGIN=http://localhost:4200 ./scripts/duman-testi.sh
 #   ADMIN_EMAIL=... ADMIN_PASSWORD=... ./scripts/duman-testi.sh   # admin katalog adımları da (veri oluşturmaz)
-# Koltuk tutma adımları yeni kullanıcıyla tutup bırakır; kalıcı veri bırakmaz.
+# Koltuk tutma adımları yeni kullanıcıyla tutup bırakır. Ödeme adımları MOCK sağlayıcıda bir koltuk satın alır
+# (örnek veride kalıcı bir satış bırakır); iyzico seçiliyse yalnızca ödeme sayfasının açıldığı denetlenir.
 set -uo pipefail
 
 GATEWAY="${1:-http://localhost:8080}"
@@ -138,9 +139,50 @@ else
     echo "  - seans yok: koltuk tutma adımları atlandı"
 fi
 
+echo "7. Ödeme ve bilet"
+adim "bilinmeyen bilet kodu (misafir)" 404 "$(kod "$GATEWAY/api/v1/tickets/ABCDEFGHJK234567")"
+adim "ödeme token'sız" 401 "$(kod -H 'Content-Type: application/json' -d '{"reservationId":1}' "$GATEWAY/api/v1/payments")"
+adim "ödeme iç ucu dışarıya kapalı" 401 "$(kod "$GATEWAY/internal/v1/auth/users/1/billing-info")"
+if [[ -n "$SEANS_ID" ]]; then
+    # Doluluk adımlarındakinden farklı bir koltuk (sondan ikinci)
+    ODEME_HUCRESI=$(curl -s "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID/layout" \
+        | grep -oE '"cellId":[0-9]+,"row":[0-9]+,"col":[0-9]+,"type":"SEAT"' | tail -n2 | head -n1 \
+        | sed -E 's/"cellId":([0-9]+).*/\1/')
+    ODEME_REZERVASYONU=$(curl -s -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+        -d "{\"showtimeId\":$SEANS_ID,\"seatCellIds\":[$ODEME_HUCRESI]}" "$GATEWAY/api/v1/bookings/reservations" \
+        | sed -nE 's/.*"reservationId":([0-9]+).*/\1/p')
+    # iyzico'ya bağlantı Docker'dan aralıklı kopabiliyor: başlatma birkaç kez denenir (aynı ödeme döner)
+    for _ in 1 2 3; do
+        ODEME=$(curl -s -w '\n%{http_code}' -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+            -d "{\"reservationId\":$ODEME_REZERVASYONU}" "$GATEWAY/api/v1/payments")
+        [[ "$(tail -n1 <<<"$ODEME")" == 201 || "$(tail -n1 <<<"$ODEME")" == 200 ]] && break
+        sleep 2
+    done
+    adim "ödeme başlatma" 201 "$(tail -n1 <<<"$ODEME")"
+    ODEME_SAYFASI=$(head -n1 <<<"$ODEME" | sed -nE 's/.*"paymentPageUrl":"([^"]+)".*/\1/p')
+    if [[ "$ODEME_SAYFASI" == */api/v1/payments/mock/checkout/* ]]; then
+        ODEME_TOKENI="${ODEME_SAYFASI##*/}"
+        adim "sahte ödeme sayfası (girişsiz)" 200 "$(kod "$ODEME_SAYFASI")"
+        adim "sahte sayfada 'başarılı'" 200 "$(kod -X POST -d 'sonuc=SUCCESS' "$ODEME_SAYFASI/complete")"
+        adim "ödeme dönüşü (callback) yönlendirir" 302 "$(kod -X POST -d "token=$ODEME_TOKENI" \
+            "$GATEWAY/api/v1/payments/callback/iyzico")"
+        BILET_KODU=$(curl -s -H "Authorization: Bearer $TOKEN" \
+            "$GATEWAY/api/v1/bookings/reservations/$ODEME_REZERVASYONU" | sed -nE 's/.*"ticketCode":"([A-Z0-9]+)".*/\1/p')
+        adim "rezervasyon onaylandı, bilet kodu var" 16 "${#BILET_KODU}"
+        adim "QR bilet doğrulama (misafir)" 200 "$(kod "$GATEWAY/api/v1/tickets/$BILET_KODU")"
+        adim "satılan koltuk doluluğa SOLD yansır" 1 "$(curl -s "$GATEWAY/api/v1/bookings/showtimes/$SEANS_ID/seat-status" \
+            | grep -c "\"cellId\":$ODEME_HUCRESI,\"status\":\"SOLD\"")"
+    else
+        adim "iyzico sandbox ödeme sayfası açıldı" 1 "$(grep -c '^https://sandbox-cpp.iyzipay.com' <<<"$ODEME_SAYFASI")"
+        echo "  - iyzico seçili: kart girişi elle yapılır; tamamlama ve bilet adımları atlandı (PAYMENT_PROVIDER=MOCK ile çalışır)"
+    fi
+else
+    echo "  - seans yok: ödeme adımları atlandı"
+fi
+
 # Admin adımları isteğe bağlı ve veri oluşturmaz (her çalıştırmada örnek veriyi kirletmesin)
 if [[ -n "${ADMIN_EMAIL:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
-    echo "7. Katalog (admin)"
+    echo "8. Katalog (admin)"
     ADMIN_TOKEN=$(curl -s -H 'Content-Type: application/json' \
         -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" "$GATEWAY/api/v1/auth/login" \
         | json_alan accessToken)

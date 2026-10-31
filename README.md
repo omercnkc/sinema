@@ -4,9 +4,9 @@
 Misafirler film, seans ve koltuk doluluğunu görür; üyeler en fazla 5 koltuk tutup iyzico (sandbox) ile satın alır;
 adminler film (TMDB), salon düzeni, seans ve fiyatları yönetir.
 
-> **Durum:** M3 (rezervasyon) tamamlandı. Kimlik/gateway (M1) ve katalog (M2) üzerine koltuk doluluğu, koltuk tutma
-> (çift satış yok), rezervasyonlarım, hold bırakma, terk koruması ve ödeme servisinin kullanacağı onay uçları
-> çalışıyor; ödeme (iyzico) ve bilet doğrulama M4'te.
+> **Durum:** M4 (ödeme + bilet) tamamlandı. Backend uçtan uca çalışıyor: kayıt/giriş, katalog, koltuk tutma (çift satış
+> yok), iyzico sandbox ile ödeme (yerelde anahtarsız sahte sağlayıcı da seçilebilir), mutabakat/iade ve QR bilet
+> doğrulama. Sıradaki adım Angular ön yüz (M5).
 > Ayrıntılı plan: [planlama.md](planlama.md), veritabanı: [db-planlama.md](db-planlama.md).
 
 ## Mimari
@@ -16,13 +16,14 @@ Angular 13 SPA ──> api-gateway (CORS, JWT ön doğrulama, Redis rate limit)
                      ├─> auth-service     (auth_db)
                      ├─> catalog-service  (catalog_db) ──> TMDB
                      ├─> booking-service  (booking_db) ──Feign──> catalog
-                     └─> payment-service  (payment_db) ──Feign──> booking, iyzico
+                     └─> payment-service  (payment_db) ──Feign──> booking, auth (alıcı bilgisi), iyzico
 MySQL 8.4: tek instance, servis başına ayrı şema ve kullanıcı
 ```
 
 - **Aynı koltuk iki kişiye satılamaz:** garanti veritabanında, `UNIQUE(showtime_id, layout_cell_id)` kısıtıyla.
 - Koltuk tutma (hold) 3 dakika, sunucu saatine göre; süresi dolan koltuk kendiliğinden serbest kalır.
-- Servisler arası çağrılar tek yönlü: `payment → booking → catalog`.
+- Servisler arası çağrılar tek yönlü: `payment → booking → catalog`. auth yalnızca servis token'ı ve (payment için) alıcı
+  bilgisi verir, kimseyi çağırmaz: [docs/adr/0001](docs/adr/0001-servisler-arasi-auth-cagrilari.md).
 
 ## Teknolojiler
 
@@ -210,6 +211,26 @@ olur; ödeme başlayınca hold bir kez 2 dk uzar. Son 30 dk'da ödemeden bırak�
 10 dk sonrasına kadar yeni hold açılamaz. Satın alınan bilet iptal edilemez. Doluluk cevabı sunucuda en çok 2 sn
 önbelleklenir; kendi tutma/bırakma işleminiz hemen görünür.
 
+**Ödeme (M4)** — giriş zorunlu, sağlayıcı dönüşleri hariç
+
+| Uç | Erişim | Açıklama |
+|---|---|---|
+| `POST /api/v1/payments` | USER/ADMIN | `{reservationId}` → 201 `{paymentId, status, amount, paymentPageUrl}`. Tutar booking'den gelir; aynı rezervasyonun sayfası hâlâ geçerliyse aynı ödeme 200 ile döner. Tarayıcı `paymentPageUrl`'e tam sayfa yönlendirilir |
+| `GET /api/v1/payments/by-reservation/{id}` | Sahibi | Ödeme durumu (`PENDING`, `SUCCEEDED`, `FAILED`, `REFUND_REQUIRED`, `REFUNDED`) |
+| `POST /api/v1/payments/callback/iyzico` | Sağlayıcı (tarayıcı yönlendirmesi) | Form `token`; sonuç iyzico'dan sorgulanıp doğrulanır, 302 ile ön yüz `/odeme/sonuc?reservationId=…` |
+| `GET /api/v1/payments/mock/checkout/{token}` | Herkes, yalnızca `PAYMENT_PROVIDER=MOCK` | Sahte ödeme sayfası ("başarılı / başarısız"); iyzico gibi callback'e döner |
+| `GET /api/v1/tickets/{kod}` | Herkes (hız sınırlı) | QR bilet doğrulama: `{valid, movieTitle, cinemaName, hallName, startsAt, seats}`; kişisel veri yok, geçersizse 404 |
+
+**Ödeme akışı:** ödeme başlayınca hold bir kez 2 dk uzar. iyzico'nun dönüşüne güvenilmez; sonuç her zaman iyzico'dan
+sorgulanır ve tutar, sepet ve işlem kimliği kendi kayıtla eşleşmelidir. Onayda koltuklar `SOLD` olur ve 16 karakterlik
+bilet kodu üretilir. Hold süresi dolduktan sonra gelen başarılı ödeme bilet üretmez, otomatik iade edilir. Mutabakat
+job'ı (dakikada bir) yarım kalanları tamamlar: tarayıcı kapanırsa sonucu iyzico'dan alır, 30 dk içinde ödenmeyen
+ödemeyi terk edilmiş sayar, iadeleri ve booking'e iletilemeyen sonuçları yeniden dener.
+
+**iyzico sandbox ile deneme:** `.env`'de `IYZICO_API_KEY` / `IYZICO_SECRET_KEY` dolu olmalı. Ödeme sayfasında test
+kartı `5528 7900 0000 0008`, son kullanma gelecekte herhangi bir tarih, CVC herhangi 3 hane. Ödeme sonrası tarayıcı
+`http://localhost:4200/odeme/sonuc` adresine gider (ön yüz M5'te). Anahtarsız denemek için `PAYMENT_PROVIDER=MOCK`.
+
 ## Derleme ve test
 
 ```powershell
@@ -221,7 +242,8 @@ olur; ödeme başlayınca hold bir kez 2 dk uzar. Son 30 dk'da ödemeden bırak�
 - Testler JWT anahtarlarını çalışma anında kendileri üretir; `keys/` gerekmez.
 - Her servlet servisi `ServisAltyapiTesti`'ni miras alır: sağlık kontrolü, Flyway ve 6 güvenlik senaryosu.
 - Çalışan yığın için: `bash ./scripts/duman-testi.sh [gateway-adresi]`. `ADMIN_EMAIL`/`ADMIN_PASSWORD` verilirse admin
-  katalog adımları da çalışır (veri oluşturmaz).
+  katalog adımları da çalışır (veri oluşturmaz). `PAYMENT_PROVIDER=MOCK` ile çalışan yığında ödeme adımları bir koltuğu
+  satın alıp bileti doğrular; iyzico seçiliyse yalnızca ödeme sayfasının açıldığı denetlenir.
 
 **Veritabanı değişiklikleri** yalnızca Flyway ile yapılır: servisin `src/main/resources/db/migration` klasörüne
 `V<sürüm>__<açıklama>.sql` eklenir. Uygulanmış bir migration dosyası değiştirilmez; değişiklik için yeni sürüm eklenir.
@@ -242,7 +264,8 @@ Hibernate şemayı değiştirmez (`ddl-auto=validate`), yalnızca entity'lerle u
 | `BOOKING_SERVICE_CLIENT_SECRET`, `PAYMENT_SERVICE_CLIENT_SECRET` | Servis token'ı almak için sırlar; booking bu değer olmadan açılmaz |
 | `CATALOG_PROFILES` | `dev` (varsayılan): katalog boşken örnek veri yüklenir; `default`: yüklenmez |
 | `TMDB_API_TOKEN` | TMDB "API Read Access Token" (v4). Boşsa TMDB araması 503 verir, filmler elle girilir |
-| `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` | iyzico sandbox bilgileri — M4 |
+| `PAYMENT_PROVIDER` | `IYZICO` (varsayılan; iyzico anahtarları gerekir) ya da `MOCK` (anahtarsız, sahte ödeme sayfası) |
+| `IYZICO_API_KEY`, `IYZICO_SECRET_KEY`, `IYZICO_BASE_URL` | iyzico sandbox bilgileri; `PAYMENT_PROVIDER=IYZICO` iken anahtarlar zorunlu (eksikse payment açılmaz). Değeri `=`'den sonra boşluksuz yazın |
 
 Eksik zorunlu bir değişkende `docker compose` hangi değişkenin eksik olduğunu söyleyerek başlamaz.
 
@@ -273,6 +296,10 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | booking açılmıyor, `sinema.servis-istemcisi.sir` boş | `.env`'de `BOOKING_SERVICE_CLIENT_SECRET` yok. Değeri verip `docker compose up -d booking-service`. |
 | Koltuk tutarken `429 HOLD_COOLDOWN` | Kısa sürede 3 işlem ödemeden bırakıldı/süresi doldu (terk koruması); `Retry-After` saniye bekleyin. |
 | Koltuk tutarken `409 ACTIVE_RESERVATION_EXISTS` | Bu seansta ödemesi bekleyen işleminiz var; cevaptaki `reservationId`'yi bırakın ya da süresinin dolmasını bekleyin. |
+| payment açılmıyor, `sinema.payment.iyzico.api-anahtari` boş | `PAYMENT_PROVIDER=IYZICO` ama iyzico anahtarları `.env`'de yok. Anahtarları girin ya da `PAYMENT_PROVIDER=MOCK`. |
+| Ödeme başlatırken `503 PAYMENT_PROVIDER_UNAVAILABLE` | iyzico'ya ulaşılamadı. Docker Desktop'tan iyzico'ya bağlantı arada bir kopabiliyor (istek bir kez kendiliğinden yeniden denenir); birkaç saniye sonra tekrar deneyin, payment loglarına bakın. |
+| iyzico sayfasında "Geçersiz token" | Token kullanılmış (ödeme tamamlanmış) ya da 30 dk'lık süresi dolmuş. Durumu `GET /api/v1/payments/by-reservation/{id}` ile kontrol edin. |
+| Ödemeden sonra tarayıcı `localhost:4200`'e gidip açılamıyor | Ön yüz henüz yok (M5); ödeme yine de işlenir. Rezervasyonun durumuna API'den bakın. |
 | `./mvnw: bad interpreter` (Linux container / WSL) | Satır sonları CRLF olmuş. `.gitattributes` bunu önler; `git add --renormalize .` ile düzeltin. |
 
 ## Yol haritası
@@ -283,8 +310,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | M1 | Auth + gateway güvenliği (JWT, refresh, hesap kilidi, admin, servis token'ı, rate limit, CORS) | Tamamlandı |
 | M2 | Catalog: şube, salon, sürümlü düzen, film (TMDB), seans, örnek veri | Tamamlandı |
 | M3 | Booking: koltuk tutma (çift satış yok), doluluk, rezervasyon, terk koruması, ödeme onay uçları | Tamamlandı |
-| M4 | Payment (iyzico sandbox) + bilet doğrulama | Sırada |
-| M5–M7 | Angular frontend, koltuk haritası, admin paneli | |
+| M4 | Payment (iyzico sandbox + sahte sağlayıcı), mutabakat/iade, QR bilet doğrulama | Tamamlandı |
+| M5–M7 | Angular frontend, koltuk haritası, admin paneli | Sırada (M5) |
 | M8 | Salon düzeni değişikliğinde bilet göçü | |
 | M9 | Sertleştirme, güvenlik taraması, demo | |
 
