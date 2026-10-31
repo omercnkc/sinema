@@ -797,7 +797,7 @@ Eski sorular (referans):
 ### 9.3 Kodlamadan önce kapanacak doğrulamalar
 1. Spring Boot 3.x ile Spring Cloud sürüm uyumluluk tablosu; sabit Docker image tag'leri (JRE 21, MySQL 8.4, Redis, nginx).
 2. ~~TMDB: `descriptors` alanının TR için dolu gelip gelmediği, `append_to_response`, atıf ve hotlink şartları.~~ Doğrulandı (2026-10-29, bkz. §9.5 M2 notu).
-3. iyzico: token ömrü, `retrieve` yanıt `signature` hesabı.
+3. ~~iyzico: token ömrü, `retrieve` yanıt `signature` hesabı.~~ Doğrulandı (2026-10-31, bkz. §9.5 M4 notu).
 4. `angularx-qrcode` ve `ng-bootstrap` (12.x) Angular 13 uyumlu sürümleri ve peer bağımlılıkları; `DatePipe` `'+0300'` davranışı.
 5. Redis erişilemezken Spring Cloud Gateway `RequestRateLimiter` varsayılan davranışı.
 
@@ -904,7 +904,7 @@ Notlar (alt görev 9): compose değişikliği alt görev 1'de yapılmıştı. Du
 **M3 tamamlandı (2026-10-30).** Ertelenen notlar: bilet doğrulama ucu `/tickets/{kod}`, ödeme servisinin Feign istemcisi ve iade (onay 409 aldığında) M4'te; bildirimler, göç tabloları ve bakım kilidi M8'de; booking birden fazla kopya çalışırsa doluluk önbelleği paylaşılan bir gerçekleştirmeye geçmeli (K47) ve zaman kaynağı DB saatine taşınmalı (§4.4).
 
 **M4 alt görevleri (2026-10-31, K48 ve K49'a göre güncellendi; onay bekliyor):**
-1. [ ] iyzico doğrulamaları (kod yok, §9.3-3): checkout form token ömrü ve tekrar kullanımı, `retrieve` yanıt `signature` hesabı, `initialize` zorunlu alanları (alıcı/adres/sepet, telefon biçimi), iptal (`cancel`) ve iade (`refund`) uçları, IYZWSv2 imza biçimi; sonuçlar bu dosyaya not
+1. [x] iyzico doğrulamaları (kod yok, §9.3-3): checkout form token ömrü ve tekrar kullanımı, `retrieve` yanıt `signature` hesabı, `initialize` zorunlu alanları (alıcı/adres/sepet, telefon biçimi), iptal (`cancel`) ve iade (`refund`) uçları, IYZWSv2 imza biçimi; sonuçlar bu dosyaya not
 2. [ ] auth (K48): V4 `users` → `first_name`, `last_name`, `phone` (eski satırlar için boş olabilir); kayıt isteğinde zorunlu + doğrulama (ad/soyad uzunluğu, TR cep telefonu → `+905…` biçimine normalize); `/me` cevabına eklenir; iç uç `GET /internal/v1/auth/users/{id}/billing-info` (yalnızca SERVICE, `aud=auth-service`); auth'un izinli hedeflerine payment → auth-service; duman testi kaydı yeni alanlarla
 3. [ ] Payment şeması: V2 `payments` (UNIQUE reservation_id / conversation_id / provider_token / provider_payment_id, booking_sync alanları) + `payment_callback_logs` (ham kayıt, kart verisi yok) + entity'ler; ayarlar (`sinema.payment.*`: sağlayıcı IYZICO|MOCK, callback ve ön yüz sonuç adresleri, sabit alıcı alanları, mutabakat aralıkları, log saklama 90 gün)
 4. [ ] payment'ın Feign istemcileri (M3 ortak altyapısı): booking (`payment-info`, `extend-payment-window`, `confirm`, `fail`; fallback 503 `BOOKING_UNAVAILABLE`) ve auth (`billing-info`; fallback 503); compose: payment'a auth/booking adresleri ve client secret
@@ -917,6 +917,27 @@ Notlar (alt görev 9): compose değişikliği alt görev 1'de yapılmıştı. Du
 11. [ ] compose/README, ADR (payment → auth okuma yönü), duman testine ödeme (MOCK ile uçtan uca: başlat → sahte sayfa → callback → bilet doğrulama) adımları, M4 kapanışı (tam verify + sıfırdan yığın)
 
 Gruplar (2026-10-31, onaylı gruplamaya auth görevi eklendi): [1], [2], [3+4], [5+6], [7], [8], [9], [10+11].
+
+**§9.3-3 iyzico doğrulaması (alt görev 1, 2026-10-31; resmi doküman + `.env`'deki sandbox anahtarlarıyla gerçek çağrılar):**
+- **IYZWSv2 imzası** (sandbox'ta çalıştı): `randomKey` = epoch ms + sabit sayı (aynı değer `x-iyzi-rnd` başlığında); `imza = hex(HMAC-SHA256(secretKey, randomKey + uriPath + gövde))` (gövde boşsa yalnızca `randomKey + uriPath`); `Authorization: IYZWSv2 base64("apiKey:{k}&randomKey:{r}&signature:{imza}")`. **İmzalanan gövde baytı gönderilen gövdeyle birebir aynı olmalı:** JSON bir kez üretilir, aynı byte dizisi hem imzalanır hem gönderilir. Yanlış imza: HTTP 200 + `status: failure`, `errorCode 1000`.
+- **İş hataları HTTP 200 ile gelir** (`status: failure`, `errorCode`, `errorMessage`); karar her zaman gövdedeki `status`'a göre verilir. Görülen kodlar: `1000` geçersiz imza, `5062` tutar kırılımların toplamına eşit değil, `5122` token'a ait ödeme yok (henüz ödenmemiş), `5124` token bulunamadı.
+- **Initialize** (`POST /payment/iyzipos/checkoutform/initialize/auth/ecom`):
+  - Zorunlu alanlar: `price`, `paidPrice`, `currency`, `callbackUrl`, `buyer` (id, name, surname, identityNumber, email, gsmNumber, registrationAddress, city, country), `billingAddress` (contactName, address, city, country), `basketItems` (id, name, category1, itemType, price).
+  - `price` **kırılımların toplamına eşit olmalı** (sandbox `5062` ile reddetti) → koltuk başına bir kalem (birim fiyat), `paidPrice = price`, taksit yok (`enabledInstallments: [1]`).
+  - `itemType: VIRTUAL` ile `shippingAddress` gerekmedi.
+  - `gsmNumber` `+905…` biçiminde kabul edildi (K48'deki saklama biçimi).
+  - Cevap: `token`, `tokenExpireTime: 1800` (**token ömrü 30 dk**), `paymentPageUrl` (`https://sandbox-cpp.iyzipay.com?token=…`), `signature`.
+- **Callback ve `localhost`:** doküman "geçerli SSL" diyor ama sandbox `http://localhost:8080/...` callbackUrl'ini kabul etti (K39). Tarayıcı yönlendirmesinin gerçekten geldiği alt görev 8'deki elle uçtan uca denemede görülecek.
+- **Cevap imzası** (`signature`): `hex(HMAC-SHA256(secretKey, alanlar ":" ile birleşik))`, fiyatlarda sondaki sıfırlar atılır (`300.00` → `300`, `10.50` → `10.5`).
+  - Initialize alanları: `conversationId:token` — sandbox'ta doğrulandı.
+  - Retrieve alanları: `paymentStatus:paymentId:currency:basketId:conversationId:paidPrice:price:token` — ödenmiş bir token gerektiği için alt görev 8'deki gerçek ödemeyle doğrulanacak.
+  - Dokümandaki örnek kodda hata var (tanımsız değişken döndürüyor); kopyalanmayacak.
+- **Retrieve** (`POST /payment/iyzipos/checkoutform/auth/ecom/detail`, `{token, conversationId}`):
+  - Ödenmemiş token'da `5122` döner; tekrar çağrılabilir, durum bozulmaz.
+  - Kontrol edilecek alanlar: `paymentStatus` (`SUCCESS`), `fraudStatus` (`1` onaylı, `0` incelemede → bekle, `-1` red), `paidPrice`/`price`/`currency`/`basketId`/`conversationId` kendi kaydımızla eşleşmeli, `paymentId` (iade için saklanır).
+  - Mutabakat kuralı: token ömrü (30 dk) dolduğu halde hâlâ `5122` dönüyorsa ödeme yapılmamıştır → FAILED.
+- **İade:** **İade V2** (`POST /v2/payment/refund`, `{paymentId, price}`; kırılım gerekmez, tutar ödeme toplamını aşamaz). İptal (`/payment/cancel`) için dokümanda zaman kuralı yok; kullanılmaz (YAGNI). Sandbox'ta iade alt görev 9'da denenecek.
+- **Hız sınırı:** iade/iptal için doküman sürümleri çelişiyor (dakikada 50 / 150); tek tek iade yaptığımız için sorun değil.
 
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
