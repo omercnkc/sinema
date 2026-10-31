@@ -45,10 +45,13 @@ adim "iç uçlar dışarıya kapalı (/internal)" 401 "$(kod -X POST "$GATEWAY/i
 adim "korumalı uç token'sız reddedilir" 401 "$(kod "$GATEWAY/api/v1/auth/me")"
 
 echo "2. Kayıt ve giriş"
-adim "kayıt" 201 "$(kod -H 'Content-Type: application/json' \
-    -d "{\"email\":\"$EMAIL\",\"password\":\"$PAROLA\"}" "$GATEWAY/api/v1/auth/register")"
+# K48: kayıtta ad, soyad ve TR cep telefonu zorunlu
+KAYIT_GOVDESI="{\"email\":\"$EMAIL\",\"password\":\"$PAROLA\",\"firstName\":\"Duman\",\"lastName\":\"Testi\",\"phone\":\"0532 123 45 67\"}"
+adim "kayıt" 201 "$(kod -H 'Content-Type: application/json' -d "$KAYIT_GOVDESI" "$GATEWAY/api/v1/auth/register")"
 adim "aynı e-postayla tekrar kayıt" 409 "$(kod -H 'Content-Type: application/json' \
-    -d "{\"email\":\"$EMAIL\",\"password\":\"$PAROLA\"}" "$GATEWAY/api/v1/auth/register")"
+    -d "$KAYIT_GOVDESI" "$GATEWAY/api/v1/auth/register")"
+adim "kişi bilgisi olmadan kayıt" 400 "$(kod -H 'Content-Type: application/json' \
+    -d "{\"email\":\"eksik-$EMAIL\",\"password\":\"$PAROLA\"}" "$GATEWAY/api/v1/auth/register")"
 adim "yanlış parola" 401 "$(kod -H 'Content-Type: application/json' \
     -d "{\"email\":\"$EMAIL\",\"password\":\"Yanlis12345\"}" "$GATEWAY/api/v1/auth/login")"
 

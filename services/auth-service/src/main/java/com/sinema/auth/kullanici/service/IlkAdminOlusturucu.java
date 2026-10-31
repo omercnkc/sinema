@@ -1,7 +1,7 @@
 package com.sinema.auth.kullanici.service;
 
 import com.sinema.auth.config.KimlikAyarlari;
-import com.sinema.auth.kullanici.dto.KayitIstegi;
+import com.sinema.auth.kullanici.dto.AdminIstegi;
 import com.sinema.auth.kullanici.entity.Rol;
 import com.sinema.auth.kullanici.repository.KullaniciRepository;
 import com.sinema.common.hata.CakismaIstisnasi;
@@ -43,7 +43,7 @@ public class IlkAdminOlusturucu implements ApplicationRunner {
         if (kullaniciRepository.existsByRol(Rol.ADMIN)) {
             return;
         }
-        KayitIstegi istek = new KayitIstegi(ilkAdmin.email(), ilkAdmin.parola());
+        AdminIstegi istek = new AdminIstegi(ilkAdmin.email(), ilkAdmin.parola());
         gecerliDegilseDurdur(istek);
         try {
             kayitServisi.adminEkle(istek);
@@ -55,8 +55,8 @@ public class IlkAdminOlusturucu implements ApplicationRunner {
     }
 
     // Zayıf/hatalı admin bilgisiyle servisin açılması yerine açık bir hata ile durmak tercih edilir (fail fast)
-    private void gecerliDegilseDurdur(KayitIstegi istek) {
-        Set<ConstraintViolation<KayitIstegi>> ihlaller = dogrulayici.validate(istek);
+    private void gecerliDegilseDurdur(AdminIstegi istek) {
+        Set<ConstraintViolation<AdminIstegi>> ihlaller = dogrulayici.validate(istek);
         if (!ihlaller.isEmpty()) {
             String nedenler = ihlaller.stream().map(ConstraintViolation::getMessage).collect(Collectors.joining(" "));
             throw new IllegalStateException("ADMIN_EMAIL / ADMIN_PASSWORD geçersiz: " + nedenler);

@@ -1,6 +1,8 @@
 package com.sinema.auth.kullanici.service;
 
+import com.sinema.auth.kullanici.dto.AliciBilgisi;
 import com.sinema.auth.kullanici.dto.ProfilCevabi;
+import com.sinema.auth.kullanici.entity.Kullanici;
 import com.sinema.auth.kullanici.repository.KullaniciRepository;
 import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +17,24 @@ public class ProfilServisi {
 
     private final KullaniciRepository kullaniciRepository;
 
+    /** GET /me: yalnızca token sahibinin kendi bilgileri. */
     @Transactional(readOnly = true)
     public ProfilCevabi profil(Long kullaniciId) {
+        Kullanici kullanici = bul(kullaniciId);
+        return new ProfilCevabi(kullanici.getId(), kullanici.getEmail(), kullanici.getRol().name(),
+                kullanici.getAd(), kullanici.getSoyad(), kullanici.getTelefon());
+    }
+
+    /** payment-service'in iyzico alıcı bilgisi (iç uç, K48). */
+    @Transactional(readOnly = true)
+    public AliciBilgisi aliciBilgisi(Long kullaniciId) {
+        Kullanici kullanici = bul(kullaniciId);
+        return new AliciBilgisi(kullanici.getId(), kullanici.getEmail(), kullanici.getAd(), kullanici.getSoyad(),
+                kullanici.getTelefon());
+    }
+
+    private Kullanici bul(Long kullaniciId) {
         return kullaniciRepository.findById(kullaniciId)
-                .map(kullanici -> new ProfilCevabi(kullanici.getId(), kullanici.getEmail(), kullanici.getRol().name()))
                 .orElseThrow(() -> new KaynakBulunamadiIstisnasi(KULLANICI_BULUNAMADI_KODU, "Kullanıcı bulunamadı."));
     }
 }

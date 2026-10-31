@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sinema.auth.kullanici.dto.AdminIstegi;
 import com.sinema.auth.kullanici.dto.KayitCevabi;
 import com.sinema.auth.kullanici.dto.KayitIstegi;
 import com.sinema.auth.kullanici.entity.Kullanici;
@@ -35,14 +36,14 @@ class KullaniciKayitServisiTest {
     private KullaniciKayitServisi servis;
 
     @Test
-    void shouldSaveNormalizedEmailHashedPasswordAndUserRole_whenEmailIsNew() {
+    void shouldSaveNormalizedEmailPhoneTrimmedNamesAndUserRole_whenEmailIsNew() {
         // Given
         when(kullaniciRepository.existsByEmail("ali@ornek.com")).thenReturn(false);
         when(parolaKodlayici.encode("Parola123")).thenReturn("$2a$ozet");
         when(kullaniciRepository.saveAndFlush(any())).thenAnswer(cagri -> cagri.getArgument(0));
 
         // When
-        KayitCevabi cevap = servis.kaydet(new KayitIstegi("  ALI@Ornek.COM ", "Parola123"));
+        KayitCevabi cevap = servis.kaydet(new KayitIstegi("  ALI@Ornek.COM ", "Parola123", " Ali ", " Yılmaz ", "0532 123 45 67"));
 
         // Then
         ArgumentCaptor<Kullanici> kaydedilen = ArgumentCaptor.forClass(Kullanici.class);
@@ -50,6 +51,9 @@ class KullaniciKayitServisiTest {
         assertThat(kaydedilen.getValue().getEmail()).isEqualTo("ali@ornek.com");
         assertThat(kaydedilen.getValue().getParolaOzeti()).isEqualTo("$2a$ozet");
         assertThat(kaydedilen.getValue().getRol()).isEqualTo(Rol.USER);
+        assertThat(kaydedilen.getValue().getAd()).isEqualTo("Ali");
+        assertThat(kaydedilen.getValue().getSoyad()).isEqualTo("Yılmaz");
+        assertThat(kaydedilen.getValue().getTelefon()).isEqualTo("+905321234567");
         assertThat(cevap.email()).isEqualTo("ali@ornek.com");
     }
 
@@ -57,7 +61,7 @@ class KullaniciKayitServisiTest {
     void shouldThrowConflict_whenEmailAlreadyRegistered() {
         when(kullaniciRepository.existsByEmail("ali@ornek.com")).thenReturn(true);
 
-        assertThatThrownBy(() -> servis.kaydet(new KayitIstegi("ali@ornek.com", "Parola123")))
+        assertThatThrownBy(() -> servis.kaydet(new KayitIstegi("ali@ornek.com", "Parola123", "Ali", "Yılmaz", "0532 123 45 67")))
                 .isInstanceOf(CakismaIstisnasi.class)
                 .extracting("kod").isEqualTo(KullaniciKayitServisi.EMAIL_KAYITLI_KODU);
         verify(kullaniciRepository, never()).saveAndFlush(any());
@@ -69,12 +73,26 @@ class KullaniciKayitServisiTest {
         when(parolaKodlayici.encode(any())).thenReturn("$2a$ozet");
         when(kullaniciRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("uq_users_email"));
 
-        assertThatThrownBy(() -> servis.kaydet(new KayitIstegi("ali@ornek.com", "Parola123")))
+        assertThatThrownBy(() -> servis.kaydet(new KayitIstegi("ali@ornek.com", "Parola123", "Ali", "Yılmaz", "0532 123 45 67")))
                 .isInstanceOf(CakismaIstisnasi.class);
     }
 
     @Test
     void shouldNormalizeWithoutTurkishDotlessI_whenEmailHasUppercaseI() {
         assertThat(KullaniciKayitServisi.emailNormalizeEt("INFO@SINEMA.COM")).isEqualTo("info@sinema.com");
+    }
+
+    @Test
+    void shouldCreateAdminWithoutPersonalInfo_whenAdminAdded() {
+        when(kullaniciRepository.existsByEmail("yonetici@sinema.local")).thenReturn(false);
+        when(parolaKodlayici.encode("Parola123")).thenReturn("$2a$ozet");
+        when(kullaniciRepository.saveAndFlush(any())).thenAnswer(cagri -> cagri.getArgument(0));
+
+        servis.adminEkle(new AdminIstegi("Yonetici@Sinema.local", "Parola123"));
+
+        ArgumentCaptor<Kullanici> kaydedilen = ArgumentCaptor.forClass(Kullanici.class);
+        verify(kullaniciRepository).saveAndFlush(kaydedilen.capture());
+        assertThat(kaydedilen.getValue().getRol()).isEqualTo(Rol.ADMIN);
+        assertThat(kaydedilen.getValue().getTelefon()).isNull();
     }
 }

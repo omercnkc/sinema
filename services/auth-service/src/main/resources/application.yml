@@ -42,7 +42,8 @@ sinema:
         izinli-hedefler: [catalog-service]
       payment-service:
         sir: ${PAYMENT_SERVICE_CLIENT_SECRET:}
-        izinli-hedefler: [booking-service]
+        # auth-service: iyzico alıcı bilgisi (K48, yalnızca okuma)
+        izinli-hedefler: [booking-service, auth-service]
     kilit:
       esik: 5
       sure: 5m

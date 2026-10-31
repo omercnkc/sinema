@@ -31,6 +31,17 @@ public class Kullanici {
     @Column(nullable = false, unique = true)
     private String email;
 
+    // K48: herkese açık kayıtta zorunlu; admin hesaplarında ve eski hesaplarda boş olabilir
+    @Column(name = "first_name", length = 50)
+    private String ad;
+
+    @Column(name = "last_name", length = 50)
+    private String soyad;
+
+    /** Her zaman +905XXXXXXXXX biçiminde (TelefonNumarasi.normalizeEt). */
+    @Column(name = "phone", length = 13)
+    private String telefon;
+
     @Column(name = "password_hash", nullable = false, length = 100)
     private String parolaOzeti;
 
@@ -61,6 +72,16 @@ public class Kullanici {
     /** Yeni kullanıcı; e-postanın normalize, parolanın özetlenmiş olması çağıranın sorumluluğudur. */
     public static Kullanici olustur(String normalizeEmail, String parolaOzeti, Rol rol) {
         return new Kullanici(normalizeEmail, parolaOzeti, rol);
+    }
+
+    /** Herkese açık kayıt (K48): kişi bilgileriyle; telefonun normalize edilmiş olması çağıranın sorumluluğudur. */
+    public static Kullanici kisiBilgileriyleOlustur(String normalizeEmail, String parolaOzeti, Rol rol, String ad,
+            String soyad, String normalizeTelefon) {
+        Kullanici kullanici = new Kullanici(normalizeEmail, parolaOzeti, rol);
+        kullanici.ad = ad;
+        kullanici.soyad = soyad;
+        kullanici.telefon = normalizeTelefon;
+        return kullanici;
     }
 
     // Kimlik id'dir; kaydedilmemiş (id'siz) iki nesne eşit sayılmaz. hashCode sabittir, çünkü id kayıtta değişir.

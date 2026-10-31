@@ -60,7 +60,7 @@ class AdminKontrolcusuEntegrasyonTest {
     @Test
     void shouldReturnForbiddenProblemJson_whenCalledByRegularUser() throws Exception {
         String email = "kullanici-" + UUID.randomUUID() + "@ornek.com";
-        kayitServisi.kaydet(new KayitIstegi(email, "Parola123"));
+        kayitServisi.kaydet(new KayitIstegi(email, "Parola123", "Ali", "Yılmaz", "0532 123 45 67"));
 
         mockMvc.perform(adminEkle("x-" + email).header("Authorization", "Bearer " + token(email, "Parola123")))
                 .andExpect(status().isForbidden())

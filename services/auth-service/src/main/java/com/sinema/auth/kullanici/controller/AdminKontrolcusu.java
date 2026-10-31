@@ -1,7 +1,7 @@
 package com.sinema.auth.kullanici.controller;
 
 import com.sinema.auth.kullanici.dto.KayitCevabi;
-import com.sinema.auth.kullanici.dto.KayitIstegi;
+import com.sinema.auth.kullanici.dto.AdminIstegi;
 import com.sinema.auth.kullanici.service.KullaniciKayitServisi;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class AdminKontrolcusu {
     @PostMapping("/admins")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    public KayitCevabi adminEkle(@Valid @RequestBody KayitIstegi istek) {
+    public KayitCevabi adminEkle(@Valid @RequestBody AdminIstegi istek) {
         return kullaniciKayitServisi.adminEkle(istek);
     }
 }

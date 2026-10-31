@@ -68,7 +68,7 @@ class OturumKontrolcusuEntegrasyonTest {
     @Test
     void shouldReturnSignedTokenWithExpectedClaims_whenCredentialsAreValid() throws Exception {
         String email = yeniKullanici();
-        Long kullaniciId = kayitServisi.kaydet(new KayitIstegi(email + ".x", DOGRU_PAROLA)).id();
+        Long kullaniciId = kayitServisi.kaydet(new KayitIstegi(email + ".x", DOGRU_PAROLA, "Ali", "Yılmaz", "0532 123 45 67")).id();
 
         String govde = girisYap(email + ".x", DOGRU_PAROLA)
                 .andExpect(status().isOk())
@@ -240,7 +240,9 @@ class OturumKontrolcusuEntegrasyonTest {
         mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + JsonPath.read(govde, "$.accessToken")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(email))
-                .andExpect(jsonPath("$.role").value("USER"));
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(jsonPath("$.firstName").value("Ali"))
+                .andExpect(jsonPath("$.phone").value("+905321234567"));
     }
 
     private ResultActions yenile(Cookie cerez) throws Exception {
@@ -255,7 +257,7 @@ class OturumKontrolcusuEntegrasyonTest {
 
     private String yeniKullanici() {
         String email = "giris-" + UUID.randomUUID() + "@ornek.com";
-        kayitServisi.kaydet(new KayitIstegi(email, DOGRU_PAROLA));
+        kayitServisi.kaydet(new KayitIstegi(email, DOGRU_PAROLA, "Ali", "Yılmaz", "0532 123 45 67"));
         return email;
     }
 

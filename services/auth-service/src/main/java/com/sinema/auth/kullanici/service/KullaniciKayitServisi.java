@@ -1,7 +1,9 @@
 package com.sinema.auth.kullanici.service;
 
+import com.sinema.auth.kullanici.dto.AdminIstegi;
 import com.sinema.auth.kullanici.dto.KayitCevabi;
 import com.sinema.auth.kullanici.dto.KayitIstegi;
+import com.sinema.auth.kullanici.dto.TelefonNumarasi;
 import com.sinema.auth.kullanici.entity.Kullanici;
 import com.sinema.auth.kullanici.entity.Rol;
 import com.sinema.auth.kullanici.repository.KullaniciRepository;
@@ -23,25 +25,34 @@ public class KullaniciKayitServisi {
     private final KullaniciRepository kullaniciRepository;
     private final PasswordEncoder parolaKodlayici;
 
-    /** Herkese açık kayıt: rol her zaman USER (admin bu yoldan oluşturulamaz, planlama §5.6). */
+    /**
+     * Herkese açık kayıt: rol her zaman USER (admin bu yoldan oluşturulamaz, planlama §5.6). Ad/soyad baştaki ve
+     * sondaki boşluktan arındırılır, telefon +905XXXXXXXXX biçimine çevrilir (K48).
+     */
     @Transactional
     public KayitCevabi kaydet(KayitIstegi istek) {
-        return rolIleKaydet(istek, Rol.USER);
+        String email = kayitliDegilseNormalizeEt(istek.email());
+        String telefon = TelefonNumarasi.normalizeEt(istek.phone())
+                .orElseThrow(() -> new IllegalArgumentException("Telefon doğrulanmış olmalı")); // @GecerliTelefon
+        Kullanici kullanici = Kullanici.kisiBilgileriyleOlustur(email, parolaKodlayici.encode(istek.password()),
+                Rol.USER, istek.firstName().trim(), istek.lastName().trim(), telefon);
+        return new KayitCevabi(kaydetVeyaCakismaBildir(kullanici).getId(), email);
     }
 
     /** Yalnızca mevcut bir admin (veya açılıştaki ilk admin kurulumu) çağırır; yetki kontrolü çağıranda. */
     @Transactional
-    public KayitCevabi adminEkle(KayitIstegi istek) {
-        return rolIleKaydet(istek, Rol.ADMIN);
+    public KayitCevabi adminEkle(AdminIstegi istek) {
+        String email = kayitliDegilseNormalizeEt(istek.email());
+        Kullanici kullanici = Kullanici.olustur(email, parolaKodlayici.encode(istek.password()), Rol.ADMIN);
+        return new KayitCevabi(kaydetVeyaCakismaBildir(kullanici).getId(), email);
     }
 
-    private KayitCevabi rolIleKaydet(KayitIstegi istek, Rol rol) {
-        String email = emailNormalizeEt(istek.email());
+    private String kayitliDegilseNormalizeEt(String girilenEmail) {
+        String email = emailNormalizeEt(girilenEmail);
         if (kullaniciRepository.existsByEmail(email)) {
             throw new CakismaIstisnasi(EMAIL_KAYITLI_KODU, EMAIL_KAYITLI_MESAJI);
         }
-        Kullanici kullanici = Kullanici.olustur(email, parolaKodlayici.encode(istek.password()), rol);
-        return new KayitCevabi(kaydetVeyaCakismaBildir(kullanici).getId(), email);
+        return email;
     }
 
     /**

@@ -127,11 +127,11 @@ Gateway üzerinden (`http://localhost:8080`). Para tutarları string (`"120.00"`
 
 | Uç | Erişim | Açıklama |
 |---|---|---|
-| `POST /api/v1/auth/register` | Herkes | `{email, password}` → 201. Rol her zaman USER |
+| `POST /api/v1/auth/register` | Herkes | `{email, password, firstName, lastName, phone}` → 201. Rol her zaman USER; telefon TR cep, `+905…` biçiminde saklanır |
 | `POST /api/v1/auth/login` | Herkes | `{email, password}` → `{accessToken, expiresInSeconds}` + refresh cookie |
 | `POST /api/v1/auth/refresh` | Cookie + izinli Origin | Yeni access token + yeni refresh cookie |
 | `POST /api/v1/auth/logout` | Cookie + izinli Origin | 204, oturum ailesi iptal, cookie silinir |
-| `GET /api/v1/auth/me` | USER/ADMIN | `{id, email, role}` |
+| `GET /api/v1/auth/me` | USER/ADMIN | `{id, email, role, firstName, lastName, phone}` (admin hesaplarında kişi alanları boş) |
 | `POST /api/v1/admin/auth/admins` | ADMIN | `{email, password}` → 201, yeni admin |
 
 Parola kuralı: en az 8 karakter, en çok 72 bayt (BCrypt sınırı; Türkçe harfler 2 bayt sayılır).
