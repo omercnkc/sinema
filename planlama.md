@@ -988,6 +988,19 @@ Notlar (alt görev 9): **Paket boyutu kararı (ölçümle):** ilk yük ≈ JS 37
 
 **M5 tamamlandı (2026-10-31).** Ertelenen notlar: ödeme sonuç sayfası (`/odeme/sonuc`), koltuk haritası, rezervasyonlarım ve bilet M6'da; ng-bootstrap'in ana pakete girmesi M7'de yeniden ölçülür; Angular 13 `npm audit` açıkları M9'da yeniden değerlendirilir; 390 px mobil kontrolü gerçek tarayıcıda.
 
+**M6 alt görevleri (2026-10-31, taslak; onay bekliyor):**
+Ön bilgi: gereken uçların hepsi M2–M4'te hazır (layout, seat-status, reservations POST/GET/liste/DELETE, payments POST + by-reservation, tickets/{kod}); backend değişikliği beklenmiyor. Rezervasyon cevabında afiş yok: bilet sayfası afişi `GET /catalog/showtimes/{id}`'den alır. `angularx-qrcode` 13.0.15 onaylı (K41) ve Angular 13 uyumu M5 alt görev 1'de doğrulandı.
+1. [ ] Koltuk haritası (görüntüleme): `/seans/:id`'de düzen (bir kez, `shareReplay`) + doluluk (`timer(0, 5 sn)` + `switchMap`, sekme gizliyken durur, görünür olunca hemen yenilenir, hata akışı kırmaz) `combineLatest` ile birleşir; dumb `KoltukHaritasi` + `KoltukHucresi` (SCSS grid, hücre tipleri `SEAT/ENTRANCE/EXIT/SCREEN/WALL`, `ACCESSIBLE` koltuk, durum renk + simge/desenle, `aria-label` "F sırası 7, boş", klavyeyle gezinme, `OnPush` + `trackBy`), küçük ekranda yatay kaydırma, renk açıklaması; misafire "Bilet almak için giriş yapın" (dönüş adresiyle)
+2. [ ] Seçim ve tutma: seçim `BehaviorSubject` (en çok 5, dolu/tutulu koltuk seçilemez, misafir seçemez), seçilenler ve toplam tutar özeti, "Devam" → `POST /bookings/reservations` (`exhaustMap`); 409 `SEATS_UNAVAILABLE` → harita hemen yenilenir, çakışan koltuklar seçimden çıkar, "az önce alındı"; 409 `ACTIVE_RESERVATION_EXISTS` → mevcut işleme yönlendirme; 429 `HOLD_COOLDOWN` → kalan süre; 422 `SALES_CLOSED`; başarıda işlem sayfasına
+3. [ ] Tutma ekranı: `/rezervasyonlarim/:id` (`GirisGerekliGuard`) `PENDING_PAYMENT` görünümü: koltuklar, tutar, geri sayım (`expiresAt` + sunucu saat farkı; `ServerClockService` cevaplardaki `serverTime`'dan farkı tutar, karar yine sunucuda), süre dolunca "süre doldu" ve haritaya dönüş, "Vazgeç" → `DELETE` (409 `PAYMENT_IN_PROGRESS` mesajı)
+4. [ ] Ödeme: "Öde" → `POST /payments` (`exhaustMap`) → `paymentPageUrl`'e tam sayfa yönlendirme (`window.location` sarmalayıcı servis, test edilebilir); `/odeme/sonuc?reservationId=` (ve `?error=PAYMENT_NOT_FOUND`) sayfası rezervasyonu sınırlı sayıda yoklar (`timer` + `switchMap`): `CONFIRMED` → bilete, `FAILED`/`EXPIRED` → anlamlı mesaj, hâlâ bekliyorsa "kontrol ediliyor" + elle yenile
+5. [ ] Rezervasyonlarım: `/rezervasyonlarim` sayfalı liste (en yeni önce; durum rozeti, film, şube, saat, koltuklar), header kullanıcı menüsüne bağlantı
+6. [ ] Bilet: `/rezervasyonlarim/:id` `CONFIRMED` görünümü: film + afiş, şube, salon, tarih/saat, koltuklar, bilet kodu, tutar, QR (`angularx-qrcode` kurulumu; içerik `${origin}/bilet/${kod}`), yazdırma stili (PDF yok)
+7. [ ] Bilet doğrulama: `/bilet/:kod` herkese açık; geçerliyse film, şube, salon, saat, koltuklar; 404 → "Geçersiz bilet"; kişisel veri yok (K30)
+8. [ ] Kapanış: tarayıcıda uçtan uca (MOCK ile tut → öde → sonuç → bilet → QR doğrulama; iyzico sandbox ile bir kez test kartı), 409/429 yolları, mobil, paket boyutu ölçümü, README, duman testi, M6 kapanışı (tam test + sıfırdan yığın)
+
+Gruplar (öneri): [1], [2], [3], [4], [5+7], [6], [8]. Uzun görevler (harita, tutma, ödeme, bilet) tek başına; kısa ve birbirinden bağımsız olan rezervasyon listesi ile bilet doğrulama birlikte.
+
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
 2. **Örnek veri** (M2) Flyway migration'ı olarak mı (her ortamda gelir), yoksa yalnızca `dev` profilinde çalışan ayrı bir seed olarak mı? Önerim `dev` seed.
