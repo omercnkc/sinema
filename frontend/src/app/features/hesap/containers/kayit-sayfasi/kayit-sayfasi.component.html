@@ -1,0 +1,94 @@
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-8 col-lg-6">
+    <h1 class="h3 mb-2">Kayıt ol</h1>
+    <p class="text-muted mb-4">Bilet satın almak için üye olun. Ad, soyad ve telefon yalnızca ödeme için kullanılır.</p>
+
+    <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+
+    <form [formGroup]="form" (ngSubmit)="gonder()" novalidate>
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label for="kayit-ad" class="form-label">Ad</label>
+          <input
+            id="kayit-ad"
+            type="text"
+            class="form-control"
+            formControlName="firstName"
+            autocomplete="given-name"
+            aria-describedby="kayit-ad-hata"
+            [class.is-invalid]="ad.touched && ad.invalid"
+          />
+          <div id="kayit-ad-hata" class="invalid-feedback">{{ ad | alanHatasi: 'Ad' }}</div>
+        </div>
+        <div class="col-sm-6">
+          <label for="kayit-soyad" class="form-label">Soyad</label>
+          <input
+            id="kayit-soyad"
+            type="text"
+            class="form-control"
+            formControlName="lastName"
+            autocomplete="family-name"
+            aria-describedby="kayit-soyad-hata"
+            [class.is-invalid]="soyad.touched && soyad.invalid"
+          />
+          <div id="kayit-soyad-hata" class="invalid-feedback">{{ soyad | alanHatasi: 'Soyad' }}</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="kayit-eposta" class="form-label">E-posta</label>
+        <input
+          id="kayit-eposta"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          autocomplete="email"
+          aria-describedby="kayit-eposta-hata"
+          [class.is-invalid]="eposta.touched && eposta.invalid"
+        />
+        <div id="kayit-eposta-hata" class="invalid-feedback">{{ eposta | alanHatasi: 'E-posta' }}</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="kayit-telefon" class="form-label">Cep telefonu</label>
+        <input
+          id="kayit-telefon"
+          type="tel"
+          inputmode="tel"
+          class="form-control"
+          formControlName="phone"
+          autocomplete="tel"
+          placeholder="0532 123 45 67"
+          aria-describedby="kayit-telefon-hata"
+          [class.is-invalid]="telefon.touched && telefon.invalid"
+        />
+        <div id="kayit-telefon-hata" class="invalid-feedback">{{ telefon | alanHatasi: 'Cep telefonu' }}</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="kayit-parola" class="form-label">Parola</label>
+        <input
+          id="kayit-parola"
+          type="password"
+          class="form-control"
+          formControlName="password"
+          autocomplete="new-password"
+          aria-describedby="kayit-parola-ipucu kayit-parola-hata"
+          [class.is-invalid]="parola.touched && parola.invalid"
+        />
+        <div id="kayit-parola-ipucu" class="form-text">En az 8 karakter.</div>
+        <div id="kayit-parola-hata" class="invalid-feedback">{{ parola | alanHatasi: 'Parola' }}</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100" [disabled]="gonderiliyor">
+        <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Kayıt ol
+      </button>
+    </form>
+
+    <p class="mt-4 text-center">
+      Zaten üye misiniz?
+      <a routerLink="/giris" queryParamsHandling="preserve">Giriş yapın</a>
+    </p>
+  </div>
+</div>

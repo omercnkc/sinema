@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import {
+  HttpContext,
   HttpContextToken,
   HttpErrorResponse,
   HttpEvent,
@@ -19,6 +20,11 @@ const ORTAK_ALANLAR = new Set(['type', 'title', 'status', 'detail', 'instance', 
 
 /** İsteği yapan kendi gösterecekse (ör. ödeme sonucu yoklaması) genel bildirim çıkmasın. */
 export const SESSIZ_HATA = new HttpContextToken<boolean>(() => false);
+
+/** Hatasını kendisi gösterecek istekler için bağlam: `http.post(url, govde, { context: sessizBaglam() })`. */
+export function sessizBaglam(): HttpContext {
+  return new HttpContext().set(SESSIZ_HATA, true);
+}
 
 /**
  * Her HTTP hatasını UygulamaHatasi'na çevirir (tek yerde, rules §6.6). Kullanıcının sayfada karşılığı olmayan

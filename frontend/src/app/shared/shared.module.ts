@@ -4,8 +4,9 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HataMesajiComponent } from './components/hata-mesaji/hata-mesaji.component';
 import { YukleniyorComponent } from './components/yukleniyor/yukleniyor.component';
+import { AlanHatasiPipe } from './form/alan-hatasi.pipe';
 
-const BILESENLER = [YukleniyorComponent, HataMesajiComponent];
+const BILESENLER = [YukleniyorComponent, HataMesajiComponent, AlanHatasiPipe];
 
 /**
  * Feature modüllerinin ortak ihtiyaçları (rules §6.3): yeniden kullanılan bileşen, direktif ve pipe'lar burada

@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpContext } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, distinctUntilChanged, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { BildirimService } from '../bildirim/bildirim.service';
-import { SESSIZ_HATA } from '../hata/hata.interceptor';
+import { sessizBaglam } from '../hata/hata.interceptor';
 import { GirisBilgileri, Kullanici, TokenCevabi } from './oturum.models';
 
 const AUTH_ADRESI = `${environment.apiTabanAdresi}/auth`;
@@ -51,8 +51,10 @@ export class OturumService {
     return this.durum.value.kullanici;
   }
 
+  /** Hataları (hatalı parola, hesap kilidi, ağ) giriş sayfası formda gösterir; genel bildirim çıkmaz. */
   girisYap(bilgiler: GirisBilgileri): Observable<Kullanici> {
-    return this.http.post<TokenCevabi>(`${AUTH_ADRESI}/login`, bilgiler, { withCredentials: true }).pipe(
+    const secenekler = { withCredentials: true, context: sessizBaglam() };
+    return this.http.post<TokenCevabi>(`${AUTH_ADRESI}/login`, bilgiler, secenekler).pipe(
       switchMap((cevap) => this.kullaniciyiYukle(cevap.accessToken)),
     );
   }
@@ -64,7 +66,7 @@ export class OturumService {
   yenile(): Observable<string> {
     if (!this.yenileme$) {
       this.yenileme$ = this.http
-        .post<TokenCevabi>(`${AUTH_ADRESI}/refresh`, null, { withCredentials: true, context: OturumService.sessiz() })
+        .post<TokenCevabi>(`${AUTH_ADRESI}/refresh`, null, { withCredentials: true, context: sessizBaglam() })
         .pipe(
           map((cevap) => cevap.accessToken),
           tap({
@@ -91,7 +93,7 @@ export class OturumService {
 
   /** Sunucu hatası olsa bile yerel oturum kapanır (access token en geç 15 dk'da kendiliğinden geçersizleşir). */
   cikisYap(): Observable<void> {
-    return this.http.post<void>(`${AUTH_ADRESI}/logout`, null, { withCredentials: true, context: OturumService.sessiz() })
+    return this.http.post<void>(`${AUTH_ADRESI}/logout`, null, { withCredentials: true, context: sessizBaglam() })
       .pipe(
         catchError(() => of(undefined)),
         map(() => undefined),
@@ -115,9 +117,5 @@ export class OturumService {
         return throwError(() => hata);
       }),
     );
-  }
-
-  private static sessiz(): HttpContext {
-    return new HttpContext().set(SESSIZ_HATA, true);
   }
 }

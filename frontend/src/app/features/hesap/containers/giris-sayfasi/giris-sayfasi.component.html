@@ -1,0 +1,47 @@
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-7 col-lg-5">
+    <h1 class="h3 mb-4">Giriş yap</h1>
+
+    <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+
+    <form [formGroup]="form" (ngSubmit)="gonder()" novalidate>
+      <div class="mb-3">
+        <label for="giris-eposta" class="form-label">E-posta</label>
+        <input
+          id="giris-eposta"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          autocomplete="email"
+          aria-describedby="giris-eposta-hata"
+          [class.is-invalid]="eposta.touched && eposta.invalid"
+        />
+        <div id="giris-eposta-hata" class="invalid-feedback">{{ eposta | alanHatasi: 'E-posta' }}</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="giris-parola" class="form-label">Parola</label>
+        <input
+          id="giris-parola"
+          type="password"
+          class="form-control"
+          formControlName="password"
+          autocomplete="current-password"
+          aria-describedby="giris-parola-hata"
+          [class.is-invalid]="parola.touched && parola.invalid"
+        />
+        <div id="giris-parola-hata" class="invalid-feedback">{{ parola | alanHatasi: 'Parola' }}</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100" [disabled]="gonderiliyor">
+        <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Giriş yap
+      </button>
+    </form>
+
+    <p class="mt-4 text-center">
+      Hesabınız yok mu?
+      <a routerLink="/kayit" queryParamsHandling="preserve">Kayıt olun</a>
+    </p>
+  </div>
+</div>
