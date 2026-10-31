@@ -1,0 +1,13 @@
+@import "tema";
+
+.bildirim-alani {
+  position: fixed;
+  top: $header-yuksekligi;
+  right: 0;
+  z-index: $zindex-bildirim;
+  padding: map-get($spacers, 3);
+
+  &__bildirim {
+    margin-bottom: map-get($spacers, 2);
+  }
+}

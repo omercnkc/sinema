@@ -1,0 +1,12 @@
+// Bileşen stillerinin içe aktardığı tema: Bootstrap fonksiyonları, bizim ezmelerimiz, Bootstrap değişkenleri ve
+// mixin'leri ile kendi mixin'lerimiz. CSS üretmez (yalnızca değişken/mixin), bu yüzden her bileşen güvenle içe aktarır.
+// Bootstrap 5.1 Sass modül sistemine (@use) uygun olmadığı için @import kullanılır.
+@import "bootstrap/scss/functions";
+@import "variables";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+
+// Bildirimler her katmanın (modal, tooltip) üstünde; Bootstrap 5.2'deki $zindex-toast (1090) karşılığı, 5.1'de yok
+$zindex-bildirim: $zindex-tooltip + 10;
+
+@import "mixins";

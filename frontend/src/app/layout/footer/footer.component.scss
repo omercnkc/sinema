@@ -1,0 +1,12 @@
+@import "tema";
+
+.footer {
+  &__tmdb-logo {
+    height: $tmdb-logo-yuksekligi;
+    width: auto;
+  }
+
+  &__tmdb-baglanti {
+    flex-shrink: 0;
+  }
+}

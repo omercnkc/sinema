@@ -1,0 +1,10 @@
+@import "tema";
+
+.header {
+  min-height: $header-yuksekligi;
+
+  &__marka {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+}

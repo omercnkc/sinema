@@ -2,6 +2,10 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { HataMesajiComponent } from './components/hata-mesaji/hata-mesaji.component';
+import { YukleniyorComponent } from './components/yukleniyor/yukleniyor.component';
+
+const BILESENLER = [YukleniyorComponent, HataMesajiComponent];
 
 /**
  * Feature modüllerinin ortak ihtiyaçları (rules §6.3): yeniden kullanılan bileşen, direktif ve pipe'lar burada
@@ -9,7 +13,8 @@ import { RouterModule } from '@angular/router';
  * girer; NgbModule'ün tamamı içe aktarılmaz (paket boyutu, §8.1).
  */
 @NgModule({
+  declarations: BILESENLER,
   imports: [CommonModule],
-  exports: [CommonModule, ReactiveFormsModule, RouterModule],
+  exports: [CommonModule, ReactiveFormsModule, RouterModule, ...BILESENLER],
 })
 export class SharedModule {}

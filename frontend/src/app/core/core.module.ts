@@ -1,5 +1,6 @@
 import { NgModule, Optional, SkipSelf } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { HataInterceptor } from './hata/hata.interceptor';
 
 /**
  * Uygulama genelinde tek örnek olan servisler, interceptor'lar ve guard'lar (rules §6.3). Yalnızca AppModule içe
@@ -8,6 +9,9 @@ import { HttpClientModule } from '@angular/common/http';
  */
 @NgModule({
   imports: [HttpClientModule],
+  // Sıra önemli: cevap interceptor'lardan ters sırayla geçer. HataInterceptor ilk kayıtlı olduğu için cevabı en son
+  // görür; oturum yenileme (alt görev 5) 401'i ondan önce ham haliyle yakalayabilir.
+  providers: [{ provide: HTTP_INTERCEPTORS, useClass: HataInterceptor, multi: true }],
 })
 export class CoreModule {
   constructor(@Optional() @SkipSelf() mevcut: CoreModule | null) {

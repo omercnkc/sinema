@@ -1,0 +1,12 @@
+<div class="bildirim-alani" aria-live="polite" aria-atomic="false">
+  <ngb-toast
+    *ngFor="let bildirim of bildirimler$ | async; trackBy: kimlikIzle"
+    class="bildirim-alani__bildirim"
+    [ngClass]="renkSiniflari[bildirim.tur]"
+    [autohide]="true"
+    [delay]="gosterimSuresi"
+    (hidden)="kapat(bildirim.kimlik)"
+  >
+    {{ bildirim.mesaj }}
+  </ngb-toast>
+</div>

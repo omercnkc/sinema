@@ -1,0 +1,37 @@
+<header>
+  <nav class="navbar navbar-expand-md navbar-dark bg-dark header" aria-label="Ana menü">
+    <div class="container">
+      <a class="navbar-brand header__marka" routerLink="/" (click)="menuyuKapat()">Sinema</a>
+
+      <button
+        type="button"
+        class="navbar-toggler"
+        aria-controls="ana-menu"
+        [attr.aria-expanded]="!menuKapali"
+        aria-label="Menüyü aç/kapat"
+        (click)="menuyuDegistir()"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div id="ana-menu" class="collapse navbar-collapse" [ngbCollapse]="menuKapali">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <!-- Angular 13'te ariaCurrentWhenActive yok (15'te geldi): aria-current isActive'ten -->
+            <a
+              #filmlerBaglantisi="routerLinkActive"
+              class="nav-link"
+              routerLink="/filmler"
+              routerLinkActive="active"
+              [attr.aria-current]="filmlerBaglantisi.isActive ? 'page' : null"
+              (click)="menuyuKapat()"
+              >Filmler</a
+            >
+          </li>
+        </ul>
+        <!-- Oturum alanı (giriş/kayıt ya da kullanıcı menüsü): M5 alt görev 5 -->
+        <div class="header__oturum" data-test="oturum-alani"></div>
+      </div>
+    </div>
+  </nav>
+</header>
