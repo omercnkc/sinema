@@ -1,0 +1,12 @@
+@import "tema";
+
+.film-detayi {
+  &__yildiz {
+    color: $warning;
+  }
+
+  // Özetteki paragraf aralarını korur (düz metin; innerHTML kullanılmaz, §8.9)
+  &__ozet {
+    white-space: pre-line;
+  }
+}

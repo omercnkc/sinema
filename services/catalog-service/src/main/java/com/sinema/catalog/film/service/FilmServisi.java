@@ -12,6 +12,7 @@ import com.sinema.common.hata.IsKuraliIstisnasi;
 import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import com.sinema.common.sayfa.SayfaCevabi;
 import java.time.Clock;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +75,11 @@ public class FilmServisi {
     @Transactional(readOnly = true)
     public SayfaCevabi<FilmOzeti> herkeseAcikAra(String arama, String tur, int sayfa, int boyut) {
         return ara(true, arama, tur, sayfa, boyut);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> herkeseAcikTurler() {
+        return filmRepository.gorunurFilmTurleri();
     }
 
     @Transactional(readOnly = true)

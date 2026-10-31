@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -105,6 +106,20 @@ class FilmKontrolcusuEntegrasyonTest {
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.totalPages").value(2))
                 .andExpect(jsonPath("$.content", hasSize(1)));
+    }
+
+    @Test
+    void shouldListGenresOfVisibleMoviesOnly_whenGuestAsksGenres() throws Exception {
+        String gorunurTur = "Tür-" + UUID.randomUUID();
+        String gizliTur = "Tür-" + UUID.randomUUID();
+        filmOlustur("Görünür Film", null, gorunurTur);
+        long gizli = filmOlustur("Gizli Film", null, gizliTur);
+        yonetim(patch(YONETIM + "/" + gizli + "/visibility"), "{\"visible\":false}").andExpect(status().isOk());
+
+        mockMvc.perform(get(KATALOG + "/genres"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasItem(gorunurTur)))
+                .andExpect(jsonPath("$", not(hasItem(gizliTur))));
     }
 
     @Test

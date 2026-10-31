@@ -1,0 +1,24 @@
+@import "tema";
+
+:host {
+  display: block;
+}
+
+.film-afisi {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: $border-radius;
+  background-color: $gray-300;
+
+  &--bos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $white;
+    background-color: $sinema-koyu;
+    font-size: $h1-font-size * 1.5;
+    font-weight: $font-weight-bold;
+  }
+}

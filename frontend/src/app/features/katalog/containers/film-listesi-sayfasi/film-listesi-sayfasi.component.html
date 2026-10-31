@@ -1,0 +1,58 @@
+<ng-container *ngIf="gorunum$ | async as gorunum">
+  <div class="d-flex flex-wrap align-items-end gap-3 mb-4">
+    <h1 class="h3 mb-0 me-auto">Vizyondaki filmler</h1>
+
+    <form role="search" class="d-flex flex-wrap gap-2 film-filtresi" (submit)="$event.preventDefault()">
+      <label for="film-arama" class="visually-hidden">Film adıyla ara</label>
+      <input
+        id="film-arama"
+        type="search"
+        class="form-control film-filtresi__arama"
+        placeholder="Film ara"
+        autocomplete="off"
+        [formControl]="aramaKontrolu"
+      />
+      <label for="film-turu" class="visually-hidden">Tür</label>
+      <select id="film-turu" #turSecimi class="form-select film-filtresi__tur" (change)="turSecildi(turSecimi.value)">
+        <option value="">Tüm türler</option>
+        <option
+          *ngFor="let tur of turler$ | async; trackBy: turIzle"
+          [value]="tur"
+          [selected]="tur === gorunum.filtre.tur"
+        >
+          {{ tur }}
+        </option>
+      </select>
+    </form>
+  </div>
+
+  <app-yukleniyor *ngIf="gorunum.durum.yukleniyor" etiket="Filmler yükleniyor…"></app-yukleniyor>
+
+  <app-hata-mesaji
+    *ngIf="gorunum.durum.hata as hata"
+    [mesaj]="hata.mesaj"
+    [tekrarDenenebilir]="true"
+    (tekrarDene)="tekrarDene()"
+  ></app-hata-mesaji>
+
+  <ng-container *ngIf="gorunum.durum.veri as sayfa">
+    <p *ngIf="sayfa.totalElements === 0" class="text-muted" role="status">Aramanıza uygun film bulunamadı.</p>
+
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+      <div class="col" *ngFor="let film of sayfa.content; trackBy: filmIzle">
+        <app-film-karti [film]="film"></app-film-karti>
+      </div>
+    </div>
+
+    <nav *ngIf="sayfa.totalPages > 1" class="d-flex justify-content-center mt-5" aria-label="Film listesi sayfaları">
+      <ngb-pagination
+        [collectionSize]="sayfa.totalElements"
+        [pageSize]="sayfaBoyutu"
+        [page]="sayfa.page + 1"
+        [maxSize]="5"
+        [rotate]="true"
+        (pageChange)="sayfaDegisti($event)"
+      ></ngb-pagination>
+    </nav>
+  </ng-container>
+</ng-container>

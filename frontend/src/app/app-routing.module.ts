@@ -12,7 +12,8 @@ const rotalar: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(rotalar)],
+  // Yeni sayfada en üstten başlanır, geri tuşunda önceki kaydırma konumuna dönülür
+  imports: [RouterModule.forRoot(rotalar, { scrollPositionRestoration: 'enabled' })],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

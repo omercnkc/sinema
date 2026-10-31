@@ -1,0 +1,14 @@
+@import "tema";
+
+.film-filtresi {
+  width: 100%;
+
+  &__arama,
+  &__tur {
+    flex: 1 1 10rem;
+  }
+
+  @include media-breakpoint-up(md) {
+    width: auto;
+  }
+}

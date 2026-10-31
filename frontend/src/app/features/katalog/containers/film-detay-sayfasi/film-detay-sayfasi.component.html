@@ -1,0 +1,64 @@
+<ng-container *ngIf="durum$ | async as durum">
+  <app-yukleniyor *ngIf="durum.yukleniyor" etiket="Film yükleniyor…"></app-yukleniyor>
+
+  <ng-container *ngIf="durum.hata as hata">
+    <app-hata-mesaji
+      [mesaj]="hata.mesaj"
+      [tekrarDenenebilir]="tekrarDenenebilir(hata)"
+      (tekrarDene)="tekrarDene()"
+    ></app-hata-mesaji>
+    <a routerLink="/filmler" class="btn btn-outline-dark">Filmlere dön</a>
+  </ng-container>
+
+  <article *ngIf="durum.veri as film" class="film-detayi">
+    <nav aria-label="Konum">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/filmler">Filmler</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ film.title }}</li>
+      </ol>
+    </nav>
+
+    <div class="row g-4">
+      <div class="col-7 col-sm-5 col-md-4 col-lg-3">
+        <app-film-afisi [afisYolu]="film.posterPath" [baslik]="film.title" boyut="w500"></app-film-afisi>
+      </div>
+
+      <div class="col-md">
+        <h1 class="h2 mb-2">{{ film.title }}</h1>
+        <p class="text-muted mb-3">
+          <span *ngIf="film.certification" class="badge bg-dark me-1">{{ film.certification }}</span>
+          {{ film.runtimeMinutes }} dk
+          <ng-container *ngIf="film.releaseDate"> · Vizyon: {{ film.releaseDate | date: 'd MMMM y' }}</ng-container>
+          <ng-container *ngIf="film.genres.length"> · {{ film.genres.join(', ') }}</ng-container>
+        </p>
+
+        <p *ngIf="film.voteAverage !== null" class="mb-3">
+          <strong>{{ film.tmdbId !== null ? 'TMDB puanı' : 'Puan' }}:</strong> <span aria-hidden="true" class="film-detayi__yildiz">★</span>
+          {{ film.voteAverage | number: '1.1-1' }} / 10
+        </p>
+
+        <ul *ngIf="film.contentDescriptors.length" class="list-inline mb-3" aria-label="Akıllı işaretler">
+          <li *ngFor="let isaret of film.contentDescriptors; trackBy: isaretIzle" class="list-inline-item">
+            <span class="badge rounded-pill bg-warning text-dark">{{ isaretAdlari[isaret] }}</span>
+          </li>
+        </ul>
+
+        <section *ngIf="film.overview" class="mb-3">
+          <h2 class="h5">Özet</h2>
+          <p class="film-detayi__ozet">{{ film.overview }}</p>
+        </section>
+
+        <dl class="row mb-0">
+          <ng-container *ngIf="film.director">
+            <dt class="col-sm-3">Yönetmen</dt>
+            <dd class="col-sm-9">{{ film.director }}</dd>
+          </ng-container>
+          <ng-container *ngIf="film.cast.length">
+            <dt class="col-sm-3">Oyuncular</dt>
+            <dd class="col-sm-9">{{ film.cast.join(', ') }}</dd>
+          </ng-container>
+        </dl>
+      </div>
+    </div>
+  </article>
+</ng-container>

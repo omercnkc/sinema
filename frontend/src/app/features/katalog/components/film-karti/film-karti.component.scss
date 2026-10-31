@@ -1,0 +1,14 @@
+@import "tema";
+
+.film-karti {
+  background-color: transparent;
+
+  &__baslik {
+    @include satir-sinirla(2);
+  }
+
+  &:hover &__baslik,
+  &:focus-within &__baslik {
+    color: $primary;
+  }
+}

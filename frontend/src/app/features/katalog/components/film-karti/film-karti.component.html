@@ -1,0 +1,18 @@
+<article class="card h-100 border-0 film-karti">
+  <app-film-afisi [afisYolu]="film.posterPath" [baslik]="film.title"></app-film-afisi>
+  <div class="card-body px-0 pb-0">
+    <h2 class="h6 card-title mb-1">
+      <a class="stretched-link link-dark text-decoration-none film-karti__baslik" [routerLink]="['/filmler', film.id]">{{
+        film.title
+      }}</a>
+    </h2>
+    <p class="small text-muted mb-1">
+      <span *ngIf="film.certification" class="badge bg-dark me-1">{{ film.certification }}</span>
+      {{ film.runtimeMinutes }} dk
+      <ng-container *ngIf="film.voteAverage !== null">
+        · <span class="visually-hidden">TMDB puanı</span><span aria-hidden="true">★</span> {{ film.voteAverage | number: '1.1-1' }}
+      </ng-container>
+    </p>
+    <p class="small text-muted mb-0">{{ film.genres.join(', ') }}</p>
+  </div>
+</article>

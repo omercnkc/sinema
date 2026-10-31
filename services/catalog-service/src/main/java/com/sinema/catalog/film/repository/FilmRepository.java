@@ -36,4 +36,8 @@ public interface FilmRepository extends JpaRepository<Film, Long> {
               and (:tur is null or :tur member of f.turler)""")
     Page<Film> ara(@Param("sadeceGorunur") boolean sadeceGorunur, @Param("arama") String arama,
             @Param("tur") String tur, Pageable sayfa);
+
+    /** Görünür filmlerdeki türler (ön yüzdeki tür filtresi); harmanlama aksan/harf duyarsız olduğundan tekrarsız. */
+    @Query("select distinct t from Film f join f.turler t where f.gorunur = true order by t")
+    List<String> gorunurFilmTurleri();
 }

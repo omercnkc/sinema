@@ -7,6 +7,7 @@ import com.sinema.common.sayfa.SayfaCevabi;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,6 +37,12 @@ public class FilmKontrolcusu {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = VARSAYILAN_SAYFA_BOYUTU) @Min(1) @Max(EN_BUYUK_SAYFA) int size) {
         return filmServisi.herkeseAcikAra(q, genre, page, size);
+    }
+
+    /** Tür filtresinin seçenekleri: yalnızca görünür filmlerde geçen türler, alfabetik. */
+    @GetMapping("/genres")
+    public List<String> turler() {
+        return filmServisi.herkeseAcikTurler();
     }
 
     @GetMapping("/{filmId}")
