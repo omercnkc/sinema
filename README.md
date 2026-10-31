@@ -186,7 +186,12 @@ npx ng build                # üretim derlemesi (dist/sinema-frontend)
 - `npm start` ile frontend container'ı aynı anda çalışamaz (ikisi de 4200): `docker compose stop frontend`.
 - API adresi `src/environments/` altında; Docker imajında `GATEWAY_HOST_PORT`'tan derleme sırasında gömülür.
 - Yapı: `core/` (oturum, hata yönetimi, bildirim; yalnızca AppModule), `shared/` (ortak bileşen, pipe, form doğrulayıcıları),
-  `layout/` (üst menü, alt bilgi), `features/` (tembel yüklenen modüller: `katalog`, `hesap`, `rezervasyon`).
+  `layout/` (üst menü, alt bilgi), `features/` (tembel yüklenen modüller: `katalog`, `hesap`, `rezervasyon`,
+  `bilet-dogrulama`).
+- Satın alma akışı: `/filmler/:id` (seanslar) → `/seans/:id` (koltuk haritası, doluluk 5 sn'de bir yenilenir, en çok 5
+  koltuk) → `/rezervasyonlarim/:id` (sunucu saatine göre geri sayım, öde / vazgeç) → ödeme sayfası (iyzico ya da
+  MOCK) → `/odeme/sonuc` → `/rezervasyonlarim/:id` (QR'lı bilet, yazdır). QR, herkese açık `/bilet/:kod` doğrulama
+  sayfasını açar.
 - Access token yalnızca bellekte tutulur; sayfa yenilenince HttpOnly refresh cookie'si ile oturum sessizce geri kurulur.
 - nginx: SPA yönlendirmesi, içerik özetli dosyalara uzun önbellek, `index.html`'e `no-cache`, CSP ve güvenlik başlıkları.
 
@@ -255,7 +260,8 @@ job'ı (dakikada bir) yarım kalanları tamamlar: tarayıcı kapanırsa sonucu i
 
 **iyzico sandbox ile deneme:** `.env`'de `IYZICO_API_KEY` / `IYZICO_SECRET_KEY` dolu olmalı. Ödeme sayfasında test
 kartı `5528 7900 0000 0008`, son kullanma gelecekte herhangi bir tarih, CVC herhangi 3 hane. Ödeme sonrası tarayıcı
-`http://localhost:4200/odeme/sonuc` adresine gider (sonuç sayfası M6'da). Anahtarsız denemek için `PAYMENT_PROVIDER=MOCK`.
+`http://localhost:4200/odeme/sonuc` adresine döner; sayfa sonucu kısa süre yoklar ve bilete geçer. Anahtarsız denemek
+için `PAYMENT_PROVIDER=MOCK` (sahte ödeme sayfasında "Ödeme başarılı / başarısız").
 
 ## Derleme ve test
 
@@ -326,7 +332,9 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | payment açılmıyor, `sinema.payment.iyzico.api-anahtari` boş | `PAYMENT_PROVIDER=IYZICO` ama iyzico anahtarları `.env`'de yok. Anahtarları girin ya da `PAYMENT_PROVIDER=MOCK`. |
 | Ödeme başlatırken `503 PAYMENT_PROVIDER_UNAVAILABLE` | iyzico'ya ulaşılamadı. Docker Desktop'tan iyzico'ya bağlantı arada bir kopabiliyor (istek bir kez kendiliğinden yeniden denenir); birkaç saniye sonra tekrar deneyin, payment loglarına bakın. |
 | iyzico sayfasında "Geçersiz token" | Token kullanılmış (ödeme tamamlanmış) ya da 30 dk'lık süresi dolmuş. Durumu `GET /api/v1/payments/by-reservation/{id}` ile kontrol edin. |
-| Ödemeden sonra `localhost:4200/odeme/sonuc` "Sayfa bulunamadı" | Sonuç sayfası M6'da; ödeme yine de işlenir. Rezervasyonun durumuna API'den bakın. |
+| Ödeme sonucu sayfası "hâlâ kontrol ediliyor" | Sonuç ~30 sn içinde kesinleşmedi (banka onayı/3DS ya da booking'e geçici erişim sorunu). Mutabakat işi dakikada bir tamamlar; "Tekrar kontrol et" ya da Rezervasyonlarım. |
+| Ödeme dönüşünde giriş sayfası açılıyor | Oturum geri kurulamadı: sayfa `http://localhost:4200` dışında (ör. `127.0.0.1`) açılmış ya da refresh cookie'si silinmiş. Aynı adresten yeniden giriş yapın; ödeme yine işlenir. |
+| Sahte ödeme sayfasında "erişim reddedildi" (403) | Gateway eski sürüm (form gönderimi CORS'a takılıyordu): `docker compose up -d --build api-gateway`. |
 | Ön yüzde istekler başarısız, konsolda CORS hatası | Sayfa `127.0.0.1:4200` ile açılmış ya da port değişmiş: `http://localhost:4200` kullanın veya `CORS_ALLOWED_ORIGINS`'i güncelleyin. |
 | frontend `port is already allocated` (4200) | `npm start` (ng serve) çalışıyor; birini kapatın ya da `FRONTEND_HOST_PORT` değiştirin. |
 | Ön yüz yeni sürümde eski görünüyor | Tarayıcı eski `index.html`'i tutuyor olamaz (`no-cache`); imaj yeniden derlenmemiş olabilir: `docker compose up -d --build frontend`. |
@@ -342,7 +350,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | M3 | Booking: koltuk tutma (çift satış yok), doluluk, rezervasyon, terk koruması, ödeme onay uçları | Tamamlandı |
 | M4 | Payment (iyzico sandbox + sahte sağlayıcı), mutabakat/iade, QR bilet doğrulama | Tamamlandı |
 | M5 | Angular ön yüz: oturum, giriş/kayıt, film listesi/detayı, seans seçimi, nginx container'ı | Tamamlandı |
-| M6–M7 | Koltuk haritası → ödeme → bilet, admin paneli | Sırada (M6) |
+| M6 | Koltuk haritası → tutma → ödeme → QR'lı bilet, rezervasyonlarım, bilet doğrulama | Tamamlandı |
+| M7 | Admin paneli (film + TMDB, şube/salon, düzen editörü, seans) | Sırada |
 | M8 | Salon düzeni değişikliğinde bilet göçü | |
 | M9 | Sertleştirme, güvenlik taraması, demo | |
 

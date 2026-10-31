@@ -21,13 +21,13 @@
           <p class="mb-1">{{ rezervasyon.startsAt | date: 'd MMMM EEEE, HH:mm':saatDilimi }}</p>
           <p class="mb-2 text-muted">{{ rezervasyon.cinemaName }} · {{ rezervasyon.hallName }}</p>
           <p class="mb-1">
-            <span class="text-muted">Koltuklar:</span>
+            <span class="text-muted">Koltuklar:</span>&ngsp;
             <span *ngFor="let koltuk of rezervasyon.seats; trackBy: koltukIzle; let son = last" class="fw-bold"
               >{{ koltuk.label }}{{ son ? '' : ', ' }}</span
             >
           </p>
           <p class="mb-0">
-            <span class="text-muted">Tutar:</span>
+            <span class="text-muted">Tutar:</span>&ngsp;
             <strong>{{ rezervasyon.totalAmount | currency: 'TRY':'symbol-narrow':'1.2-2' }}</strong>
           </p>
         </div>

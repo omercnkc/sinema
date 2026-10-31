@@ -203,8 +203,9 @@ describe('RezervasyonSayfasiComponent', () => {
     const kok: HTMLElement = fixture.nativeElement;
 
     expect(kok.querySelector('h1')?.textContent).toContain('Ödeme bekleniyor');
-    expect(kok.textContent).toContain('D-3, D-4');
-    expect(kok.textContent).toContain('₺320,00');
+    // Etiket ile değer arasındaki boşluk (&ngsp;) şablon derlemesinde silinmemeli
+    expect(kok.textContent).toContain('Koltuklar: D-3, D-4');
+    expect(kok.textContent).toContain('Tutar: ₺320,00');
     expect(kok.querySelector('app-geri-sayim')).not.toBeNull();
     // İstemci saati bir saat geride olsa da sunucu saati esas alınır
     expect(new Date(TestBed.inject(SunucuSaati).simdi()).toISOString()).toBe('2026-11-01T16:00:00.000Z');

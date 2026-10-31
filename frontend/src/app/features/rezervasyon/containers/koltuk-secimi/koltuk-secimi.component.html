@@ -19,6 +19,7 @@
     Koltuk durumu güncellenemedi; yeniden deneniyor. Harita birkaç saniye eski olabilir.
   </p>
 
+  <p *ngIf="gorunum.harita" class="d-md-none small text-muted mb-2">Haritanın tamamını görmek için yana kaydırın.</p>
   <app-koltuk-haritasi
     *ngIf="gorunum.harita as harita"
     [gorunum]="harita"
