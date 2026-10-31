@@ -37,6 +37,9 @@ public interface RezervasyonRepository extends JpaRepository<Rezervasyon, Long> 
     int suresiDolanBekleyeniKapat(@Param("kullaniciId") Long kullaniciId, @Param("seansId") Long seansId,
             @Param("simdi") Instant simdi);
 
+    /** QR bilet doğrulama (K30); bilet kodu UNIQUE. */
+    Optional<Rezervasyon> findByBiletKodu(String biletKodu);
+
     /** Sahiplik sorgunun parçası: başkasının rezervasyonu "yok" gibi görünür (404, §7.2). */
     Optional<Rezervasyon> findByIdAndKullaniciId(Long id, Long kullaniciId);
 
