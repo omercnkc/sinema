@@ -956,6 +956,21 @@ Notlar (alt görev 10-11): booking `GET /api/v1/tickets/{kod}` (`BiletDogrulamaS
 
 **M4 tamamlandı (2026-10-31).** Ertelenen notlar: Docker Desktop'tan iyzico'ya aralıklı TLS/bağlantı kopması (tekrar deneme + mutabakat telafi ediyor; M9'da gözlem); iyzico iade cevabı imzası doğrulanmıyor (dokümanda tanımı net değil; iade sonucu `status` ile); `INITIATED`'da takılan ödemeler (sağlayıcı başlatılamadı) temizlenmiyor, aynı istek yeniden denediği için zararsız (M9); ödeme sonrası ön yüz sonuç sayfası M6'da.
 
+**M5 alt görevleri (2026-10-31, TASLAK, onay bekliyor):**
+Ön bilgi (2026-10-31 yoklaması): nvm'de Node 14.18.1 / 20 / 24 var, **16 yok**; Angular CLI 13.3.11, core 13.4.0; ng-bootstrap 12.1.2 (peer: Angular ^13, `@angular/localize` ^13, `@popperjs/core` ^2.10.2); angularx-qrcode 13.0.15 (Angular ^13); `@angular-eslint` 13.5.0.
+1. [ ] Doğrulamalar ve araçlar (kod yok, §9.3-4): Node 16 (nvm) kurulumu ve `.nvmrc`; ng-bootstrap 12'nin desteklediği Bootstrap sürümü (5.1.x beklenir); Angular 13 `DatePipe`'ın `'+0300'` saat dilimi ve `tr` locale davranışı (küçük deneme); `npm audit` başlangıç durumu
+2. [ ] Proje iskeleti: `frontend/` (`ng new`, strict, SCSS, routing), Bootstrap + ng-bootstrap kurulumu, SCSS yapısı (`_variables`, `_mixins`, Bootstrap değişken override), `environment.ts` (`apiBaseUrl` = gateway, TMDB görsel taban adresi), klasörler `core/shared/layout/features` (§8.2), CoreModule tek import koruması, `tr` locale, `@angular-eslint` ile lint, Karma test altyapısı
+3. [ ] Layout: header (logo, film menüsü, oturum alanı yer tutucusu), footer (TMDB logosu + atıf metni, §9.3-2), ana sayfa yönlendirmesi, 404 sayfası; mobile-first
+4. [ ] Hata yönetimi: RFC 7807 modeli, `ErrorInterceptor` (`code` → Türkçe mesaj sözlüğü tek yerde, 429'da `Retry-After`, teknik ayrıntı gösterilmez), ng-bootstrap toast ile bildirim servisi, yükleniyor/hata bileşenleri (shared)
+5. [ ] Auth çekirdeği (§8.4, K36): `AuthService` (BehaviorSubject, access token yalnızca bellekte), `AuthInterceptor` (Bearer; 401'de tek seferlik paylaşılan refresh, `shareReplay`), `withCredentials` yalnızca auth uçlarına, `APP_INITIALIZER` ile açılışta sessiz refresh, `AuthGuard` / `RoleGuard` / `GuestGuard`, header'da kullanıcı menüsü + çıkış
+6. [ ] Giriş ve kayıt sayfaları: Reactive Forms (tiplenmemiş, model arayüzleriyle sarılı), kayıtta ad/soyad/TR cep telefonu (K48; sunucuyla aynı kurallar), sunucu alan hatalarının (`errors[]`) forma eşlenmesi, ortak form hata bileşeni, hesap kilidi 429 mesajı
+7. [ ] Film listesi ve detayı: `/filmler` (sayfalı, ng-bootstrap pagination, başlık araması `debounceTime` + `distinctUntilChanged` + `switchMap`, tür filtresi), film kartı (afiş hotlink, K41), `/filmler/:id` (özet, süre, tür, yaş sınırı, akıllı işaretler, oyuncular, yönetmen, "TMDB puanı"); `OnPush`, `trackBy`, async pipe
+8. [ ] Seans seçimi: film detayında gün seçici (Europe/Istanbul günü, `?date`), şube filtresi, seans listesi (saat, şube, salon, fiyat, `salesOpen`), seansa tıklayınca `/seans/:id` (koltuk haritası M6; şimdilik yer tutucu)
+9. [ ] Docker + kapanış: frontend Dockerfile (multi-stage: Node 16 build → nginx, sabit tag, non-root), nginx (SPA fallback, önbellek ve güvenlik başlıkları), compose `frontend` servisi (`127.0.0.1:4200`, gateway CORS ve ödeme sonuç adresi ile uyumlu), README (`nvm use && npm start`), `ng lint` + `ng test` + prod build + `npm audit`, duman testine ön yüz adımı, M5 kapanışı
+
+Gruplar (öneri, kısa görevler ikişer): [1+2], [3+4], [5], [6], [7], [8+9]. Uzun görevler (auth çekirdeği, formlar, film sayfaları) tek başına.
+Onay gerekenler: Node 16'nın nvm ile kurulması; yeni bağımlılıklar `@angular/localize` 13 ve `@popperjs/core` 2.x (ng-bootstrap'in zorunlu eşleri), `@angular-eslint` 13 (yalnızca geliştirme, lint); frontend container'ının M5'te compose'a eklenmesi (planlamada §6.2'de vardı, milestone listesinde yoktu).
+
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
 2. **Örnek veri** (M2) Flyway migration'ı olarak mı (her ortamda gelir), yoksa yalnızca `dev` profilinde çalışan ayrı bir seed olarak mı? Önerim `dev` seed.
