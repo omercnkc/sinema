@@ -27,9 +27,8 @@ server:
 
 sinema:
   payment:
-    # K49: IYZICO ya da MOCK (anahtarsız yerel deneme, sahte ödeme sayfası).
-    # GEÇİCİ: iyzico adaptörü M4 alt görev 8'de gelene kadar varsayılan MOCK; sonra IYZICO olur
-    saglayici: ${PAYMENT_PROVIDER:MOCK}
+    # K49: IYZICO (varsayılan, sandbox) ya da MOCK (anahtarsız yerel deneme, sahte ödeme sayfası)
+    saglayici: ${PAYMENT_PROVIDER:IYZICO}
     # Sağlayıcı ödeme sonrası tarayıcıyı buraya yönlendirir (gateway üzerinden, K39)
     callback-adresi: ${PAYMENT_CALLBACK_URL:http://localhost:8080/api/v1/payments/callback/iyzico}
     # Callback işlenince tarayıcının gittiği ön yüz sayfası (?reservationId= eklenir)
@@ -43,6 +42,11 @@ sinema:
       yedek-ad: Sinema
       yedek-soyad: Musterisi
       yedek-telefon: "+905350000000"
+    # Yalnızca saglayici=IYZICO iken; anahtarların varsayılanı yok (eksikse servis açılmaz). Yalnızca sandbox (K39)
+    iyzico:
+      api-anahtari: ${IYZICO_API_KEY:}
+      gizli-anahtar: ${IYZICO_SECRET_KEY:}
+      taban-adres: ${IYZICO_BASE_URL:https://sandbox-api.iyzipay.com}
     mock:
       # Sahte ödeme sayfası (gateway üzerinden); yalnızca saglayici=MOCK iken
       sayfa-adresi: ${PAYMENT_MOCK_PAGE_URL:http://localhost:8080/api/v1/payments/mock/checkout}

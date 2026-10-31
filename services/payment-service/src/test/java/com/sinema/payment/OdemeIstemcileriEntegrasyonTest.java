@@ -29,7 +29,7 @@ import org.springframework.test.context.DynamicPropertySource;
  * payment'ın booking ve auth istemcileri, ortak Feign altyapısıyla gerçek HTTP üzerinden: doğru hedefe kesilmiş
  * servis token'ı, JSON eşlemesi, iş sonuçlarının (404/409) kodlarıyla taşınması ve ulaşılamayan servisin 503'e çevrilmesi.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = "sinema.payment.saglayici=MOCK")
 @Import(MysqlTestYapilandirmasi.class)
 class OdemeIstemcileriEntegrasyonTest {
 

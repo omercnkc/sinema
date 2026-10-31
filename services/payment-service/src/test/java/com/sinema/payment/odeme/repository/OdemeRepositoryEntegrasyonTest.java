@@ -23,7 +23,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /** V2 şeması ile entity eşlemesi gerçek MySQL'de: kısıtlar ve JSON kolonu. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = "sinema.payment.saglayici=MOCK")
 @Import(MysqlTestYapilandirmasi.class)
 class OdemeRepositoryEntegrasyonTest {
 

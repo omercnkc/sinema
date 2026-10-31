@@ -116,8 +116,11 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       BOOKING_SERVICE_URL: http://booking-service:8083
       PAYMENT_SERVICE_CLIENT_SECRET: ${PAYMENT_SERVICE_CLIENT_SECRET}
-      # K49: IYZICO ya da MOCK. GEÇİCİ: iyzico adaptörü (M4 alt görev 8) gelene kadar varsayılan MOCK
-      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-MOCK}
+      # K49: IYZICO (varsayılan, sandbox anahtarları gerekir) ya da MOCK (anahtarsız, sahte ödeme sayfası)
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-IYZICO}
+      IYZICO_API_KEY: ${IYZICO_API_KEY:-}
+      IYZICO_SECRET_KEY: ${IYZICO_SECRET_KEY:-}
+      IYZICO_BASE_URL: ${IYZICO_BASE_URL:-https://sandbox-api.iyzipay.com}
     healthcheck:
       <<: *saglik
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]
