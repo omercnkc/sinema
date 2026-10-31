@@ -1,0 +1,121 @@
+@import "tema";
+
+$hucre-boyu: 2rem;
+$hucre-boyu-kucuk: 1.75rem;
+$hucre-araligi: 0.25rem;
+$koltuk-dolu: $gray-600;
+
+:host {
+  display: block;
+}
+
+.koltuk-haritasi {
+  --hucre-boyu: #{$hucre-boyu-kucuk};
+
+  display: grid;
+  gap: $hucre-araligi;
+  width: max-content;
+  margin-inline: auto;
+
+  @include media-breakpoint-up(md) {
+    --hucre-boyu: #{$hucre-boyu};
+  }
+
+  // Küçük ekranda harita sığmazsa yatay kayar (sayfa değil)
+  &__kaydirma {
+    overflow-x: auto;
+    padding-bottom: map-get($spacers, 2);
+  }
+
+  &__perde {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 0.25rem solid $gray-500;
+    color: $text-muted;
+    font-size: $font-size-sm;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  &__sira {
+    display: flex;
+    grid-column: 1;
+    align-items: center;
+    justify-content: center;
+    color: $text-muted;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+
+  &__isaret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: $border-width dashed $success;
+    border-radius: $border-radius-sm;
+    color: $success;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &--duvar {
+      border-style: solid;
+      border-color: $gray-500;
+      background-color: $gray-400;
+    }
+  }
+}
+
+.koltuk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: $border-width solid $gray-500;
+  border-radius: $border-radius-sm $border-radius-sm 0 0;
+  background-color: $white;
+  color: $body-color;
+  font-size: $font-size-sm * 0.85;
+  line-height: 1;
+
+  &:focus-visible {
+    outline: 0.15rem solid $primary;
+    outline-offset: 0.1rem;
+  }
+
+  &--bos:hover {
+    border-color: $primary;
+  }
+
+  &--engelli {
+    border-color: $info;
+  }
+
+  &--secili {
+    border-color: $primary;
+    background-color: $primary;
+    color: $white;
+  }
+
+  // Tutulu: çapraz çizgili desen (renk körlüğünde de ayırt edilir)
+  &--tutulu {
+    border-color: $koltuk-dolu;
+    background: repeating-linear-gradient(45deg, $gray-300, $gray-300 0.2rem, $gray-500 0.2rem, $gray-500 0.4rem);
+    cursor: not-allowed;
+  }
+
+  &--satildi {
+    border-color: $koltuk-dolu;
+    background-color: $koltuk-dolu;
+    color: $white;
+    cursor: not-allowed;
+  }
+
+  // Açıklamadaki örnek kutucuklar
+  &--ornek {
+    width: $hucre-boyu-kucuk;
+    height: $hucre-boyu-kucuk;
+    margin-right: map-get($spacers, 1);
+    vertical-align: middle;
+  }
+}

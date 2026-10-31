@@ -1,0 +1,23 @@
+<section aria-labelledby="koltuk-secimi-basligi" *ngIf="gorunum$ | async as gorunum">
+  <h2 id="koltuk-secimi-basligi" class="h5 mb-3">Koltuk seçimi</h2>
+
+  <div *ngIf="!gorunum.kullanici" class="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status">
+    <span class="me-auto">Bilet almak için giriş yapın. Haritada boş ve dolu koltukları görebilirsiniz.</span>
+    <a class="btn btn-sm btn-primary" routerLink="/giris" [queryParams]="{ donus: donusAdresi }">Giriş yap</a>
+  </div>
+
+  <app-yukleniyor *ngIf="gorunum.duzen.yukleniyor" etiket="Koltuk haritası yükleniyor…"></app-yukleniyor>
+
+  <app-hata-mesaji
+    *ngIf="gorunum.duzen.hata as hata"
+    [mesaj]="hata.mesaj"
+    [tekrarDenenebilir]="true"
+    (tekrarDene)="duzeniTekrarDene()"
+  ></app-hata-mesaji>
+
+  <p *ngIf="gorunum.dolulukHatasi" class="alert alert-warning py-2 small" role="status">
+    Koltuk durumu güncellenemedi; yeniden deneniyor. Harita birkaç saniye eski olabilir.
+  </p>
+
+  <app-koltuk-haritasi *ngIf="gorunum.harita as harita" [gorunum]="harita"></app-koltuk-haritasi>
+</section>

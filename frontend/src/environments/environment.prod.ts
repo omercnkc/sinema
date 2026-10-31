@@ -3,4 +3,6 @@ export const environment = {
   production: true,
   apiTabanAdresi: 'http://localhost:8080/api/v1',
   tmdbGorselTabanAdresi: 'https://image.tmdb.org/t/p',
+  /** Koltuk doluluğunun yenilenme aralığı (K33: 5 sn, yapılandırılabilir). */
+  dolulukYenilemeMs: 5000,
 };

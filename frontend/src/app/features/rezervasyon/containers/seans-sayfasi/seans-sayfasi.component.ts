@@ -12,8 +12,8 @@ import { SeansDetayService } from '../../services/seans-detay.service';
 const SEANS_YOK = new UygulamaHatasi(HttpStatusCode.NotFound, 'SHOWTIME_NOT_FOUND', 'Seans bulunamadı.');
 
 /**
- * /seans/:id (smart): seçilen seansın başlığı. Misafir de açabilir (K3: görüntüleme serbest). Koltuk haritası,
- * seçim ve tutma M6'da bu sayfaya eklenir.
+ * /seans/:id (smart): seçilen seansın başlığı ve satış açıksa koltuk seçimi. Misafir de açabilir (K3: haritayı
+ * görür, seçemez).
  */
 @Component({
   selector: 'app-seans-sayfasi',

@@ -33,8 +33,9 @@
     </div>
 
     <div *ngIf="!seans.salesOpen" class="alert alert-secondary" role="status">Bu seansın satışı kapandı.</div>
-    <div *ngIf="seans.salesOpen" class="alert alert-info" role="status">
-      Satış kapanışı: {{ seans.salesCloseAt | date: 'HH:mm':saatDilimi }}. Koltuk seçimi yakında bu sayfada olacak.
-    </div>
+    <ng-container *ngIf="seans.salesOpen">
+      <p class="text-muted small">Satış kapanışı: {{ seans.salesCloseAt | date: 'HH:mm':saatDilimi }}</p>
+      <app-koltuk-secimi [seansId]="seans.id"></app-koltuk-secimi>
+    </ng-container>
   </ng-container>
 </ng-container>

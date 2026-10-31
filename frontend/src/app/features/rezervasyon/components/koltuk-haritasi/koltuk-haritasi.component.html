@@ -1,0 +1,78 @@
+<div class="koltuk-haritasi__kaydirma">
+  <div
+    *ngIf="gorunumVerisi"
+    class="koltuk-haritasi"
+    role="group"
+    aria-label="Koltuk haritası. Ok tuşlarıyla koltuklar arasında gezinin."
+    [style.grid-template-columns]="izgaraSutunlari"
+    [style.grid-template-rows]="izgaraSatirlari"
+  >
+    <div
+      *ngFor="let bant of perdeBantlari; trackBy: satirIzle"
+      class="koltuk-haritasi__perde"
+      [style.grid-row]="bant.satir + 1"
+      [style.grid-column-start]="bant.ilkSutun + 2"
+      [style.grid-column-end]="bant.sonSutun + 3"
+    >
+      Perde
+    </div>
+
+    <div
+      *ngFor="let sira of gorunumVerisi.siraEtiketleri; trackBy: satirIzle"
+      class="koltuk-haritasi__sira"
+      aria-hidden="true"
+      [style.grid-row]="sira.satir + 1"
+    >
+      {{ sira.etiket }}
+    </div>
+
+    <div
+      *ngFor="let diger of digerHucreler; trackBy: hucreIzle"
+      class="koltuk-haritasi__isaret"
+      [class.koltuk-haritasi__isaret--duvar]="diger.hucre.type === 'WALL'"
+      [style.grid-row]="diger.hucre.row + 1"
+      [style.grid-column]="diger.hucre.col + 2"
+      [attr.title]="diger.erisilebilirEtiket"
+      aria-hidden="true"
+    >
+      <ng-container [ngSwitch]="diger.hucre.type">
+        <span *ngSwitchCase="'ENTRANCE'">G</span>
+        <span *ngSwitchCase="'EXIT'">Ç</span>
+      </ng-container>
+    </div>
+
+    <button
+      *ngFor="let koltuk of koltuklar; trackBy: hucreIzle"
+      type="button"
+      class="koltuk"
+      [ngClass]="durumSiniflari[koltuk.durum || 'BOS']"
+      [class.koltuk--engelli]="koltuk.hucre.seatType === 'ACCESSIBLE'"
+      [style.grid-row]="koltuk.hucre.row + 1"
+      [style.grid-column]="koltuk.hucre.col + 2"
+      [attr.data-hucre]="koltuk.hucre.cellId"
+      [attr.aria-label]="koltuk.erisilebilirEtiket"
+      [attr.aria-pressed]="koltuk.durum === 'SECILI'"
+      [attr.aria-disabled]="koltuk.durum === 'TUTULU' || koltuk.durum === 'SATILDI'"
+      [tabIndex]="koltuk.hucre.cellId === odakKimligi ? 0 : -1"
+      (click)="tikla(koltuk)"
+      (keydown)="tusaBasildi($event, koltuk)"
+    >
+      <span aria-hidden="true" [ngSwitch]="koltuk.durum">
+        <ng-container *ngSwitchCase="'SATILDI'">✕</ng-container>
+        <ng-container *ngSwitchCase="'SECILI'">✓</ng-container>
+        <ng-container *ngSwitchCase="'TUTULU'"></ng-container>
+        <ng-container *ngSwitchDefault>{{ koltuk.hucre.seatType === 'ACCESSIBLE' ? '♿' : koltuk.hucre.seatNumber }}</ng-container>
+      </span>
+    </button>
+  </div>
+</div>
+
+<ul class="koltuk-aciklamasi list-unstyled d-flex flex-wrap gap-3 small mt-3 mb-0" aria-label="Harita açıklaması">
+  <li><span class="koltuk koltuk--ornek koltuk--bos" aria-hidden="true"></span> Boş</li>
+  <li><span class="koltuk koltuk--ornek koltuk--secili" aria-hidden="true">✓</span> Seçiminiz</li>
+  <li><span class="koltuk koltuk--ornek koltuk--tutulu" aria-hidden="true"></span> Tutuluyor</li>
+  <li><span class="koltuk koltuk--ornek koltuk--satildi" aria-hidden="true">✕</span> Satıldı</li>
+  <li><span class="koltuk koltuk--ornek koltuk--bos" aria-hidden="true">♿</span> Engelli koltuğu</li>
+  <li><span class="koltuk-haritasi__isaret koltuk--ornek" aria-hidden="true">G</span> Giriş</li>
+  <li><span class="koltuk-haritasi__isaret koltuk--ornek" aria-hidden="true">Ç</span> Çıkış</li>
+</ul>

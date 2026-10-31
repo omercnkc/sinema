@@ -5,4 +5,6 @@ export const environment = {
   apiTabanAdresi: 'http://localhost:8080/api/v1',
   /** TMDB görsellerinin taban adresi; yalnızca posterPath saklanır, afiş hotlink edilir (K41). */
   tmdbGorselTabanAdresi: 'https://image.tmdb.org/t/p',
+  /** Koltuk doluluğunun yenilenme aralığı (K33: 5 sn, yapılandırılabilir). */
+  dolulukYenilemeMs: 5000,
 };
