@@ -9,4 +9,6 @@ if (environment.production) {
 }
 
 platformBrowserDynamic().bootstrapModule(AppModule)
-  .catch(err => console.error(err));
+  // Uygulama hiç açılamadıysa hatayı bildirecek başka bir yer yok (bildirim servisi de henüz yok)
+  // eslint-disable-next-line no-console
+  .catch((hata: unknown) => console.error(hata));
