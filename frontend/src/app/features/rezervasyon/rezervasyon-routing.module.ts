@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { GirisGerekliGuard } from '../../core/oturum/oturum.guards';
+import { OdemeSonucuSayfasiComponent } from './containers/odeme-sonucu-sayfasi/odeme-sonucu-sayfasi.component';
 import { RezervasyonSayfasiComponent } from './containers/rezervasyon-sayfasi/rezervasyon-sayfasi.component';
 import { SeansSayfasiComponent } from './containers/seans-sayfasi/seans-sayfasi.component';
 
@@ -8,6 +9,8 @@ import { SeansSayfasiComponent } from './containers/seans-sayfasi/seans-sayfasi.
 const rotalar: Routes = [
   { path: 'seans/:id', component: SeansSayfasiComponent },
   { path: 'rezervasyonlarim/:id', component: RezervasyonSayfasiComponent, canActivate: [GirisGerekliGuard] },
+  // Ödeme sağlayıcısından tam sayfa dönüş: oturum açılışta refresh cookie'si ile geri kurulur
+  { path: 'odeme/sonuc', component: OdemeSonucuSayfasiComponent, canActivate: [GirisGerekliGuard] },
 ];
 
 @NgModule({

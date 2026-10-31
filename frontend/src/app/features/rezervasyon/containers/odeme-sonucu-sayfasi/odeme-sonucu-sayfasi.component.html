@@ -1,0 +1,42 @@
+<div class="row justify-content-center" *ngIf="gorunum$ | async as gorunum">
+  <div class="col-lg-7" [ngSwitch]="gorunum.tur">
+    <h1 class="h3 mb-3">Ödeme sonucu</h1>
+
+    <app-yukleniyor *ngSwitchCase="'KONTROL'" etiket="Ödemeniz kontrol ediliyor…"></app-yukleniyor>
+    <app-yukleniyor *ngSwitchCase="'ONAYLANDI'" etiket="Biletinize yönlendiriliyorsunuz…"></app-yukleniyor>
+
+    <ng-container *ngSwitchCase="'GECIKTI'">
+      <div class="alert alert-info" role="status">
+        Ödemeniz hâlâ kontrol ediliyor. Banka onayı birkaç dakika sürebilir; sonuç kesinleşince rezervasyonlarınızda
+        görünür.
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary" (click)="yenile()">Tekrar kontrol et</button>
+        <a *ngIf="gorunum.rezervasyon" class="btn btn-outline-dark" [routerLink]="['/rezervasyonlarim', gorunum.rezervasyon.reservationId]"
+          >İşleme git</a
+        >
+      </div>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'SURESI_DOLDU'">
+      <div class="alert alert-warning" role="status">
+        Ödeme süresi dolduğu için biletiniz oluşturulamadı; koltuklar bırakıldı.
+        <ng-container *ngIf="gorunum.iade"> Ödemeniz alınmıştı, kartınıza iade edilir.</ng-container>
+      </div>
+      <a *ngIf="gorunum.rezervasyon" class="btn btn-primary" [routerLink]="['/seans', gorunum.rezervasyon.showtimeId]">Koltuk seçimine dön</a>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'BASARISIZ'">
+      <div class="alert alert-danger" role="status">
+        Ödeme tamamlanamadı; koltuklar bırakıldı.
+        <ng-container *ngIf="gorunum.iade"> Ödemeniz alınmıştı, kartınıza iade edilir.</ng-container>
+      </div>
+      <a *ngIf="gorunum.rezervasyon" class="btn btn-primary" [routerLink]="['/seans', gorunum.rezervasyon.showtimeId]">Koltuk seçimine dön</a>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'ODEME_YOK'">
+      <div class="alert alert-danger" role="status">Ödeme kaydı bulunamadı. İşlemlerinizi rezervasyonlarınızdan kontrol edebilirsiniz.</div>
+      <a class="btn btn-outline-dark" routerLink="/filmler">Filmlere dön</a>
+    </ng-container>
+  </div>
+</div>

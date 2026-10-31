@@ -10,6 +10,9 @@ import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
 import { SunucuSaati } from '../../../../core/zaman/sunucu-saati.service';
 import { SharedModule } from '../../../../shared/shared.module';
 import { gorunenDurum, Rezervasyon } from '../../models/rezervasyon.models';
+import { SayfaYonlendirici } from '../../../../core/yonlendirme/sayfa-yonlendirici.service';
+import { Odeme } from '../../models/odeme.models';
+import { OdemeService } from '../../services/odeme.service';
 import { RezervasyonService } from '../../services/rezervasyon.service';
 import { RezervasyonSayfasiComponent } from './rezervasyon-sayfasi.component';
 
@@ -38,6 +41,8 @@ describe('gorunenDurum', () => {
 
 describe('RezervasyonSayfasiComponent', () => {
   let servis: jasmine.SpyObj<RezervasyonService>;
+  let odemeServisi: jasmine.SpyObj<OdemeService>;
+  let disYonlendirici: jasmine.SpyObj<SayfaYonlendirici>;
   let yonlendir: jasmine.Spy;
 
   beforeAll(() => registerLocaleData(localeTr));
@@ -46,6 +51,9 @@ describe('RezervasyonSayfasiComponent', () => {
     jasmine.clock().install();
     jasmine.clock().mockDate(new Date('2026-11-01T15:00:00Z'));
     servis = jasmine.createSpyObj<RezervasyonService>('RezervasyonService', ['getir', 'birak']);
+    odemeServisi = jasmine.createSpyObj<OdemeService>('OdemeService', ['baslat']);
+    disYonlendirici = jasmine.createSpyObj<SayfaYonlendirici>('SayfaYonlendirici', ['disAdreseGit']);
+    disYonlendirici.disAdreseGit.and.returnValue(true);
   });
 
   afterEach(() => jasmine.clock().uninstall());
@@ -56,6 +64,8 @@ describe('RezervasyonSayfasiComponent', () => {
       declarations: [RezervasyonSayfasiComponent],
       providers: [
         { provide: RezervasyonService, useValue: servis },
+        { provide: OdemeService, useValue: odemeServisi },
+        { provide: SayfaYonlendirici, useValue: disYonlendirici },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id })) } },
         { provide: LOCALE_ID, useValue: 'tr' },
       ],
@@ -66,10 +76,72 @@ describe('RezervasyonSayfasiComponent', () => {
     return fixture;
   }
 
-  function vazgecDugmesi(fixture: ComponentFixture<RezervasyonSayfasiComponent>): HTMLButtonElement {
+  function dugme(fixture: ComponentFixture<RezervasyonSayfasiComponent>, metin: string): HTMLButtonElement {
     return Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button'))
-      .find((b) => b.textContent?.includes('Vazgeç')) as HTMLButtonElement;
+      .find((b) => b.textContent?.includes(metin)) as HTMLButtonElement;
   }
+
+  function vazgecDugmesi(fixture: ComponentFixture<RezervasyonSayfasiComponent>): HTMLButtonElement {
+    return dugme(fixture, 'Vazgeç');
+  }
+
+  function odeDugmesi(fixture: ComponentFixture<RezervasyonSayfasiComponent>): HTMLButtonElement {
+    return dugme(fixture, 'öde');
+  }
+
+  const ODEME: Odeme = {
+    paymentId: 5, reservationId: 18, status: 'PENDING', amount: '320.00', paymentPageUrl: 'https://sandbox-cpp.iyzipay.com?token=t',
+  };
+
+  describe('payment', () => {
+    it('should start payment once and send browser to the payment page, keeping buttons disabled', () => {
+      servis.getir.and.returnValue(of(BEKLEYEN));
+      const cevap = new Subject<Odeme>();
+      odemeServisi.baslat.and.returnValue(cevap);
+      const fixture = olustur();
+      expect(odeDugmesi(fixture).textContent).toContain('₺320,00 öde');
+
+      odeDugmesi(fixture).click();
+      vazgecDugmesi(fixture).click();
+      fixture.detectChanges();
+      cevap.next(ODEME);
+      cevap.complete();
+      fixture.detectChanges();
+
+      expect(odemeServisi.baslat).toHaveBeenCalledOnceWith(18);
+      expect(servis.birak).not.toHaveBeenCalled();
+      expect(disYonlendirici.disAdreseGit).toHaveBeenCalledWith(ODEME.paymentPageUrl as string);
+      expect(odeDugmesi(fixture).disabled).toBeTrue();
+      expect(vazgecDugmesi(fixture).disabled).toBeTrue();
+    });
+
+    it('should not leave the app for a refused payment address', () => {
+      servis.getir.and.returnValue(of(BEKLEYEN));
+      odemeServisi.baslat.and.returnValue(of(ODEME));
+      disYonlendirici.disAdreseGit.and.returnValue(false);
+      const fixture = olustur();
+
+      odeDugmesi(fixture).click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Ödeme sayfası açılamadı');
+      expect(odeDugmesi(fixture).disabled).toBeFalse();
+    });
+
+    it('should reload when the reservation was already paid', () => {
+      servis.getir.and.returnValue(of(BEKLEYEN));
+      odemeServisi.baslat.and.returnValue(throwError(() =>
+        new UygulamaHatasi(409, 'PAYMENT_ALREADY_COMPLETED', 'Bu rezervasyonun ödemesi tamamlandı.')));
+      const fixture = olustur();
+      servis.getir.and.returnValue(of({ ...BEKLEYEN, status: 'CONFIRMED', ticketCode: 'ABCD1234EFGH5678' }));
+
+      odeDugmesi(fixture).click();
+      fixture.detectChanges();
+
+      expect(servis.getir).toHaveBeenCalledTimes(2);
+      expect(fixture.nativeElement.textContent).toContain('ABCD1234EFGH5678');
+    });
+  });
 
   it('should show pending hold with seats, amount and countdown aligned to server time', () => {
     servis.getir.and.returnValue(of(BEKLEYEN));

@@ -41,17 +41,24 @@
             </p>
             <div *ngIf="gorunum.islem.hata as hata" class="alert alert-danger" role="alert">{{ hata }}</div>
             <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-primary" [disabled]="gorunum.islem.calisan !== null" (click)="ode(rezervasyon)">
+                <span *ngIf="gorunum.islem.calisan === 'ODE'" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                {{ rezervasyon.totalAmount | currency: 'TRY':'symbol-narrow':'1.2-2' }} öde
+              </button>
               <button
                 type="button"
                 class="btn btn-outline-secondary"
-                [disabled]="gorunum.islem.birakiliyor"
+                [disabled]="gorunum.islem.calisan !== null"
                 (click)="vazgec(rezervasyon)"
               >
-                <span *ngIf="gorunum.islem.birakiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                <span *ngIf="gorunum.islem.calisan === 'VAZGEC'" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
                 Vazgeç
               </button>
             </div>
-            <p class="small text-muted mt-3 mb-0">
+            <p class="small text-muted mt-3 mb-1">
+              Ödeme güvenli ödeme sayfasında yapılır; ödeme başlayınca koltuklarınız birkaç dakika daha tutulur.
+            </p>
+            <p class="small text-muted mb-0">
               Vazgeçerseniz koltuklar hemen başkalarına açılır. Kısa sürede üç kez ödemeden bırakılan işlem, yeni koltuk
               tutmayı bir süre engeller.
             </p>
