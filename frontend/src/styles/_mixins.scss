@@ -1,0 +1,10 @@
+// Ortak SCSS yardımcıları (rules §6.8). Bileşenler @use 'mixins' ile alır (angular.json includePaths: src/styles).
+// Ekran okuyucuya özel metin için Bootstrap'in .visually-hidden sınıfı kullanılır.
+
+// Metni belirtilen satır sayısında keser (film özeti kartlarda)
+@mixin satir-sinirla($satir) {
+  display: -webkit-box;
+  -webkit-line-clamp: $satir;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -1,0 +1,8 @@
+// Genel stiller: önce değişken ezmeleri, sonra Bootstrap (yalnızca CSS; Bootstrap'in JS'i ve jQuery kullanılmaz,
+// etkileşimli bileşenler ng-bootstrap'ten gelir, K41).
+@import "variables";
+@import "bootstrap/scss/bootstrap";
+
+body {
+  min-height: 100vh;
+}

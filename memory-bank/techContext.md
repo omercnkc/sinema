@@ -11,7 +11,7 @@ Sabit stack ve tüm kurallar: [rules.md](rules.md). Özet:
 - Git repo var (henüz commit yok)
 - Java: Temurin 21.0.12. **Maven kurulu değil** → `.\mvnw.cmd` kullan (wrapper Maven'ı kendisi indirir)
 - Docker 29.9 / Compose v5.6 kurulu; Docker Desktop'ın açık olması gerekir
-- Node: sistemde v20, nvm 2.0 var; Angular 13 için `.nvmrc` ile Node 16'ya geçilecek (M5)
+- Node: sistemde v20 seçili (değiştirme). Frontend için **Node 14.18.1** (K50): `N14="/c/Users/omerc/AppData/Local/Author Software/nvm/installs/v14.18.1"; PATH="$N14:$PATH"` ile komut başına; npm 6 (`npx -y` yok, `npx -p` kullan). Karma: ChromeHeadless (`npm run test:ci`)
 
 ## Boot 4 notları (3.x'ten farklar, karşılaştıkça eklenir)
 - `spring-boot-autoconfigure` SLF4J'yi geçişli getirmez; doğrudan kullanılan `slf4j-api` açıkça eklenir.
