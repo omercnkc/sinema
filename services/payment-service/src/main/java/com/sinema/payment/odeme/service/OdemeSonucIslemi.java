@@ -1,6 +1,7 @@
 package com.sinema.payment.odeme.service;
 
 import com.sinema.payment.odeme.entity.Odeme;
+import com.sinema.payment.odeme.entity.OdemeDurumu;
 import com.sinema.payment.odeme.repository.OdemeRepository;
 import com.sinema.payment.saglayici.SorguSonucu;
 import java.time.Instant;
@@ -47,6 +48,31 @@ class OdemeSonucIslemi {
     @Transactional
     public void bookingReddetti(Long odemeId, String hataKodu) {
         kilitliOku(odemeId).iadeGerekli(hataKodu);
+    }
+
+    /** Token süresi doldu, ödeme yok (mutabakat). Arada sonuç uygulandıysa (callback geldi) bir şey yapmaz. */
+    @Transactional
+    public void terkEdildi(Long odemeId) {
+        Odeme odeme = kilitliOku(odemeId);
+        if (odeme.sonucBekleniyorMu()) {
+            odeme.terkEdildi();
+        }
+    }
+
+    @Transactional
+    public void iadeEdildi(Long odemeId) {
+        Odeme odeme = kilitliOku(odemeId);
+        if (odeme.getDurum() == OdemeDurumu.REFUND_REQUIRED) {
+            odeme.iadeEdildi();
+        }
+    }
+
+    @Transactional
+    public void iadeErtelendi(Long odemeId, String hataKodu, Instant sonrakiDeneme) {
+        Odeme odeme = kilitliOku(odemeId);
+        if (odeme.getDurum() == OdemeDurumu.REFUND_REQUIRED) {
+            odeme.iadeErtelendi(hataKodu, sonrakiDeneme);
+        }
     }
 
     @Transactional

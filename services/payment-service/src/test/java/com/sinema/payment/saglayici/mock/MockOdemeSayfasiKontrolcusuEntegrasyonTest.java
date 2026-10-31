@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.jayway.jsonpath.JsonPath;
 import com.sinema.payment.OdemeEntegrasyonTesti;
 import com.sinema.payment.saglayici.SorguDurumu;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,7 @@ class MockOdemeSayfasiKontrolcusuEntegrasyonTest extends OdemeEntegrasyonTesti {
 
     @Test
     void shouldShowAmountAndChoices_withoutLogin() throws Exception {
-        String token = odemeBaslatVeTokenAl();
+        String token = odemeBaslat().token();
 
         mockMvc.perform(get(sayfa(token)))
                 .andExpect(status().isOk())
@@ -29,7 +28,7 @@ class MockOdemeSayfasiKontrolcusuEntegrasyonTest extends OdemeEntegrasyonTesti {
 
     @Test
     void shouldRecordChoiceAndAutoPostTokenToCallback_whenUserCompletes() throws Exception {
-        String token = odemeBaslatVeTokenAl();
+        String token = odemeBaslat().token();
 
         mockMvc.perform(post(sayfa(token) + "/complete").param("sonuc", "SUCCESS"))
                 .andExpect(status().isOk())
@@ -46,16 +45,6 @@ class MockOdemeSayfasiKontrolcusuEntegrasyonTest extends OdemeEntegrasyonTesti {
         mockMvc.perform(get(sayfa("<script>"))).andExpect(status().isNotFound());
         mockMvc.perform(post(sayfa("bilinmeyen-token") + "/complete").param("sonuc", "SUCCESS"))
                 .andExpect(status().isNotFound());
-    }
-
-    private String odemeBaslatVeTokenAl() throws Exception {
-        String govde = mockMvc.perform(post("/api/v1/payments").header("Authorization", yetki(KULLANICI))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reservationId\":" + yeniRezervasyonId() + "}"))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        String sayfaAdresi = JsonPath.read(govde, "$.paymentPageUrl");
-        return sayfaAdresi.substring(sayfaAdresi.lastIndexOf('/') + 1);
     }
 
     private static String sayfa(String token) {

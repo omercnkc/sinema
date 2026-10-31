@@ -31,6 +31,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class Odeme {
 
     public static final String PARA_BIRIMI = "TRY";
+    public static final String TERK_KODU = "PAYMENT_ABANDONED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -151,6 +152,37 @@ public class Odeme {
     public void saglayiciOdemeKimliginiKaydet(String kimlik) {
         if (this.saglayiciOdemeKimligi == null) {
             this.saglayiciOdemeKimligi = kimlik;
+        }
+    }
+
+    /**
+     * Token süresi doldu ve sağlayıcıda ödeme yok: kullanıcı ödeme sayfasını terk etti. booking'e ret gönderilmez:
+     * rezervasyon zaten süresi dolarak EXPIRED olur ve K29 terk sayacına öyle girer (FAILED sayılmazdı, §4.7).
+     */
+    public void terkEdildi() {
+        sonucBekleniyorOlmali();
+        this.durum = OdemeDurumu.FAILED;
+        this.hataKodu = TERK_KODU;
+        this.bookingSenkronDurumu = BookingSenkronDurumu.NOT_NEEDED;
+    }
+
+    /** İade sağlayıcıda tamamlandı. */
+    public void iadeEdildi() {
+        iadeBekleniyorOlmali();
+        this.durum = OdemeDurumu.REFUNDED;
+        this.sonrakiDeneme = null;
+    }
+
+    /** Sağlayıcı iadeyi reddetti ya da ulaşılamadı: sonrakiDeneme anında yeniden denenir. */
+    public void iadeErtelendi(String hataKodu, Instant sonrakiDeneme) {
+        iadeBekleniyorOlmali();
+        this.hataKodu = hataKodu;
+        this.sonrakiDeneme = sonrakiDeneme;
+    }
+
+    private void iadeBekleniyorOlmali() {
+        if (durum != OdemeDurumu.REFUND_REQUIRED) {
+            throw new IllegalStateException("İade yalnızca REFUND_REQUIRED ödemede yapılır: " + durum);
         }
     }
 

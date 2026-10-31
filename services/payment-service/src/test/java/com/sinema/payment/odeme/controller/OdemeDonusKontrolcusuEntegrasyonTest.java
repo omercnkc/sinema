@@ -13,7 +13,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.jayway.jsonpath.JsonPath;
 import com.sinema.common.hata.BagimlilikKullanilamazIstisnasi;
 import com.sinema.common.hata.CakismaIstisnasi;
 import com.sinema.payment.OdemeEntegrasyonTesti;
@@ -175,17 +174,6 @@ class OdemeDonusKontrolcusuEntegrasyonTest extends OdemeEntegrasyonTesti {
         verify(rezervasyonIstemcisi, never()).onayla(anyLong(), any());
     }
 
-    private Baslatilan odemeBaslat() throws Exception {
-        long rezervasyonId = yeniRezervasyonId();
-        String govde = mockMvc.perform(post("/api/v1/payments").header("Authorization", yetki(KULLANICI))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"reservationId\":" + rezervasyonId + "}"))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        String sayfa = JsonPath.read(govde, "$.paymentPageUrl");
-        long odemeId = ((Number) JsonPath.read(govde, "$.paymentId")).longValue();
-        return new Baslatilan(odemeId, rezervasyonId, sayfa.substring(sayfa.lastIndexOf('/') + 1));
-    }
-
     private ResultActions donus(String token) throws Exception {
         return mockMvc.perform(post(DONUS).contentType(MediaType.APPLICATION_FORM_URLENCODED).param("token", token));
     }
@@ -218,8 +206,5 @@ class OdemeDonusKontrolcusuEntegrasyonTest extends OdemeEntegrasyonTesti {
         } finally {
             havuz.shutdownNow();
         }
-    }
-
-    private record Baslatilan(long odemeId, long rezervasyonId, String token) {
     }
 }

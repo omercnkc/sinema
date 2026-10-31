@@ -5,10 +5,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableJpaAuditing // @CreatedDate / @LastModifiedDate alanlarını doldurur
-@EnableConfigurationProperties(OdemeAyarlari.class)
+@EnableScheduling // mutabakat job'ı
+@EnableConfigurationProperties({OdemeAyarlari.class, MutabakatAyarlari.class})
 public class OdemeYapilandirmasi {
 
     /** Token ömrü ve mutabakat kararlarının tek zaman kaynağı; testte sabitlenebilir. */

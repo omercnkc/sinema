@@ -3,14 +3,10 @@ package com.sinema.payment.odeme.service;
 import com.sinema.common.hata.BagimlilikKullanilamazIstisnasi;
 import com.sinema.payment.config.OdemeAyarlari;
 import com.sinema.payment.odeme.entity.Odeme;
-import com.sinema.payment.odeme.entity.OlayKaynagi;
-import com.sinema.payment.odeme.entity.SaglayiciKaydi;
 import com.sinema.payment.odeme.repository.OdemeRepository;
-import com.sinema.payment.odeme.repository.SaglayiciKaydiRepository;
 import com.sinema.payment.saglayici.OdemeSaglayiciAdaptoru;
 import com.sinema.payment.saglayici.SorguSonucu;
 import java.net.URI;
-import java.time.Clock;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,17 +30,16 @@ public class OdemeDonusServisi {
     static final String BILINMEYEN_ODEME = "PAYMENT_NOT_FOUND";
 
     private final OdemeRepository odemeRepository;
-    private final SaglayiciKaydiRepository kayitRepository;
+    private final SaglayiciKayitcisi kayitci;
     private final OdemeSaglayiciAdaptoru saglayici;
     private final OdemeSonucIslemi sonucIslemi;
     private final BookingSenkronlayici bookingSenkronlayici;
     private final OdemeAyarlari ayarlar;
-    private final Clock saat;
 
     /** Dönüş: tarayıcının yönlendirileceği ön yüz adresi. */
     public URI isle(String token) {
         Optional<Odeme> bulunan = odemeRepository.findBySaglayiciTokeni(token);
-        kaydet(bulunan.map(Odeme::getId).orElse(null), token, OlayKaynagi.CALLBACK, null, callbackGovdesi(token));
+        kayitci.callback(bulunan.map(Odeme::getId).orElse(null), token);
         if (bulunan.isEmpty()) {
             log.warn("Bilinmeyen token ile ödeme dönüşü geldi");
             return sonucSayfasi().queryParam("error", BILINMEYEN_ODEME).build().toUri();
@@ -71,22 +66,12 @@ public class OdemeDonusServisi {
             log.warn("Ödeme sonucu sorgulanamadı (ödeme {}); mutabakat yeniden deneyecek", odeme.getId());
             return false;
         }
-        kaydet(odeme.getId(), odeme.getSaglayiciTokeni(), OlayKaynagi.RETRIEVE, sonuc.durum().name(),
-                sonuc.maskeliGovde());
+        kayitci.sorgu(odeme.getId(), odeme.getSaglayiciTokeni(), sonuc);
         return sonucIslemi.sonucuUygula(odeme.getId(), sonuc);
-    }
-
-    private void kaydet(Long odemeId, String token, OlayKaynagi kaynak, String sonucDurumu, String maskeliGovde) {
-        kayitRepository.save(SaglayiciKaydi.olustur(odemeId, token, kaynak, sonucDurumu, maskeliGovde,
-                saat.instant()));
     }
 
     private UriComponentsBuilder sonucSayfasi() {
         return UriComponentsBuilder.fromUri(ayarlar.sonucAdresi());
     }
 
-    /** Callback'in denetim kaydı: yalnızca token (form alanları dışında bir şey kaydedilmez). */
-    private static String callbackGovdesi(String token) {
-        return "{\"token\":\"" + token.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
-    }
 }

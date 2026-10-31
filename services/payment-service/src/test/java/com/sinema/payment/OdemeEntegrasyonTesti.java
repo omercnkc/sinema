@@ -2,7 +2,10 @@ package com.sinema.payment;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import com.sinema.payment.kullanici.istemci.AliciBilgisi;
 import com.sinema.payment.kullanici.istemci.KullaniciIstemcisi;
 import com.sinema.payment.rezervasyon.istemci.RezervasyonIstemcisi;
@@ -19,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,7 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * Varsayılan sahte booking: rezervasyon kullanicinin, ödeme bekliyor, 300.00 TL, 3 dk süresi var.
  * Varsayılan sahte auth: kişi bilgileri dolu.
  */
-@SpringBootTest(properties = "sinema.payment.saglayici=MOCK")
+@SpringBootTest(properties = {"sinema.payment.saglayici=MOCK", "sinema.payment.mutabakat.zamanlayici-etkin=false"})
 @AutoConfigureMockMvc
 @Import(MysqlTestYapilandirmasi.class)
 public abstract class OdemeEntegrasyonTesti {
@@ -61,6 +65,18 @@ public abstract class OdemeEntegrasyonTesti {
                 "ayse@ornek.com", "Ayşe", "Demir", "+905551112233"));
     }
 
+    /** POST /api/v1/payments ile yeni bir rezervasyon için ödeme başlatır (201 beklenir). */
+    protected Baslatilan odemeBaslat() throws Exception {
+        long rezervasyonId = yeniRezervasyonId();
+        String govde = mockMvc.perform(post("/api/v1/payments").header("Authorization", yetki(KULLANICI))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"reservationId\":" + rezervasyonId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String sayfa = JsonPath.read(govde, "$.paymentPageUrl");
+        long odemeId = ((Number) JsonPath.read(govde, "$.paymentId")).longValue();
+        return new Baslatilan(odemeId, rezervasyonId, sayfa.substring(sayfa.lastIndexOf('/') + 1));
+    }
+
     protected static long yeniRezervasyonId() {
         return REZERVASYON_SAYACI.incrementAndGet();
     }
@@ -73,5 +89,8 @@ public abstract class OdemeEntegrasyonTesti {
 
     protected static String yetki(long kullaniciId) {
         return "Bearer " + TestTokenUretici.kullaniciTokeni(kullaniciId, "USER");
+    }
+
+    protected record Baslatilan(long odemeId, long rezervasyonId, String token) {
     }
 }
