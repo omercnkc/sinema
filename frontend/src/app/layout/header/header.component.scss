@@ -7,4 +7,15 @@
     font-weight: 700;
     letter-spacing: 0.02em;
   }
+
+  &__oturum {
+    display: flex;
+    gap: map-get($spacers, 2);
+    align-items: center;
+    padding-block: map-get($spacers, 2);
+
+    @include media-breakpoint-up(md) {
+      padding-block: 0;
+    }
+  }
 }

@@ -29,8 +29,24 @@
             >
           </li>
         </ul>
-        <!-- Oturum alanı (giriş/kayıt ya da kullanıcı menüsü): M5 alt görev 5 -->
-        <div class="header__oturum" data-test="oturum-alani"></div>
+        <div class="header__oturum" data-test="oturum-alani">
+          <ng-container *ngIf="kullanici$ | async as kullanici; else misafir">
+            <div ngbDropdown display="dynamic" placement="bottom-end">
+              <button type="button" class="btn btn-outline-light btn-sm" id="kullanici-menusu" ngbDropdownToggle>
+                {{ kullanici.firstName || kullanici.email }}
+              </button>
+              <div ngbDropdownMenu aria-labelledby="kullanici-menusu">
+                <span class="dropdown-item-text small text-muted">{{ kullanici.email }}</span>
+                <div class="dropdown-divider"></div>
+                <button type="button" ngbDropdownItem (click)="cikisYap()">Çıkış yap</button>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #misafir>
+            <a class="btn btn-link link-light btn-sm" routerLink="/giris" (click)="menuyuKapat()">Giriş yap</a>
+            <a class="btn btn-primary btn-sm" routerLink="/kayit" (click)="menuyuKapat()">Kayıt ol</a>
+          </ng-template>
+        </div>
       </div>
     </div>
   </nav>

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 import { LayoutModule } from './layout/layout.module';
@@ -6,7 +7,7 @@ import { LayoutModule } from './layout/layout.module';
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule, LayoutModule],
+      imports: [HttpClientTestingModule, RouterTestingModule, LayoutModule],
       declarations: [AppComponent],
     }).compileComponents();
   });
