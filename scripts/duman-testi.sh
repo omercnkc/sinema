@@ -166,7 +166,8 @@ if [[ -n "$SEANS_ID" ]]; then
     if [[ "$ODEME_SAYFASI" == */api/v1/payments/mock/checkout/* ]]; then
         ODEME_TOKENI="${ODEME_SAYFASI##*/}"
         adim "sahte ödeme sayfası (girişsiz)" 200 "$(kod "$ODEME_SAYFASI")"
-        adim "sahte sayfada 'başarılı'" 200 "$(kod -X POST -d 'sonuc=SUCCESS' "$ODEME_SAYFASI/complete")"
+        # Tarayıcı form POST'una sayfanın kökenini (gateway) Origin olarak ekler; gateway bunu CORS ile reddetmemeli
+        adim "sahte sayfada 'başarılı'" 200 "$(kod -X POST -H "Origin: $GATEWAY" -d 'sonuc=SUCCESS' "$ODEME_SAYFASI/complete")"
         adim "ödeme dönüşü (callback) yönlendirir" 302 "$(kod -X POST -d "token=$ODEME_TOKENI" \
             "$GATEWAY/api/v1/payments/callback/iyzico")"
         BILET_KODU=$(curl -s -H "Authorization: Bearer $TOKEN" \

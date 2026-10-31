@@ -157,6 +157,19 @@ class GatewayEntegrasyonTest {
     }
 
     @Test
+    void shouldForwardMockCheckoutCompletion_whenBrowserSendsGatewayOrigin() {
+        // Sahte ödeme sayfası gateway'in kendi kökeninden form gönderir; tarayıcı Origin ekler (frontend değil)
+        istemci.post().uri("/api/v1/payments/mock/checkout/abc-123/complete")
+                .header(HttpHeaders.ORIGIN, "http://localhost:8080")
+                .exchange()
+                .expectStatus().isOk();
+        assertThat(ARKA_UCA_GELENLER).hasSize(1);
+        // CORS dışı yalnızca bu form POST'ları: diğer uçlarda yabancı Origin yine reddedilir
+        istemci.get().uri("/api/v1/catalog/movies").header(HttpHeaders.ORIGIN, "http://localhost:8080")
+                .exchange().expectStatus().isForbidden();
+    }
+
+    @Test
     void shouldForwardMockCheckoutPage_withoutToken() {
         istemci.get().uri("/api/v1/payments/mock/checkout/abc-123").exchange().expectStatus().isOk();
         istemci.post().uri("/api/v1/payments/mock/checkout/abc-123/complete").exchange().expectStatus().isOk();

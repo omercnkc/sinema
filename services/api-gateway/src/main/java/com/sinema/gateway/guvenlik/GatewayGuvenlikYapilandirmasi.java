@@ -7,12 +7,14 @@ import java.io.InputStream;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Stream;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.PathContainer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.converter.RsaKeyConverters;
@@ -26,6 +28,8 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 import reactor.core.publisher.Mono;
 
 /**
@@ -43,6 +47,14 @@ public class GatewayGuvenlikYapilandirmasi {
     private static final String ODEME_DONUS_YOLU = "/api/v1/payments/callback/iyzico";
     // K49: sahte ödeme sayfası (yalnızca payment MOCK seçiliyken vardır; değilse payment 404 döner)
     private static final String SAHTE_ODEME_SAYFASI = "/api/v1/payments/mock/checkout/*";
+    /**
+     * Ödeme sayfalarından gelen tam sayfa form POST'ları (XHR değil): CORS uygulanmaz. iyzico dönüşünün Origin'i
+     * iyzico, sahte sayfanınki gateway'in kendisidir; ikisi de izinli frontend listesinde değildir. CORS zaten form
+     * gönderimini korumaz; güvence sonucun sağlayıcıdan sorgulanmasıdır (K39).
+     */
+    private static final List<PathPattern> CORS_DISI_YOLLAR = Stream.of(ODEME_DONUS_YOLU, SAHTE_ODEME_SAYFASI + "/complete")
+            .map(PathPatternParser.defaultInstance::parse)
+            .toList();
 
     @Bean
     public SecurityWebFilterChain gatewayGuvenlikZinciri(ServerHttpSecurity http, ReactiveJwtDecoder jwtDecoder) {
@@ -88,8 +100,7 @@ public class GatewayGuvenlikYapilandirmasi {
     /**
      * Ayrı origin (K37): frontend (ör. :4200) gateway'e (:8080) başka origin'den gelir.
      * credentials=true: refresh cookie'si gidebilsin. Bu yüzden "*" kullanılamaz, adresler açıkça listelenir.
-     * iyzico dönüşü CORS dışında: o istek iyzico sayfasından gelen tam sayfa form POST'udur (XHR değil);
-     * CORS uygulansaydı iyzico'nun Origin'i izinli olmadığı için reddedilirdi.
+     * Ödeme sayfalarının form POST'ları CORS dışında (bkz. CORS_DISI_YOLLAR); uygulansaydı reddedilirlerdi.
      */
     @Bean
     public CorsConfigurationSource corsKaynagi(GatewayAyarlari.Cors ayarlar) {
@@ -101,7 +112,12 @@ public class GatewayGuvenlikYapilandirmasi {
         yapilandirma.setExposedHeaders(List.of("X-Correlation-Id", HttpHeaders.RETRY_AFTER));
         yapilandirma.setAllowCredentials(true);
         yapilandirma.setMaxAge(Duration.ofHours(1));
-        return exchange -> ODEME_DONUS_YOLU.equals(exchange.getRequest().getPath().value()) ? null : yapilandirma;
+        return exchange -> corsDisi(exchange) ? null : yapilandirma;
+    }
+
+    private static boolean corsDisi(ServerWebExchange exchange) {
+        PathContainer yol = exchange.getRequest().getPath().pathWithinApplication();
+        return CORS_DISI_YOLLAR.stream().anyMatch(kalip -> kalip.matches(yol));
     }
 
     private static Mono<Void> yetkisiz(ServerWebExchange exchange) {
