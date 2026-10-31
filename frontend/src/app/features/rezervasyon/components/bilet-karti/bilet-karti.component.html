@@ -1,0 +1,32 @@
+<article class="card bilet-karti" aria-labelledby="bilet-film">
+  <div class="card-body">
+    <div class="d-flex gap-3 mb-3">
+      <app-film-afisi class="flex-shrink-0 bilet-karti__afis" [afisYolu]="afisYolu" [baslik]="rezervasyon.movieTitle"></app-film-afisi>
+      <div>
+        <h2 id="bilet-film" class="h4 mb-2">{{ rezervasyon.movieTitle }}</h2>
+        <p class="mb-1 fw-bold">{{ rezervasyon.startsAt | date: 'd MMMM y EEEE, HH:mm':saatDilimi }}</p>
+        <p class="mb-0">{{ rezervasyon.cinemaName }} · {{ rezervasyon.hallName }}</p>
+      </div>
+    </div>
+
+    <dl class="row mb-0">
+      <dt class="col-5 col-sm-4">Koltuklar</dt>
+      <dd class="col-7 col-sm-8">
+        <span *ngFor="let koltuk of rezervasyon.seats; trackBy: koltukIzle; let son = last" class="fw-bold"
+          >{{ koltuk.label }}{{ son ? '' : ', ' }}</span
+        >
+      </dd>
+      <dt class="col-5 col-sm-4">Tutar</dt>
+      <dd class="col-7 col-sm-8">{{ rezervasyon.totalAmount | currency: 'TRY':'symbol-narrow':'1.2-2' }}</dd>
+      <dt class="col-5 col-sm-4">Bilet kodu</dt>
+      <dd class="col-7 col-sm-8 font-monospace bilet-karti__kod">{{ rezervasyon.ticketCode }}</dd>
+    </dl>
+  </div>
+
+  <div class="card-footer bg-white text-center py-3 bilet-karti__qr">
+    <div class="d-inline-block" role="img" [attr.aria-label]="'Bilet doğrulama QR kodu: ' + rezervasyon.ticketCode">
+      <qrcode [qrdata]="dogrulamaAdresi" [width]="qrBoyutu" [errorCorrectionLevel]="'M'" [elementType]="'svg'" [margin]="2"></qrcode>
+    </div>
+    <p class="small text-muted mb-0">Girişte bu QR kodu ya da bilet kodunu gösterin.</p>
+  </div>
+</article>

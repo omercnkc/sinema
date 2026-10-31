@@ -1,8 +1,20 @@
-import { ChangeDetectionStrategy, Component, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, OnDestroy } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { HttpStatusCode } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, EMPTY, Observable, Subject, throwError } from 'rxjs';
-import { catchError, distinctUntilChanged, exhaustMap, finalize, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, EMPTY, Observable, of, Subject, throwError } from 'rxjs';
+import {
+  catchError,
+  distinctUntilChanged,
+  exhaustMap,
+  finalize,
+  map,
+  shareReplay,
+  startWith,
+  switchMap,
+  takeUntil,
+  tap,
+} from 'rxjs/operators';
 import { BildirimService } from '../../../../core/bildirim/bildirim.service';
 import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
 import { IS_SAAT_DILIMI } from '../../../../core/zaman/is-saat-dilimi';
@@ -12,6 +24,7 @@ import { YuklemeDurumu, yuklemeDurumu } from '../../../../shared/yukleme/yukleme
 import { GorunenDurum, gorunenDurum, Rezervasyon } from '../../models/rezervasyon.models';
 import { OdemeService } from '../../services/odeme.service';
 import { RezervasyonService } from '../../services/rezervasyon.service';
+import { SeansDetayService } from '../../services/seans-detay.service';
 
 const REZERVASYON_YOK = new UygulamaHatasi(HttpStatusCode.NotFound, 'RESERVATION_NOT_FOUND', 'Rezervasyon bulunamadı.');
 const BEKLENMEYEN_HATA = 'İşlem tamamlanamadı. Lütfen tekrar deneyin.';
@@ -32,12 +45,14 @@ interface RezervasyonGorunumu {
   readonly yukleme: YuklemeDurumu<Rezervasyon>;
   readonly durum: GorunenDurum | null;
   readonly islem: IslemDurumu;
+  /** Yalnızca bilette; rezervasyon kopyasında afiş yok, seanstan alınır */
+  readonly afisYolu: string | null;
 }
 
 /**
  * /rezervasyonlarim/:id (smart, giriş gerekir). Durumuna göre: ödeme bekleyen tutma (koltuklar, tutar, sunucu saatine
  * göre geri sayım, vazgeç), süresi dolmuş/bırakılmış/başarısız işlem (koltuk seçimine dönüş) ya da onaylı işlem
- * (bilet, alt görev 6). "Öde" ödeme sayfasına tam sayfa yönlendirir (K41); dönüş /odeme/sonuc.
+ * (bilet kartı: afiş, QR, yazdır). "Öde" ödeme sayfasına tam sayfa yönlendirir (K41); dönüş /odeme/sonuc.
  */
 @Component({
   selector: 'app-rezervasyon-sayfasi',
@@ -47,6 +62,8 @@ interface RezervasyonGorunumu {
 export class RezervasyonSayfasiComponent implements OnDestroy {
   readonly saatDilimi = IS_SAAT_DILIMI;
   readonly gorunum$: Observable<RezervasyonGorunumu>;
+  /** QR'daki doğrulama adresinin kökeni (uygulamanın açıldığı adres) */
+  readonly dogrulamaKokeni: string;
 
   private readonly yenile$ = new BehaviorSubject<void>(undefined);
   /** Geri sayım sıfırlandı: sunucu job'ını beklemeden "süre doldu" gösterilir */
@@ -62,15 +79,30 @@ export class RezervasyonSayfasiComponent implements OnDestroy {
     private readonly router: Router,
     private readonly odemeService: OdemeService,
     private readonly yonlendirici: SayfaYonlendirici,
+    seansDetayService: SeansDetayService,
+    @Inject(DOCUMENT) private readonly belge: Document,
     rota: ActivatedRoute,
   ) {
+    this.dogrulamaKokeni = belge.location.origin;
     const id$ = rota.paramMap.pipe(map((p) => Number(p.get('id'))), distinctUntilChanged());
     const yukleme$ = combineLatest([id$, this.yenile$]).pipe(
       tap(() => this.sureBitti$.next(false)),
       switchMap(([id]) => yuklemeDurumu(this.getir(id))),
+      // Görünüm ve afiş aynı yüklemeyi kullanır; istek bir kez gider
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
-    this.gorunum$ = combineLatest([yukleme$, this.sureBitti$, this.islem$]).pipe(
-      map(([yukleme, sureBitti, islem]) => ({ yukleme, islem, durum: this.durum(yukleme.veri, sureBitti) })),
+    const afisYolu$ = yukleme$.pipe(
+      map((yukleme) => (yukleme.veri?.status === 'CONFIRMED' ? yukleme.veri.showtimeId : null)),
+      distinctUntilChanged(),
+      switchMap((seansId) => (seansId === null ? of(null) : seansDetayService.getir(seansId).pipe(
+        map((seans) => seans.posterPath),
+        // Afiş alınamazsa bilet yer tutucuyla gösterilir
+        catchError(() => of(null)),
+        startWith(null),
+      ))),
+    );
+    this.gorunum$ = combineLatest([yukleme$, this.sureBitti$, this.islem$, afisYolu$]).pipe(
+      map(([yukleme, sureBitti, islem, afisYolu]) => ({ yukleme, islem, afisYolu, durum: this.durum(yukleme.veri, sureBitti) })),
     );
 
     // Öde ve vazgeç tek kuyrukta: biri sürerken ikinci tıklama (aynı ya da diğer düğme) yok sayılır
@@ -82,6 +114,10 @@ export class RezervasyonSayfasiComponent implements OnDestroy {
 
   ode(rezervasyon: Rezervasyon): void {
     this.islemIstegi$.next({ tur: 'ODE', rezervasyon });
+  }
+
+  yazdir(): void {
+    this.belge.defaultView?.print();
   }
 
   sureDoldu(): void {

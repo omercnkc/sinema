@@ -10,11 +10,12 @@
     <div class="col-lg-8">
       <ng-container [ngSwitch]="gorunum.durum">
         <h1 *ngSwitchCase="'ODEME_BEKLIYOR'" class="h3 mb-3">Ödeme bekleniyor</h1>
-        <h1 *ngSwitchCase="'ONAYLANDI'" class="h3 mb-3">Biletiniz hazır</h1>
+        <h1 *ngSwitchCase="'ONAYLANDI'" class="h3 mb-3 d-print-none">Biletiniz hazır</h1>
         <h1 *ngSwitchDefault class="h3 mb-3">İşlem kapandı</h1>
       </ng-container>
 
-      <div class="card mb-3">
+      <!-- Onaylı işlemde bu bilgiler biletin üzerinde -->
+      <div *ngIf="gorunum.durum !== 'ONAYLANDI'" class="card mb-3">
         <div class="card-body">
           <h2 class="h5 card-title">{{ rezervasyon.movieTitle }}</h2>
           <p class="mb-1">{{ rezervasyon.startsAt | date: 'd MMMM EEEE, HH:mm':saatDilimi }}</p>
@@ -65,9 +66,17 @@
           </div>
         </div>
 
-        <div *ngSwitchCase="'ONAYLANDI'" class="alert alert-success" role="status">
-          Ödemeniz alındı. Bilet kodunuz: <strong class="font-monospace">{{ rezervasyon.ticketCode }}</strong>
-        </div>
+        <ng-container *ngSwitchCase="'ONAYLANDI'">
+          <app-bilet-karti
+            [rezervasyon]="rezervasyon"
+            [afisYolu]="gorunum.afisYolu"
+            [dogrulamaAdresi]="dogrulamaKokeni + '/bilet/' + rezervasyon.ticketCode"
+          ></app-bilet-karti>
+          <div class="d-flex flex-wrap gap-2 mt-3 d-print-none">
+            <button type="button" class="btn btn-outline-dark" (click)="yazdir()">Yazdır</button>
+            <a class="btn btn-link" routerLink="/rezervasyonlarim">Rezervasyonlarım</a>
+          </div>
+        </ng-container>
 
         <ng-container *ngSwitchDefault>
           <div class="alert" [class.alert-warning]="gorunum.durum === 'SURESI_DOLDU'" [class.alert-secondary]="gorunum.durum === 'BIRAKILDI'"

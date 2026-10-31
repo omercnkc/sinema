@@ -14,6 +14,9 @@ import { SayfaYonlendirici } from '../../../../core/yonlendirme/sayfa-yonlendiri
 import { Odeme } from '../../models/odeme.models';
 import { OdemeService } from '../../services/odeme.service';
 import { RezervasyonService } from '../../services/rezervasyon.service';
+import { SeansDetayService } from '../../services/seans-detay.service';
+import { SeansDetayi } from '../../models/seans-detayi.models';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { RezervasyonSayfasiComponent } from './rezervasyon-sayfasi.component';
 
 const SUNUCU_SIMDI = '2026-11-01T16:00:00Z';
@@ -43,6 +46,7 @@ describe('RezervasyonSayfasiComponent', () => {
   let servis: jasmine.SpyObj<RezervasyonService>;
   let odemeServisi: jasmine.SpyObj<OdemeService>;
   let disYonlendirici: jasmine.SpyObj<SayfaYonlendirici>;
+  let seansServisi: jasmine.SpyObj<SeansDetayService>;
   let yonlendir: jasmine.Spy;
 
   beforeAll(() => registerLocaleData(localeTr));
@@ -54,6 +58,8 @@ describe('RezervasyonSayfasiComponent', () => {
     odemeServisi = jasmine.createSpyObj<OdemeService>('OdemeService', ['baslat']);
     disYonlendirici = jasmine.createSpyObj<SayfaYonlendirici>('SayfaYonlendirici', ['disAdreseGit']);
     disYonlendirici.disAdreseGit.and.returnValue(true);
+    seansServisi = jasmine.createSpyObj<SeansDetayService>('SeansDetayService', ['getir']);
+    seansServisi.getir.and.returnValue(of({ posterPath: '/afis.jpg' } as SeansDetayi));
   });
 
   afterEach(() => jasmine.clock().uninstall());
@@ -66,9 +72,12 @@ describe('RezervasyonSayfasiComponent', () => {
         { provide: RezervasyonService, useValue: servis },
         { provide: OdemeService, useValue: odemeServisi },
         { provide: SayfaYonlendirici, useValue: disYonlendirici },
+        { provide: SeansDetayService, useValue: seansServisi },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id })) } },
         { provide: LOCALE_ID, useValue: 'tr' },
       ],
+      // Bilet kartı (QR) kendi testinde; burada ona giden veri denetlenir
+      schemas: [NO_ERRORS_SCHEMA],
     });
     yonlendir = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     const fixture = TestBed.createComponent(RezervasyonSayfasiComponent);
@@ -92,6 +101,51 @@ describe('RezervasyonSayfasiComponent', () => {
   const ODEME: Odeme = {
     paymentId: 5, reservationId: 18, status: 'PENDING', amount: '320.00', paymentPageUrl: 'https://sandbox-cpp.iyzipay.com?token=t',
   };
+
+  describe('ticket', () => {
+    const ONAYLI: Rezervasyon = { ...BEKLEYEN, status: 'CONFIRMED', ticketCode: 'ABCD1234EFGH5678' };
+
+    function biletKarti(fixture: ComponentFixture<RezervasyonSayfasiComponent>):
+      { rezervasyon: Rezervasyon; afisYolu: string | null; dogrulamaAdresi: string } {
+      return fixture.nativeElement.querySelector('app-bilet-karti');
+    }
+
+    it('should show the ticket with poster from the showtime and verification address for the QR', () => {
+      servis.getir.and.returnValue(of(ONAYLI));
+      const fixture = olustur();
+
+      expect(seansServisi.getir).toHaveBeenCalledWith(101);
+      expect(biletKarti(fixture).afisYolu).toBe('/afis.jpg');
+      expect(biletKarti(fixture).dogrulamaAdresi).toBe(`${document.location.origin}/bilet/ABCD1234EFGH5678`);
+      expect(fixture.nativeElement.querySelector('.card-body h2')).toBeNull();
+    });
+
+    it('should still show the ticket when the poster cannot be loaded', () => {
+      servis.getir.and.returnValue(of(ONAYLI));
+      seansServisi.getir.and.returnValue(throwError(() => new Error('ağ')));
+      const fixture = olustur();
+
+      expect(biletKarti(fixture).afisYolu).toBeNull();
+      expect(biletKarti(fixture).rezervasyon.ticketCode).toBe('ABCD1234EFGH5678');
+    });
+
+    it('should not load the poster for unpaid reservations', () => {
+      servis.getir.and.returnValue(of(BEKLEYEN));
+      olustur();
+
+      expect(seansServisi.getir).not.toHaveBeenCalled();
+    });
+
+    it('should print the page', () => {
+      servis.getir.and.returnValue(of(ONAYLI));
+      const fixture = olustur();
+      const yazdir = spyOn(window, 'print');
+
+      dugme(fixture, 'Yazdır').click();
+
+      expect(yazdir).toHaveBeenCalled();
+    });
+  });
 
   describe('payment', () => {
     it('should start payment once and send browser to the payment page, keeping buttons disabled', () => {
@@ -139,7 +193,7 @@ describe('RezervasyonSayfasiComponent', () => {
       fixture.detectChanges();
 
       expect(servis.getir).toHaveBeenCalledTimes(2);
-      expect(fixture.nativeElement.textContent).toContain('ABCD1234EFGH5678');
+      expect(fixture.nativeElement.querySelector('app-bilet-karti').rezervasyon.ticketCode).toBe('ABCD1234EFGH5678');
     });
   });
 
@@ -207,7 +261,7 @@ describe('RezervasyonSayfasiComponent', () => {
     fixture.detectChanges();
 
     expect(servis.getir).toHaveBeenCalledTimes(2);
-    expect(fixture.nativeElement.textContent).toContain('ABCD1234EFGH5678');
+    expect(fixture.nativeElement.querySelector('app-bilet-karti').rezervasyon.ticketCode).toBe('ABCD1234EFGH5678');
   });
 
   it('should show not found for invalid id and for someone else’s reservation', () => {

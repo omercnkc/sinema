@@ -38,3 +38,4 @@ Planlama aşaması, adım adım ilerliyoruz. Kod YOK. Konu: sinema koltuk seçim
 - 2026-10-31: M6 alt görev 3 bitti (RezervasyonModule kökte; /rezervasyonlarim/:id tutma ekranı, SunucuSaati, GeriSayimComponent, vazgeç). Sıradaki: alt görev 4 (ödeme yönlendirmesi + /odeme/sonuc).
 - 2026-10-31: M6 alt görev 4 bitti (Öde → SayfaYonlendirici http(s) denetimli; öde/vazgeç tek exhaustMap; /odeme/sonuc yoklama 15x2 sn, iade bilgisi). Sıradaki: grup [5+7] (rezervasyonlarım listesi + /bilet/:kod doğrulama).
 - 2026-10-31: M6 grup [5+7] bitti (/rezervasyonlarim listesi + menü bağlantısı; /bilet/:kod ayrı BiletDogrulamaModule). Sıradaki: alt görev 6 (bilet + QR, angularx-qrcode kurulumu).
+- 2026-10-31: M6 alt görev 6 bitti (angularx-qrcode ~13.0.15, BiletKartiComponent QR + afiş + yazdır, d-print-none; çift istek hatası shareReplay ile düzeltildi). Sıradaki: alt görev 8 (tarayıcıda uçtan uca, M6 kapanışı).

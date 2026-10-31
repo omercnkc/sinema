@@ -38,6 +38,9 @@
             "styles": [
               "src/styles.scss"
             ],
+            "allowedCommonJsDependencies": [
+              "@cordobo/qrcode"
+            ],
             "scripts": [],
             "stylePreprocessorOptions": {
               "includePaths": [
