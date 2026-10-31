@@ -35,3 +35,4 @@ Planlama aşaması, adım adım ilerliyoruz. Kod YOK. Konu: sinema koltuk seçim
 - 2026-10-31: M5 push edildi (origin/main ea7b15b). M6 taslağı planlama.md'de (8 alt görev, gruplar [1], [2], [3], [4], [5+7], [6], [8]); onay bekleniyor.
 - 2026-10-31: M6 onaylandı (gruplar [1], [2], [3], [4], [5+7], [6], [8]). Alt görev 1 bitti (koltuk haritası: KoltukSecimiComponent yoklama + SekmeGorunurlugu, KoltukHaritasiComponent grid + roving tabindex, haritaKur). Sıradaki: alt görev 2 (seçim ve tutma).
 - 2026-10-31: M6 alt görev 2 bitti (seçim ≤5, özet, tutma exhaustMap, 409/429 yolları, hemenYenile$). Sıradaki: alt görev 3 (tutma ekranı, geri sayım, ServerClockService, vazgeç).
+- 2026-10-31: M6 alt görev 3 bitti (RezervasyonModule kökte; /rezervasyonlarim/:id tutma ekranı, SunucuSaati, GeriSayimComponent, vazgeç). Sıradaki: alt görev 4 (ödeme yönlendirmesi + /odeme/sonuc).

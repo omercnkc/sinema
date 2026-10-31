@@ -16,4 +16,14 @@ export class RezervasyonService {
   tut(istek: TutmaIstegi): Observable<Rezervasyon> {
     return this.http.post<Rezervasyon>(REZERVASYON_ADRESI, istek, { context: sessizBaglam() });
   }
+
+  /** Yalnızca sahibine; başkasının rezervasyonu 404 (varlığı sızdırılmaz). */
+  getir(rezervasyonId: number): Observable<Rezervasyon> {
+    return this.http.get<Rezervasyon>(`${REZERVASYON_ADRESI}/${rezervasyonId}`, { context: sessizBaglam() });
+  }
+
+  /** Ödenmemiş tutmayı bırakır (K40); koltuklar hemen boşalır. Terk korumasına (K29) sayılır. */
+  birak(rezervasyonId: number): Observable<void> {
+    return this.http.delete<void>(`${REZERVASYON_ADRESI}/${rezervasyonId}`, { context: sessizBaglam() });
+  }
 }

@@ -1,0 +1,79 @@
+<ng-container *ngIf="gorunum$ | async as gorunum">
+  <app-yukleniyor *ngIf="gorunum.yukleme.yukleniyor" etiket="Rezervasyon yükleniyor…"></app-yukleniyor>
+
+  <ng-container *ngIf="gorunum.yukleme.hata as hata">
+    <app-hata-mesaji [mesaj]="hata.mesaj" [tekrarDenenebilir]="tekrarDenenebilir(hata)" (tekrarDene)="tekrarDene()"></app-hata-mesaji>
+    <a routerLink="/filmler" class="btn btn-outline-dark">Filmlere dön</a>
+  </ng-container>
+
+  <div *ngIf="gorunum.yukleme.veri as rezervasyon" class="row justify-content-center">
+    <div class="col-lg-8">
+      <ng-container [ngSwitch]="gorunum.durum">
+        <h1 *ngSwitchCase="'ODEME_BEKLIYOR'" class="h3 mb-3">Ödeme bekleniyor</h1>
+        <h1 *ngSwitchCase="'ONAYLANDI'" class="h3 mb-3">Biletiniz hazır</h1>
+        <h1 *ngSwitchDefault class="h3 mb-3">İşlem kapandı</h1>
+      </ng-container>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h2 class="h5 card-title">{{ rezervasyon.movieTitle }}</h2>
+          <p class="mb-1">{{ rezervasyon.startsAt | date: 'd MMMM EEEE, HH:mm':saatDilimi }}</p>
+          <p class="mb-2 text-muted">{{ rezervasyon.cinemaName }} · {{ rezervasyon.hallName }}</p>
+          <p class="mb-1">
+            <span class="text-muted">Koltuklar:</span>
+            <span *ngFor="let koltuk of rezervasyon.seats; trackBy: koltukIzle; let son = last" class="fw-bold"
+              >{{ koltuk.label }}{{ son ? '' : ', ' }}</span
+            >
+          </p>
+          <p class="mb-0">
+            <span class="text-muted">Tutar:</span>
+            <strong>{{ rezervasyon.totalAmount | currency: 'TRY':'symbol-narrow':'1.2-2' }}</strong>
+          </p>
+        </div>
+      </div>
+
+      <ng-container [ngSwitch]="gorunum.durum">
+        <div *ngSwitchCase="'ODEME_BEKLIYOR'" class="card">
+          <div class="card-body">
+            <p class="mb-3">
+              Koltuklarınız sizin için tutuluyor. Kalan süre:
+              <app-geri-sayim [bitis]="rezervasyon.expiresAt" (bitti)="sureDoldu()"></app-geri-sayim>
+            </p>
+            <div *ngIf="gorunum.islem.hata as hata" class="alert alert-danger" role="alert">{{ hata }}</div>
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                [disabled]="gorunum.islem.birakiliyor"
+                (click)="vazgec(rezervasyon)"
+              >
+                <span *ngIf="gorunum.islem.birakiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                Vazgeç
+              </button>
+            </div>
+            <p class="small text-muted mt-3 mb-0">
+              Vazgeçerseniz koltuklar hemen başkalarına açılır. Kısa sürede üç kez ödemeden bırakılan işlem, yeni koltuk
+              tutmayı bir süre engeller.
+            </p>
+          </div>
+        </div>
+
+        <div *ngSwitchCase="'ONAYLANDI'" class="alert alert-success" role="status">
+          Ödemeniz alındı. Bilet kodunuz: <strong class="font-monospace">{{ rezervasyon.ticketCode }}</strong>
+        </div>
+
+        <ng-container *ngSwitchDefault>
+          <div class="alert" [class.alert-warning]="gorunum.durum === 'SURESI_DOLDU'" [class.alert-secondary]="gorunum.durum === 'BIRAKILDI'"
+            [class.alert-danger]="gorunum.durum === 'BASARISIZ'" role="status">
+            <ng-container [ngSwitch]="gorunum.durum">
+              <ng-container *ngSwitchCase="'SURESI_DOLDU'">Ödeme süresi doldu; koltuklar bırakıldı.</ng-container>
+              <ng-container *ngSwitchCase="'BIRAKILDI'">Bu işlemden vazgeçtiniz; koltuklar bırakıldı.</ng-container>
+              <ng-container *ngSwitchCase="'BASARISIZ'">Ödeme tamamlanamadı; koltuklar bırakıldı.</ng-container>
+            </ng-container>
+          </div>
+          <a class="btn btn-primary" [routerLink]="['/seans', rezervasyon.showtimeId]">Koltuk seçimine dön</a>
+        </ng-container>
+      </ng-container>
+    </div>
+  </div>
+</ng-container>

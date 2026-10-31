@@ -29,3 +29,21 @@ export interface TutmaIstegi {
 
 /** K24: bir işlemde en çok 5 koltuk (sunucu da denetler). */
 export const EN_FAZLA_KOLTUK = 5;
+
+/** Ekranda gösterilen durum: süresi geçmiş ama sunucu job'ı henüz EXPIRED yapmamış tutma da "süresi doldu" sayılır. */
+export type GorunenDurum = 'ODEME_BEKLIYOR' | 'ONAYLANDI' | 'SURESI_DOLDU' | 'BIRAKILDI' | 'BASARISIZ';
+
+export function gorunenDurum(rezervasyon: Rezervasyon, sunucuSimdi: number): GorunenDurum {
+  switch (rezervasyon.status) {
+    case 'CONFIRMED':
+      return 'ONAYLANDI';
+    case 'RELEASED':
+      return 'BIRAKILDI';
+    case 'FAILED':
+      return 'BASARISIZ';
+    case 'EXPIRED':
+      return 'SURESI_DOLDU';
+    default:
+      return Date.parse(rezervasyon.expiresAt) <= sunucuSimdi ? 'SURESI_DOLDU' : 'ODEME_BEKLIYOR';
+  }
+}

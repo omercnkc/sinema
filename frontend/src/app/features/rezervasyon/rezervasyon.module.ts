@@ -2,12 +2,13 @@ import { NgModule } from '@angular/core';
 import { SharedModule } from '../../shared/shared.module';
 import { KoltukHaritasiComponent } from './components/koltuk-haritasi/koltuk-haritasi.component';
 import { KoltukSecimiComponent } from './containers/koltuk-secimi/koltuk-secimi.component';
+import { RezervasyonSayfasiComponent } from './containers/rezervasyon-sayfasi/rezervasyon-sayfasi.component';
 import { SeansSayfasiComponent } from './containers/seans-sayfasi/seans-sayfasi.component';
 import { RezervasyonRoutingModule } from './rezervasyon-routing.module';
 
-/** Koltuk seçimi (/seans/:id); M6'da harita, tutma, rezervasyonlarım ve bilet bu modüle eklenir (§8.2 booking). */
+/** Satın alma akışı (§8.2 booking): seans ve koltuk seçimi, tutma, rezervasyonlarım, bilet. Kökte bağlanır. */
 @NgModule({
-  declarations: [SeansSayfasiComponent, KoltukSecimiComponent, KoltukHaritasiComponent],
+  declarations: [SeansSayfasiComponent, KoltukSecimiComponent, KoltukHaritasiComponent, RezervasyonSayfasiComponent],
   imports: [SharedModule, RezervasyonRoutingModule],
 })
 export class RezervasyonModule {}
