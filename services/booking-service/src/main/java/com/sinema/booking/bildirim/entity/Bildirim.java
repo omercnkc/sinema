@@ -53,6 +53,13 @@ public class Bildirim {
         return bildirim;
     }
 
+    /** Tekrar çağrı ilk okunma anını değiştirmez. */
+    public void okundu(Instant simdi) {
+        if (okunmaZamani == null) {
+            okunmaZamani = simdi;
+        }
+    }
+
     @Override
     public boolean equals(Object diger) {
         if (this == diger) {

@@ -242,9 +242,12 @@ Port `SERVER_PORT`, DB adresi `DB_HOST` / `DB_PORT` ile değiştirilebilir.
 |---|---|---|
 | `GET /api/v1/bookings/showtimes/{id}/seat-status` | Herkes | Dolu koltuklar `{serverTime, occupied[{cellId, status}]}`; kimin tuttuğu yok, `no-store` |
 | `POST /api/v1/bookings/reservations` | USER/ADMIN | `{showtimeId, seatCellIds[1..5]}` → 201, ödeme bekleyen rezervasyon + `expiresAt` |
-| `GET /api/v1/bookings/reservations/{id}` | Sahibi | Durum, koltuklar, tutar, bilet bilgileri; onaylıysa `ticketCode` |
+| `GET /api/v1/bookings/reservations/{id}` | Sahibi | Durum, koltuklar, tutar, bilet bilgileri; onaylıysa `ticketCode`; düzen göçünde koltuğu değiştiyse `seatChanges[{oldLabel, newLabel, reason, changedAt}]` |
 | `GET /api/v1/bookings/reservations?page&size` | USER/ADMIN | Kendi rezervasyonları, en yeni önce (`size` ≤ 50) |
 | `DELETE /api/v1/bookings/reservations/{id}` | Sahibi | Ödeme başlamadan hold'u bırakır (204), koltuklar hemen boşalır |
+| `GET /api/v1/bookings/notifications?page&size` | USER/ADMIN | Kendi uygulama içi bildirimleri (koltuk değişikliği, K35): okunmamışlar önce, sonra yeniden eskiye |
+| `GET /api/v1/bookings/notifications/unread-count` | USER/ADMIN | `{count}`: okunmamış bildirim sayısı (üst menüdeki zil) |
+| `POST /api/v1/bookings/notifications/{id}/read` | Sahibi | Okundu işaretler (204, tekrar çağrı zararsız; başkasınınki 404) |
 | `POST /api/v1/admin/bookings/layout-migrations/preview` | ADMIN | `{hallId, toLayoutId}` → düzen göçü raporu (K35/K51): seans başına etiketi değişen ve yedek atanan biletler, çözülemeyenler, `applicable`; hiçbir şey yazmaz |
 | `POST /api/v1/admin/bookings/layout-migrations` | ADMIN | `{hallId, toLayoutId}` → göçü uygular: salon kilitlenir, başlamamış seansların biletleri (satılmış ve tutulmuş) yeni düzene taşınır, taslak catalog'da yayımlanır, etiketi değişen/yedek atanan bilet sahiplerine bildirim. `409 MIGRATION_NOT_APPLICABLE` (+`report`), `409 MIGRATION_IN_PROGRESS`, `503 MIGRATION_PENDING` (catalog cevap vermedi; salon kilitli kalır, aynı istek tekrar gönderilince sürdürülür) |
 

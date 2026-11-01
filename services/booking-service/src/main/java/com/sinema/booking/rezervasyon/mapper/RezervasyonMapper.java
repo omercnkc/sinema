@@ -3,7 +3,9 @@ package com.sinema.booking.rezervasyon.mapper;
 import com.sinema.booking.rezervasyon.dto.RezervasyonCevabi;
 import com.sinema.booking.rezervasyon.entity.Rezervasyon;
 import com.sinema.booking.rezervasyon.entity.RezervasyonKoltugu;
+import com.sinema.booking.goc.entity.KoltukGocKaydi;
 import java.time.Instant;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -23,7 +25,20 @@ public interface RezervasyonMapper {
     @Mapping(target = "seats", source = "rezervasyon.koltuklar")
     @Mapping(target = "totalAmount", source = "rezervasyon.toplamTutar")
     @Mapping(target = "ticketCode", source = "rezervasyon.biletKodu")
-    RezervasyonCevabi cevap(Rezervasyon rezervasyon, Instant simdi);
+    @Mapping(target = "seatChanges", source = "koltukDegisiklikleri")
+    RezervasyonCevabi cevap(Rezervasyon rezervasyon, Instant simdi,
+            List<RezervasyonCevabi.KoltukDegisikligi> koltukDegisiklikleri);
+
+    /** Tutma ve liste cevabı: koltuk değişiklikleri tekil sorguda doldurulur. */
+    default RezervasyonCevabi cevap(Rezervasyon rezervasyon, Instant simdi) {
+        return cevap(rezervasyon, simdi, List.of());
+    }
+
+    @Mapping(target = "oldLabel", source = "eskiEtiket")
+    @Mapping(target = "newLabel", source = "yeniEtiket")
+    @Mapping(target = "reason", source = "neden")
+    @Mapping(target = "changedAt", source = "olusturulmaZamani")
+    RezervasyonCevabi.KoltukDegisikligi koltukDegisikligi(KoltukGocKaydi kayit);
 
     @Mapping(target = "cellId", source = "hucreId")
     @Mapping(target = "label", source = "etiket")

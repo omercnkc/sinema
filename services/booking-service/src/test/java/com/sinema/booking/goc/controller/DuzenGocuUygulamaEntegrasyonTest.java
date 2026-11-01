@@ -9,6 +9,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,15 +40,19 @@ class DuzenGocuUygulamaEntegrasyonTest extends RezervasyonEntegrasyonTesti {
 
     private long biletliSeans;
     private long biletsizSeans;
+    private long satinAlan;
     private long satilan;
+    private long tutan;
     private long tutulan;
 
     @BeforeEach
     void hazirla() throws Exception {
         biletliSeans = yeniSeansId();
         biletsizSeans = yeniSeansId();
-        satilan = satinAl(biletliSeans, 912);
-        tutulan = tutVeIdAl(yeniKullaniciId(), biletliSeans, "[902, 903]");
+        satinAlan = yeniKullaniciId();
+        satilan = satinAl(satinAlan, biletliSeans, 912);
+        tutan = yeniKullaniciId();
+        tutulan = tutVeIdAl(tutan, biletliSeans, "[902, 903]");
     }
 
     /** Askıya alma testi kilidi bilerek bırakır; aynı salonu kullanan diğer testler etkilenmesin. */
@@ -68,8 +74,8 @@ class DuzenGocuUygulamaEntegrasyonTest extends RezervasyonEntegrasyonTesti {
                 .content("{\"hallId\":" + SALON + ",\"toLayoutId\":" + hedef + "}"));
     }
 
-    private long satinAl(long seansId, long hucreId) throws Exception {
-        long rezervasyon = tutVeIdAl(yeniKullaniciId(), seansId, "[" + hucreId + "]");
+    private long satinAl(long kullaniciId, long seansId, long hucreId) throws Exception {
+        long rezervasyon = tutVeIdAl(kullaniciId, seansId, "[" + hucreId + "]");
         jdbcTemplate.update("UPDATE seat_bookings SET status = 'SOLD', hold_expires_at = NULL WHERE reservation_id = ?",
                 rezervasyon);
         jdbcTemplate.update("UPDATE reservations SET status = 'CONFIRMED' WHERE id = ?", rezervasyon);
@@ -136,6 +142,22 @@ class DuzenGocuUygulamaEntegrasyonTest extends RezervasyonEntegrasyonTesti {
                 .andExpect(status().isOk());
         assertThat(jdbcTemplate.queryForList("SELECT status FROM seat_bookings WHERE reservation_id = ?", String.class,
                 tutulan)).containsOnly("SOLD");
+
+        // Bilet sayfası bandı: tamamlanan göçteki değişiklikler, biletin eski etiketinden yenisine
+        mockMvc.perform(get("/api/v1/bookings/reservations/{id}", tutulan).header("Authorization", yetki(tutan)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.seatChanges[*].oldLabel", containsInAnyOrder("A-902", "A-903")))
+                .andExpect(jsonPath("$.seatChanges[*].newLabel", containsInAnyOrder("A-3", "A-4")))
+                .andExpect(jsonPath("$.seatChanges[0].reason").value("REPLACEMENT"))
+                .andExpect(jsonPath("$.seats[*].label", containsInAnyOrder("A-3", "A-4")));
+        mockMvc.perform(get("/api/v1/bookings/reservations/{id}", satilan).header("Authorization", yetki(satinAlan)))
+                .andExpect(jsonPath("$.seatChanges[0].reason").value("LABEL_CHANGED"));
+        // QR doğrulama yeni etiketleri gösterir (bilet snapshot'ı göçte güncellendi)
+        String biletKodu = jdbcTemplate.queryForObject("SELECT ticket_code FROM reservations WHERE id = ?",
+                String.class, tutulan);
+        mockMvc.perform(get("/api/v1/tickets/{kod}", biletKodu))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.seats", containsInAnyOrder("A-3", "A-4")));
     }
 
     @Test
@@ -171,6 +193,9 @@ class DuzenGocuUygulamaEntegrasyonTest extends RezervasyonEntegrasyonTesti {
         assertThat(etiketler(satilan)).containsExactly("A-912");
         assertThat(etiketler(tutulan)).containsExactly("A-902", "A-903");
         assertThat(bildirimler(satilan)).isEmpty();
+        // Geri alınan göçün denetim kaydı kalır ama bilet sayfasında değişiklik görünmez
+        mockMvc.perform(get("/api/v1/bookings/reservations/{id}", satilan).header("Authorization", yetki(satinAlan)))
+                .andExpect(jsonPath("$.seatChanges").isEmpty());
         assertThat(sonGocDurumu()).isEqualTo("ROLLED_BACK");
         assertThat(salonKilitli()).isFalse();
     }

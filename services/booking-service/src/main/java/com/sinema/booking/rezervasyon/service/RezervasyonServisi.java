@@ -5,6 +5,7 @@ import com.sinema.booking.koltuk.repository.KoltukKilitDeposu;
 import com.sinema.booking.rezervasyon.dto.RezervasyonCevabi;
 import com.sinema.booking.rezervasyon.entity.Rezervasyon;
 import com.sinema.booking.rezervasyon.entity.RezervasyonDurumu;
+import com.sinema.booking.goc.repository.KoltukGocKaydiRepository;
 import com.sinema.booking.rezervasyon.mapper.RezervasyonMapper;
 import com.sinema.booking.rezervasyon.repository.RezervasyonRepository;
 import com.sinema.common.hata.CakismaIstisnasi;
@@ -13,6 +14,7 @@ import com.sinema.common.sayfa.SayfaCevabi;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -39,11 +41,17 @@ public class RezervasyonServisi {
     private final KoltukKilitDeposu kilitDeposu;
     private final DolulukTemizleyici dolulukTemizleyici;
     private final RezervasyonMapper rezervasyonMapper;
+    private final KoltukGocKaydiRepository gocKaydiRepository;
     private final Clock saat;
 
     @Transactional(readOnly = true)
     public RezervasyonCevabi getir(Long kullaniciId, Long rezervasyonId) {
-        return rezervasyonMapper.cevap(sahibininRezervasyonu(kullaniciId, rezervasyonId), simdi());
+        Rezervasyon rezervasyon = sahibininRezervasyonu(kullaniciId, rezervasyonId);
+        List<RezervasyonCevabi.KoltukDegisikligi> degisiklikler = gocKaydiRepository
+                .rezervasyonunDegisiklikleri(rezervasyon.getId()).stream()
+                .map(rezervasyonMapper::koltukDegisikligi)
+                .toList();
+        return rezervasyonMapper.cevap(rezervasyon, simdi(), degisiklikler);
     }
 
     @Transactional(readOnly = true)
