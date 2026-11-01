@@ -38,6 +38,14 @@ public interface SeansRepository extends JpaRepository<Seans, Long> {
     List<Seans> filminGunlukSeanslari(@Param("filmId") Long filmId, @Param("gunBasi") Instant gunBasi,
             @Param("gunSonu") Instant gunSonu, @Param("subeId") Long subeId);
 
+    /** Admin seans çizelgesi: salonun gündeki seansları, film aynı sorguda (N+1 yok); gizli filmler dahil. */
+    @Query("""
+            select s from Seans s join fetch s.film
+            where s.salon.id = :salonId and s.baslangic >= :gunBasi and s.baslangic < :gunSonu
+            order by s.baslangic""")
+    List<Seans> salonunGunlukSeanslari(@Param("salonId") Long salonId, @Param("gunBasi") Instant gunBasi,
+            @Param("gunSonu") Instant gunSonu);
+
     /** Seans detayı: film, salon ve şube tek sorguda. */
     @Query("""
             select s from Seans s join fetch s.film join fetch s.salon salon join fetch salon.sube

@@ -5,6 +5,7 @@ import com.sinema.catalog.seans.dto.IcSeansBilgisi;
 import com.sinema.catalog.seans.dto.KoltukCozumlemeCevabi;
 import com.sinema.catalog.seans.dto.SeansDetayi;
 import com.sinema.catalog.seans.dto.SeansOzeti;
+import com.sinema.catalog.seans.dto.YonetimSeansOzeti;
 import com.sinema.catalog.seans.entity.Seans;
 import java.time.Instant;
 import org.mapstruct.Mapper;
@@ -42,6 +43,18 @@ public interface SeansMapper {
     @Mapping(target = "salesOpen", expression = "java(seans.satisAcikMi(simdi))")
     @Mapping(target = "serverTime", source = "simdi")
     SeansDetayi seansDetayi(Seans seans, Instant simdi);
+
+    @Mapping(target = "movieId", source = "seans.film.id")
+    @Mapping(target = "movieTitle", source = "seans.film.baslik")
+    @Mapping(target = "movieVisible", source = "seans.film.gorunur")
+    @Mapping(target = "startsAt", source = "seans.baslangic")
+    @Mapping(target = "endsAt", source = "seans.bitis")
+    @Mapping(target = "ticketPrice", source = "seans.biletFiyati")
+    @Mapping(target = "salesCloseOffsetMinutes", source = "seans.satisKapanisOfsetiDakika")
+    @Mapping(target = "salesCloseAt", expression = "java(seans.satisKapanisi())")
+    @Mapping(target = "salesOpen", expression = "java(seans.satisAcikMi(simdi))")
+    @Mapping(target = "layoutId", source = "seans.duzenId")
+    YonetimSeansOzeti yonetimSeansOzeti(Seans seans, Instant simdi);
 
     @Mapping(target = "showtimeId", source = "seans.id")
     @Mapping(target = "movieId", source = "seans.film.id")

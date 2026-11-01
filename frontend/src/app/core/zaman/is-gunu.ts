@@ -19,6 +19,20 @@ export function istanbulGunu(an: Date): string {
 }
 
 /**
+ * İstanbul'daki gün ve saati (`YYYY-MM-DD`, `HH:mm`) UTC ISO anına çevirir (sunucuya `startsAt` olarak gider).
+ * Yaz saati olmadığı için sabit ofset yeterlidir; tarayıcının saat diliminden bağımsızdır.
+ */
+export function istanbulAni(tarih: string, saat: string): string {
+  const ofset = IS_SAAT_DILIMI.replace(/(\d{2})(\d{2})$/, '$1:$2');
+  return new Date(`${tarih}T${saat}:00${ofset}`).toISOString();
+}
+
+/** `YYYY-MM-DD` tarihine gün ekler/çıkarır (takvim aritmetiği UTC'de; saat dilimi kayması olmaz). */
+export function gunEkle(tarih: string, gunSayisi: number): string {
+  return new Date(Date.parse(`${tarih}T00:00:00Z`) + gunSayisi * GUN_MS).toISOString().slice(0, 10);
+}
+
+/**
  * Bugünden başlayan `adet` İstanbul günü (seans gün seçicisi). İstanbul'da yaz saati olmadığı için gün eklemek 24
  * saat eklemektir. `yerel` ekrandaki gün/ay adları içindir (uygulamada 'tr').
  */

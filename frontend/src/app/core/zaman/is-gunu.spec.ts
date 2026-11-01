@@ -1,6 +1,6 @@
 import { registerLocaleData } from '@angular/common';
 import localeTr from '@angular/common/locales/tr';
-import { istanbulGunleri, istanbulGunu } from './is-gunu';
+import { gunEkle, istanbulAni, istanbulGunleri, istanbulGunu } from './is-gunu';
 
 describe('İstanbul günü', () => {
   beforeAll(() => registerLocaleData(localeTr));
@@ -16,5 +16,16 @@ describe('İstanbul günü', () => {
 
     expect(gunler.map((gun) => gun.tarih)).toEqual(['2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03']);
     expect(gunler.map((gun) => gun.etiket)).toEqual(['Bugün', 'Yarın', 'Pzt 2 Kas', 'Sal 3 Kas']);
+  });
+
+  it('should convert Istanbul date and time to UTC instant', () => {
+    expect(istanbulAni('2026-11-02', '20:15')).toBe('2026-11-02T17:15:00.000Z');
+    // İstanbul'da gece 00:30 = UTC'de önceki gün 21:30
+    expect(istanbulAni('2026-11-03', '00:30')).toBe('2026-11-02T21:30:00.000Z');
+  });
+
+  it('should add days across month and year ends', () => {
+    expect(gunEkle('2026-12-31', 1)).toBe('2027-01-01');
+    expect(gunEkle('2026-03-01', -1)).toBe('2026-02-28');
   });
 });

@@ -1,0 +1,145 @@
+<h2 class="h4 mb-4">Seanslar</h2>
+
+<ng-container *ngIf="subeDurumu$ | async as subeDurumu">
+  <app-yukleniyor *ngIf="subeDurumu.yukleniyor" etiket="Şubeler yükleniyor…"></app-yukleniyor>
+  <app-hata-mesaji
+    *ngIf="subeDurumu.hata as hata"
+    [mesaj]="hata.mesaj"
+    [tekrarDenenebilir]="true"
+    (tekrarDene)="tekrarDene()"
+  ></app-hata-mesaji>
+</ng-container>
+
+<ng-container *ngIf="gorunum$ | async as gorunum">
+  <p *ngIf="!gorunum.secim.salon" class="text-muted" role="status">
+    Henüz salon yok. Önce <a routerLink="/admin/subeler">şube ve salon ekleyin</a>.
+  </p>
+
+  <ng-container *ngIf="gorunum.secim.salon as salon">
+    <form class="row g-2 align-items-end mb-3" (submit)="$event.preventDefault()" aria-label="Çizelge seçimi">
+      <div class="col-sm-6 col-lg-3">
+        <label for="seans-sube" class="form-label small mb-1">Şube</label>
+        <select id="seans-sube" #subeSecimi class="form-select form-select-sm" (change)="subeSecildi(gorunum.subeler, subeSecimi.value)">
+          <option *ngFor="let sube of gorunum.subeler; trackBy: subeIzle" [value]="sube.id" [selected]="sube.id === gorunum.secim.sube?.id">
+            {{ sube.name }}
+          </option>
+        </select>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <label for="seans-salon" class="form-label small mb-1">Salon</label>
+        <select id="seans-salon" #salonSecimi class="form-select form-select-sm" (change)="salonSecildi(salonSecimi.value)">
+          <option *ngFor="let secenek of gorunum.secim.sube?.halls; trackBy: salonIzle" [value]="secenek.id" [selected]="secenek.id === salon.id">
+            {{ secenek.name }}
+          </option>
+        </select>
+      </div>
+      <div class="col-lg-6">
+        <label for="seans-gun" class="form-label small mb-1">Gün</label>
+        <div class="input-group input-group-sm">
+          <button type="button" class="btn btn-outline-secondary" aria-label="Önceki gün" (click)="gunKaydir(gorunum.secim.gun, -1)">‹</button>
+          <input
+            id="seans-gun"
+            #gunSecimi
+            type="date"
+            class="form-control"
+            [value]="gorunum.secim.gun"
+            (change)="gunSecildi(gunSecimi.value)"
+          />
+          <button type="button" class="btn btn-outline-secondary" aria-label="Sonraki gün" (click)="gunKaydir(gorunum.secim.gun, 1)">›</button>
+        </div>
+      </div>
+    </form>
+
+    <div *ngIf="!salon.activeLayoutId" class="alert alert-warning" role="status">
+      Bu salonun yayımlanmış düzeni yok; seans eklenemez.
+      <a [routerLink]="['/admin/subeler/salonlar', salon.id, 'duzen']">Düzeni çizin ve yayımlayın</a>.
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <span class="text-muted small me-auto">
+        Varsayılan fiyat {{ salon.defaultTicketPrice | currency: 'TRY':'symbol-narrow':'1.0-2' }} · saatler İstanbul saatiyle
+      </span>
+      <button
+        *ngIf="salon.activeLayoutId && !eklemeAcik"
+        type="button"
+        class="btn btn-primary btn-sm"
+        [disabled]="gonderiliyor"
+        (click)="eklemeyiAc()"
+      >
+        Seans ekle
+      </button>
+    </div>
+
+    <section *ngIf="eklemeAcik && salon.activeLayoutId" class="card mb-4" aria-labelledby="seans-ekle-baslik">
+      <div class="card-body">
+        <h3 id="seans-ekle-baslik" class="h6 mb-3">Yeni seans · {{ gorunum.secim.gun | date: 'd MMMM y, EEEE':saatDilimi }}</h3>
+        <app-seans-ekleme
+          [salon]="salon"
+          [gun]="gorunum.secim.gun"
+          (eklendi)="seansEklendi()"
+          (iptal)="eklemeyiKapat()"
+        ></app-seans-ekleme>
+      </div>
+    </section>
+
+    <ng-container *ngIf="gorunum.seanslar as durum">
+      <app-yukleniyor *ngIf="durum.yukleniyor" etiket="Seanslar yükleniyor…"></app-yukleniyor>
+      <app-hata-mesaji
+        *ngIf="durum.hata as hata"
+        [mesaj]="hata.mesaj"
+        [tekrarDenenebilir]="true"
+        (tekrarDene)="tekrarDene()"
+      ></app-hata-mesaji>
+
+      <ng-container *ngIf="durum.veri as seanslar">
+        <p *ngIf="seanslar.length === 0" class="text-muted" role="status">Bu gün için seans yok.</p>
+        <ul *ngIf="seanslar.length > 0" class="list-group">
+          <li class="list-group-item" *ngFor="let seans of seanslar; trackBy: seansIzle" data-test="seans-satiri">
+            <app-seans-duzenleme-formu
+              *ngIf="duzenlenenId === seans.id; else seansBilgisi"
+              [seans]="seans"
+              [gonderiliyor]="gonderiliyor"
+              [hata]="kayitHatasi"
+              (kaydet)="guncelle(seans, $event)"
+              (iptal)="duzenlemeyiKapat()"
+            ></app-seans-duzenleme-formu>
+            <ng-template #seansBilgisi>
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="fw-semibold">
+                  {{ seans.startsAt | date: 'HH:mm':saatDilimi }}–{{ seans.endsAt | date: 'HH:mm':saatDilimi }}
+                </span>
+                <span class="me-auto">
+                  {{ seans.movieTitle }}
+                  <span *ngIf="!seans.movieVisible" class="badge bg-secondary ms-1">Gizli film</span>
+                </span>
+                <span class="small text-muted">
+                  {{ seans.ticketPrice | currency: 'TRY':'symbol-narrow':'1.0-2' }} · satış kapanışı
+                  {{ seans.salesCloseAt | date: 'HH:mm':saatDilimi }}
+                  ({{ seans.salesCloseOffsetMinutes > 0 ? '+' : '' }}{{ seans.salesCloseOffsetMinutes }} dk)
+                </span>
+                <span class="badge" [ngClass]="seans.salesOpen ? 'bg-success' : 'bg-light text-dark border'">
+                  {{ seans.salesOpen ? 'Satışta' : 'Satış kapandı' }}
+                </span>
+                <span
+                  *ngIf="seans.layoutId !== salon.activeLayoutId"
+                  class="badge bg-info text-dark"
+                  title="Seans eklendiği andaki düzen sürümünü kullanır"
+                  >Eski düzen</span
+                >
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  [disabled]="gonderiliyor"
+                  [attr.aria-label]="(seans.startsAt | date: 'HH:mm':saatDilimi) + ' ' + seans.movieTitle + ' seansını düzenle'"
+                  (click)="duzenle(seans)"
+                >
+                  Düzenle
+                </button>
+              </div>
+            </ng-template>
+          </li>
+        </ul>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+</ng-container>

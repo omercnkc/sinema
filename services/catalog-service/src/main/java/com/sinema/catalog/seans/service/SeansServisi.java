@@ -17,6 +17,7 @@ import com.sinema.catalog.seans.dto.SeansDuzeni;
 import com.sinema.catalog.seans.dto.SeansGuncellemeIstegi;
 import com.sinema.catalog.seans.dto.SeansOlusturmaIstegi;
 import com.sinema.catalog.seans.dto.SeansOzeti;
+import com.sinema.catalog.seans.dto.YonetimSeansOzeti;
 import com.sinema.catalog.seans.entity.Seans;
 import com.sinema.catalog.seans.mapper.SeansMapper;
 import com.sinema.catalog.seans.repository.SeansRepository;
@@ -29,6 +30,7 @@ import com.sinema.common.hata.KaynakBulunamadiIstisnasi;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -104,11 +106,22 @@ public class SeansServisi {
             throw FilmServisi.filmYok();
         }
         Instant simdi = saat.instant();
-        LocalDate gun = tarih != null ? tarih : LocalDate.ofInstant(simdi, ayarlar.isSaatDilimi());
-        Instant gunBasi = gun.atStartOfDay(ayarlar.isSaatDilimi()).toInstant();
-        Instant gunSonu = gun.plusDays(1).atStartOfDay(ayarlar.isSaatDilimi()).toInstant();
-        return seansRepository.filminGunlukSeanslari(filmId, gunBasi, gunSonu, subeId).stream()
+        GunAraligi gun = gunAraligi(tarih, simdi);
+        return seansRepository.filminGunlukSeanslari(filmId, gun.basi(), gun.sonu(), subeId).stream()
                 .map(seans -> seansMapper.seansOzeti(seans, simdi))
+                .toList();
+    }
+
+    /** Admin çizelgesi: salonun gündeki (Europe/Istanbul) tüm seansları, gizli filmlerinkiler dahil. Boşsa bugün. */
+    @Transactional(readOnly = true)
+    public List<YonetimSeansOzeti> salonunSeanslari(Long salonId, LocalDate tarih) {
+        if (!salonRepository.existsById(salonId)) {
+            throw SubeServisi.salonYok();
+        }
+        Instant simdi = saat.instant();
+        GunAraligi gun = gunAraligi(tarih, simdi);
+        return seansRepository.salonunGunlukSeanslari(salonId, gun.basi(), gun.sonu()).stream()
+                .map(seans -> seansMapper.yonetimSeansOzeti(seans, simdi))
                 .toList();
     }
 
@@ -169,6 +182,16 @@ public class SeansServisi {
                     "Bu salonda aynı zaman aralığında başka bir seans var (seans arası payı dahil).",
                     Map.of("conflictingShowtimeId", cakisanlar.getFirst()));
         }
+    }
+
+    /** Tarih iş saat diliminde yorumlanır: gün [o günün 00:00'ı, ertesi günün 00:00'ı) aralığıdır. */
+    private GunAraligi gunAraligi(LocalDate tarih, Instant simdi) {
+        ZoneId saatDilimi = ayarlar.isSaatDilimi();
+        LocalDate gun = tarih != null ? tarih : LocalDate.ofInstant(simdi, saatDilimi);
+        return new GunAraligi(gun.atStartOfDay(saatDilimi).toInstant(), gun.plusDays(1).atStartOfDay(saatDilimi).toInstant());
+    }
+
+    private record GunAraligi(Instant basi, Instant sonu) {
     }
 
     private int ofsetVeyaVarsayilan(Integer ofsetDakika) {

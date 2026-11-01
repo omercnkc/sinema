@@ -5,10 +5,11 @@ interface MenuOgesi {
   readonly yol: string;
 }
 
-/** Yan menü. Seanslar bölümü kendi alt göreviyle (M7 alt görev 7) eklenir. */
+/** Yan menü. */
 const MENU: readonly MenuOgesi[] = [
   { etiket: 'Filmler', yol: 'filmler' },
   { etiket: 'Şubeler ve salonlar', yol: 'subeler' },
+  { etiket: 'Seanslar', yol: 'seanslar' },
   { etiket: 'Yöneticiler', yol: 'yoneticiler' },
 ];
 

@@ -1,0 +1,94 @@
+<form [formGroup]="form" (ngSubmit)="gonder()" novalidate aria-label="Yeni seans">
+  <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+
+  <div class="mb-3">
+    <label for="seans-film-arama" class="form-label">Film</label>
+    <div *ngIf="secilenFilm; else filmArama" class="d-flex align-items-center gap-2" data-test="secilen-film">
+      <span class="fw-semibold">{{ secilenFilm.title }}</span>
+      <span class="text-muted small">{{ secilenFilm.runtimeMinutes }} dk</span>
+      <button type="button" class="btn btn-link btn-sm" (click)="filmiDegistir()">Değiştir</button>
+    </div>
+    <ng-template #filmArama>
+      <input
+        id="seans-film-arama"
+        type="search"
+        class="form-control form-control-sm"
+        placeholder="Film adıyla arayın"
+        autocomplete="off"
+        aria-describedby="seans-film-hata"
+        [class.is-invalid]="film.touched && film.invalid"
+        [formControl]="aramaKontrolu"
+      />
+      <div id="seans-film-hata" class="invalid-feedback">{{ film | alanHatasi: 'Film' }}</div>
+      <div class="list-group mt-1" *ngIf="adaylar$ | async as adaylar">
+        <button
+          type="button"
+          class="list-group-item list-group-item-action py-1"
+          *ngFor="let aday of adaylar; trackBy: adayIzle"
+          data-test="film-adayi"
+          (click)="filmSec(aday)"
+        >
+          {{ aday.title }} <span class="text-muted small">· {{ aday.runtimeMinutes }} dk</span>
+        </button>
+      </div>
+    </ng-template>
+    <div *ngIf="secilenFilm && film.touched && film.invalid" class="small text-danger mt-1">{{ film | alanHatasi: 'Film' }}</div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-sm-4">
+      <label for="seans-saat" class="form-label">Başlangıç saati</label>
+      <input
+        id="seans-saat"
+        type="time"
+        class="form-control form-control-sm"
+        formControlName="startsAt"
+        aria-describedby="seans-saat-hata"
+        [class.is-invalid]="saat.touched && saat.invalid"
+      />
+      <div id="seans-saat-hata" class="invalid-feedback">{{ saat | alanHatasi: 'Başlangıç saati' }}</div>
+    </div>
+    <div class="col-sm-4">
+      <label for="seans-fiyat" class="form-label">Bilet fiyatı (₺)</label>
+      <input
+        id="seans-fiyat"
+        type="text"
+        inputmode="decimal"
+        class="form-control form-control-sm"
+        formControlName="ticketPrice"
+        [placeholder]="salon.defaultTicketPrice"
+        aria-describedby="seans-fiyat-ipucu seans-fiyat-hata"
+        [class.is-invalid]="fiyat.touched && fiyat.invalid"
+      />
+      <div id="seans-fiyat-ipucu" class="form-text">Boşsa salonun fiyatı.</div>
+      <div id="seans-fiyat-hata" class="invalid-feedback">{{ fiyat | alanHatasi: 'Fiyat' }}</div>
+    </div>
+    <div class="col-sm-4">
+      <label for="seans-ofset" class="form-label">Satış kapanışı (dk)</label>
+      <input
+        id="seans-ofset"
+        type="number"
+        class="form-control form-control-sm"
+        [min]="enAzOfset"
+        [max]="enFazlaOfset"
+        formControlName="salesCloseOffsetMinutes"
+        aria-describedby="seans-ofset-ipucu seans-ofset-hata"
+        [class.is-invalid]="ofset.touched && ofset.invalid"
+      />
+      <div id="seans-ofset-ipucu" class="form-text">Başlangıca göre; boşsa sistem varsayılanı.</div>
+      <div id="seans-ofset-hata" class="invalid-feedback">{{ ofset | alanHatasi: 'Satış kapanışı' }}</div>
+    </div>
+  </div>
+
+  <p class="small text-muted">Bitiş saati film süresi ve seans arası payı eklenerek sunucuda hesaplanır.</p>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary btn-sm" [disabled]="gonderiliyor">
+      <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      Seansı ekle
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="gonderiliyor" (click)="iptal.emit()">
+      Kapat
+    </button>
+  </div>
+</form>

@@ -164,6 +164,7 @@ Parola kuralı: en az 8 karakter, en çok 72 bayt (BCrypt sınırı; Türkçe ha
 | `POST /halls/{id}/layouts/{layoutId}/publish` | Taslağı sürüm yapar, salonun aktif düzeni olur; salonda süren seans varken 409 |
 | `GET/POST /movies`, `GET/PUT /movies/{id}`, `PATCH /movies/{id}/visibility` | Film (silinmez, gizlenir) |
 | `GET /tmdb/search?query`, `GET /tmdb/movies/{tmdbId}` | TMDB araması ve form ön doldurma (kaydetmez); TMDB yoksa 503 |
+| `GET /showtimes?hallId&date` | Salonun günlük çizelgesi (`date` Europe/Istanbul günü, boşsa bugün; gizli filmlerin seansları dahil) |
 | `POST /showtimes`, `PUT /showtimes/{id}` | Seans (çakışma 409, fiyat boşsa salondan); silme/iptal yok |
 
 **Kurallar:** seans bitişi = başlangıç + film süresi + 15 dk ara; satış başlangıçtan 10 dk sonra kapanır (seans bazında

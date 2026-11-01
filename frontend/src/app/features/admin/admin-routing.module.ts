@@ -4,6 +4,7 @@ import { AdminDuzeniComponent } from './containers/admin-duzeni/admin-duzeni.com
 import { DuzenSayfasiComponent } from './containers/duzen-sayfasi/duzen-sayfasi.component';
 import { FilmFormuSayfasiComponent } from './containers/film-formu-sayfasi/film-formu-sayfasi.component';
 import { FilmYonetimiSayfasiComponent } from './containers/film-yonetimi-sayfasi/film-yonetimi-sayfasi.component';
+import { SeansYonetimiSayfasiComponent } from './containers/seans-yonetimi-sayfasi/seans-yonetimi-sayfasi.component';
 import { SubeYonetimiSayfasiComponent } from './containers/sube-yonetimi-sayfasi/sube-yonetimi-sayfasi.component';
 import { KaydedilmemisDegisiklikGuard } from './services/kaydedilmemis-degisiklik.guard';
 import { YoneticiEklemeSayfasiComponent } from './containers/yonetici-ekleme-sayfasi/yonetici-ekleme-sayfasi.component';
@@ -25,6 +26,7 @@ const rotalar: Routes = [
         component: DuzenSayfasiComponent,
         canDeactivate: [KaydedilmemisDegisiklikGuard],
       },
+      { path: 'seanslar', component: SeansYonetimiSayfasiComponent },
       { path: 'yoneticiler', component: YoneticiEklemeSayfasiComponent },
     ],
   },

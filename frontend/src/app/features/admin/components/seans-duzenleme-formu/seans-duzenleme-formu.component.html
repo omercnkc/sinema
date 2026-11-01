@@ -1,0 +1,43 @@
+<form [formGroup]="form" (ngSubmit)="gonder()" novalidate aria-label="Seans fiyatı ve satış kapanışı">
+  <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6">
+      <label for="seans-duzenle-fiyat" class="form-label">Bilet fiyatı (₺)</label>
+      <input
+        id="seans-duzenle-fiyat"
+        type="text"
+        inputmode="decimal"
+        class="form-control form-control-sm"
+        formControlName="ticketPrice"
+        aria-describedby="seans-duzenle-fiyat-ipucu seans-duzenle-fiyat-hata"
+        [class.is-invalid]="fiyat.touched && fiyat.invalid"
+      />
+      <div id="seans-duzenle-fiyat-ipucu" class="form-text">Satılmış biletlerin fiyatı değişmez.</div>
+      <div id="seans-duzenle-fiyat-hata" class="invalid-feedback">{{ fiyat | alanHatasi: 'Fiyat' }}</div>
+    </div>
+    <div class="col-sm-6">
+      <label for="seans-duzenle-ofset" class="form-label">Satış kapanışı (dk)</label>
+      <input
+        id="seans-duzenle-ofset"
+        type="number"
+        class="form-control form-control-sm"
+        [min]="enAzOfset"
+        [max]="enFazlaOfset"
+        formControlName="salesCloseOffsetMinutes"
+        aria-describedby="seans-duzenle-ofset-ipucu seans-duzenle-ofset-hata"
+        [class.is-invalid]="ofset.touched && ofset.invalid"
+      />
+      <div id="seans-duzenle-ofset-ipucu" class="form-text">Başlangıca göre; eksi değer başlamadan önce kapanır.</div>
+      <div id="seans-duzenle-ofset-hata" class="invalid-feedback">{{ ofset | alanHatasi: 'Satış kapanışı' }}</div>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary btn-sm" [disabled]="gonderiliyor">
+      <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      Kaydet
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="gonderiliyor" (click)="iptal.emit()">
+      Vazgeç
+    </button>
+  </div>
+</form>

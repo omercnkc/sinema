@@ -151,6 +151,40 @@ class SeansKontrolcusuEntegrasyonTest {
     }
 
     @Test
+    void shouldListHallScheduleForIstanbulDay_includingHiddenMovies() throws Exception {
+        LocalDate gun = LocalDate.now(ISTANBUL).plusDays(25);
+        Instant aksam = gun.atTime(LocalTime.of(20, 0)).atZone(ISTANBUL).toInstant();
+        Instant geceYarisindanSonra = gun.atTime(LocalTime.of(0, 30)).atZone(ISTANBUL).toInstant();
+        long aksamSeansi = idOku(seansOlustur(aksam, "\"150\""));
+        long geceSeansi = idOku(seansOlustur(geceYarisindanSonra, null));
+        idOku(seansOlustur(gun.plusDays(1).atTime(LocalTime.of(0, 30)).atZone(ISTANBUL).toInstant(), null));
+        yonetim(patch("/api/v1/admin/catalog/movies/" + filmId + "/visibility"), "{\"visible\":false}");
+
+        yonetim(get(SEANSLAR).param("hallId", String.valueOf(salonId)).param("date", gun.toString()), null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id").value(geceSeansi))
+                .andExpect(jsonPath("$[1].id").value(aksamSeansi))
+                .andExpect(jsonPath("$[1].movieId").value(filmId))
+                .andExpect(jsonPath("$[1].movieVisible").value(false))
+                .andExpect(jsonPath("$[1].ticketPrice").value("150.00"))
+                .andExpect(jsonPath("$[1].salesCloseOffsetMinutes").value(10))
+                .andExpect(jsonPath("$[1].salesCloseAt").value(aksam.plus(10, ChronoUnit.MINUTES).toString()))
+                .andExpect(jsonPath("$[1].salesOpen").value(true))
+                .andExpect(jsonPath("$[1].layoutId").value(duzenId));
+    }
+
+    @Test
+    void shouldRejectHallSchedule_whenHallMissingOrUserNotAdmin() throws Exception {
+        yonetim(get(SEANSLAR).param("hallId", "999999"), null)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("HALL_NOT_FOUND"));
+        mockMvc.perform(get(SEANSLAR).param("hallId", String.valueOf(salonId))
+                        .header("Authorization", "Bearer " + TestTokenUretici.kullaniciTokeni(2, "USER")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void shouldReturnNotModified_whenLayoutRequestedWithSameEtag() throws Exception {
         long seansId = idOku(seansOlustur(baslangic, null));
 
