@@ -189,11 +189,23 @@ npx ng build                # üretim derlemesi (dist/sinema-frontend)
 - API adresi `src/environments/` altında; Docker imajında `GATEWAY_HOST_PORT`'tan derleme sırasında gömülür.
 - Yapı: `core/` (oturum, hata yönetimi, bildirim; yalnızca AppModule), `shared/` (ortak bileşen, pipe, form doğrulayıcıları),
   `layout/` (üst menü, alt bilgi), `features/` (tembel yüklenen modüller: `katalog`, `hesap`, `rezervasyon`,
-  `bilet-dogrulama`).
+  `bilet-dogrulama`, `admin`).
 - Satın alma akışı: `/filmler/:id` (seanslar) → `/seans/:id` (koltuk haritası, doluluk 5 sn'de bir yenilenir, en çok 5
   koltuk) → `/rezervasyonlarim/:id` (sunucu saatine göre geri sayım, öde / vazgeç) → ödeme sayfası (iyzico ya da
   MOCK) → `/odeme/sonuc` → `/rezervasyonlarim/:id` (QR'lı bilet, yazdır). QR, herkese açık `/bilet/:kod` doğrulama
   sayfasını açar.
+- Yönetim paneli `/admin` (yalnızca ADMIN; üst menüde "Yönetim"). Yönetici olmayan kullanıcı admin paketini hiç
+  indirmez (`canLoad`); asıl yetki kontrolü sunucudadır.
+  - **Filmler:** gizliler dahil liste, gizle/göster; yeni filmde TMDB araması formu doldurur (afiş, süre, TR yaş sınırı,
+    oyuncular, akıllı işaretler), TMDB'ye ulaşılamazsa elle giriş. TMDB bağlantısı sonradan değişmez.
+  - **Şubeler ve salonlar:** sayfa içi formlarla ekle/düzenle (silme yok), salonun varsayılan fiyatı.
+  - **Salon düzeni** (`/admin/subeler/salonlar/:id/duzen`): ızgara editörü (koltuk, engelli koltuğu, perde, giriş,
+    çıkış, duvar, sil; tıkla ya da sürükle, klavyeyle de). Sıra harfleri perdeye en yakın sıradan, numaralar soldan
+    sağa otomatik verilir. Taslak kaydedilir, müşteri gözüyle önizlenir, onayla yayımlanır; yeni seanslar yeni sürümü
+    kullanır, mevcut seanslar eski sürümde kalır. Salonda süren seans varken yayımlanamaz.
+  - **Seanslar** (`/admin/seanslar?salon=&gun=`): salonun günlük çizelgesi (İstanbul saati), görünür filmlerden seans
+    ekleme (çakışma uyarısı), fiyat ve satış kapanışı düzenleme.
+  - **Yöneticiler:** yeni yönetici hesabı.
 - Access token yalnızca bellekte tutulur; sayfa yenilenince HttpOnly refresh cookie'si ile oturum sessizce geri kurulur.
 - nginx: SPA yönlendirmesi, içerik özetli dosyalara uzun önbellek, `index.html`'e `no-cache`, CSP ve güvenlik başlıkları.
 
@@ -354,8 +366,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | M4 | Payment (iyzico sandbox + sahte sağlayıcı), mutabakat/iade, QR bilet doğrulama | Tamamlandı |
 | M5 | Angular ön yüz: oturum, giriş/kayıt, film listesi/detayı, seans seçimi, nginx container'ı | Tamamlandı |
 | M6 | Koltuk haritası → tutma → ödeme → QR'lı bilet, rezervasyonlarım, bilet doğrulama | Tamamlandı |
-| M7 | Admin paneli (film + TMDB, şube/salon, düzen editörü, seans) | Sırada |
-| M8 | Salon düzeni değişikliğinde bilet göçü | |
+| M7 | Admin paneli (film + TMDB, şube/salon, düzen editörü, seans) | Tamamlandı |
+| M8 | Salon düzeni değişikliğinde bilet göçü | Sırada |
 | M9 | Sertleştirme, güvenlik taraması, demo | |
 
 ## Lisans / atıf

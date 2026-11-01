@@ -147,10 +147,17 @@ adim "bilinmeyen bilet kodu (misafir)" 404 "$(kod "$GATEWAY/api/v1/tickets/ABCDE
 adim "ödeme token'sız" 401 "$(kod -H 'Content-Type: application/json' -d '{"reservationId":1}' "$GATEWAY/api/v1/payments")"
 adim "ödeme iç ucu dışarıya kapalı" 401 "$(kod "$GATEWAY/internal/v1/auth/users/1/billing-info")"
 if [[ -n "$SEANS_ID" ]]; then
-    # Doluluk adımlarındakinden farklı bir koltuk (sondan ikinci)
-    ODEME_HUCRESI=$(curl -s "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID/layout" \
-        | grep -oE '"cellId":[0-9]+,"row":[0-9]+,"col":[0-9]+,"type":"SEAT"' | tail -n2 | head -n1 \
-        | sed -E 's/"cellId":([0-9]+).*/\1/')
+    # Sondan başlayarak boş ve doluluk adımlarındakinden farklı ilk koltuk: ödeme adımı koltuğu satın aldığı için
+    # aynı yığında tekrar çalıştırıldığında önceki satılan koltuklar atlanır
+    DOLU_HUCRELER=$(curl -s "$DOLULUK" | grep -oE '"cellId":[0-9]+' | sed -E 's/"cellId"://')
+    ODEME_HUCRESI=""
+    for ADAY in $(curl -s "$GATEWAY/api/v1/catalog/showtimes/$SEANS_ID/layout" \
+        | grep -oE '"cellId":[0-9]+,"row":[0-9]+,"col":[0-9]+,"type":"SEAT"' | sed -E 's/"cellId":([0-9]+).*/\1/' | tac); do
+        if [[ "$ADAY" != "$HUCRE" ]] && ! grep -qx "$ADAY" <<<"$DOLU_HUCRELER"; then
+            ODEME_HUCRESI="$ADAY"
+            break
+        fi
+    done
     ODEME_REZERVASYONU=$(curl -s -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
         -d "{\"showtimeId\":$SEANS_ID,\"seatCellIds\":[$ODEME_HUCRESI]}" "$GATEWAY/api/v1/bookings/reservations" \
         | sed -nE 's/.*"reservationId":([0-9]+).*/\1/p')
@@ -196,6 +203,18 @@ if [[ -n "${ADMIN_EMAIL:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
         "$GATEWAY/api/v1/admin/catalog/movies")"
     adim "geçersiz şube isteği doğrulanır" 400 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H 'Content-Type: application/json' -d '{}' "$GATEWAY/api/v1/admin/catalog/cinemas")"
+    SALON_ID=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$GATEWAY/api/v1/admin/catalog/cinemas" \
+        | grep -o '"halls":\[{"id":[0-9]*' | head -1 | grep -o '[0-9]*$')
+    adim "salonun günlük seans çizelgesi" 200 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        "$GATEWAY/api/v1/admin/catalog/showtimes?hallId=$SALON_ID")"
+    adim "olmayan salonun çizelgesi" 404 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        "$GATEWAY/api/v1/admin/catalog/showtimes?hallId=999999")"
+    adim "seans çizelgesi USER ile" 403 "$(kod -H "Authorization: Bearer $TOKEN" \
+        "$GATEWAY/api/v1/admin/catalog/showtimes?hallId=$SALON_ID")"
+    adim "salonun düzen sürümleri" 200 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        "$GATEWAY/api/v1/admin/catalog/halls/$SALON_ID/layouts")"
+    adim "geçersiz yönetici isteği doğrulanır" 400 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' -d '{}' "$GATEWAY/api/v1/admin/auth/admins")"
 else
     echo "  - ADMIN_EMAIL/ADMIN_PASSWORD verilmedi: admin katalog adımları atlandı"
 fi
@@ -203,6 +222,7 @@ fi
 echo "9. Ön yüz (nginx)"
 adim "ana sayfa" 200 "$(kod "$FRONTEND/")"
 adim "uygulama içi derin yol index.html'e düşer" 200 "$(kod "$FRONTEND/filmler/1")"
+adim "yönetim paneli derin yolu index.html'e düşer" 200 "$(kod "$FRONTEND/admin/seanslar")"
 adim "olmayan dosya 404 (index.html değil)" 404 "$(kod "$FRONTEND/assets/olmayan-dosya.png")"
 BASLIKLAR=$(curl -s -D - -o /dev/null "$FRONTEND/")
 adim "güvenlik başlığı: Content-Security-Policy" "var"     "$(grep -qi '^content-security-policy:.*script-src .self.' <<<"$BASLIKLAR" && echo var || echo yok)"
