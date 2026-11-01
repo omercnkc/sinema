@@ -1,0 +1,88 @@
+<div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+  <div role="group" aria-label="Fırça" class="d-flex flex-wrap gap-1">
+    <button
+      *ngFor="let secenek of fircalar; trackBy: fircaIzle"
+      type="button"
+      class="btn btn-sm duzen-editoru__firca"
+      [class.btn-primary]="firca === secenek.firca"
+      [class.btn-outline-secondary]="firca !== secenek.firca"
+      [attr.aria-pressed]="firca === secenek.firca"
+      (click)="fircaSec(secenek.firca)"
+    >
+      <span class="hucre hucre--ornek" [ngClass]="secenek.sinif" aria-hidden="true"></span>
+      {{ secenek.ad }}
+    </button>
+  </div>
+
+  <form class="d-flex align-items-end gap-2 ms-lg-auto" [formGroup]="boyutFormu" (ngSubmit)="boyutuUygula()" novalidate aria-label="Izgara boyutu">
+    <div>
+      <label for="duzen-satir" class="form-label small mb-1">Satır</label>
+      <input
+        id="duzen-satir"
+        type="number"
+        class="form-control form-control-sm duzen-editoru__boyut"
+        [min]="enAz"
+        [max]="enFazla"
+        formControlName="satir"
+      />
+    </div>
+    <div>
+      <label for="duzen-sutun" class="form-label small mb-1">Sütun</label>
+      <input
+        id="duzen-sutun"
+        type="number"
+        class="form-control form-control-sm duzen-editoru__boyut"
+        [min]="enAz"
+        [max]="enFazla"
+        formControlName="sutun"
+      />
+    </div>
+    <button
+      type="submit"
+      class="btn btn-sm"
+      [class.btn-outline-secondary]="silinecekHucre === 0"
+      [class.btn-outline-danger]="silinecekHucre > 0"
+      [disabled]="!boyutGecerli"
+    >
+      Boyutu uygula<ng-container *ngIf="silinecekHucre > 0">&ngsp;({{ silinecekHucre }} hücre silinir)</ng-container>
+    </button>
+  </form>
+</div>
+<p *ngIf="!boyutGecerli" class="small text-danger">Satır ve sütun {{ enAz }}–{{ enFazla }} arasında olmalı.</p>
+
+<div class="duzen-editoru__kaydirma">
+  <div
+    class="duzen-editoru__izgara"
+    role="group"
+    aria-label="Salon düzeni. Ok tuşlarıyla gezinin, Enter ya da Boşluk ile seçili fırçayla boyayın."
+    (pointerdown)="boyamaBasladi($event)"
+    (pointermove)="boyamaSurdu($event)"
+  >
+    <div class="duzen-editoru__satir" *ngFor="let satir of satirlar; trackBy: satirIzle">
+      <span class="duzen-editoru__sira" aria-hidden="true">{{ satir.sira }}</span>
+      <button
+        *ngFor="let hucre of satir.hucreler; trackBy: hucreIzle"
+        type="button"
+        class="hucre"
+        [ngClass]="hucre.sinif"
+        [attr.data-anahtar]="hucre.anahtar"
+        [attr.aria-label]="hucre.erisilebilirEtiket"
+        [tabIndex]="hucre.anahtar === odakAnahtari ? 0 : -1"
+        (click)="klavyeylaBoya($event, hucre)"
+        (keydown)="tusaBasildi($event, hucre)"
+      >
+        <span aria-hidden="true">{{ hucre.metin }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3" aria-live="polite">
+  <p class="small text-muted mb-2" data-test="duzen-ozeti">
+    {{ koltukToplami }} koltuk<ng-container *ngIf="engelliToplami > 0">&ngsp;({{ engelliToplami }} engelli)</ng-container>.
+    Sıra harfleri perdeye en yakın sıradan başlar, numaralar soldan sağa verilir.
+  </p>
+  <ul *ngIf="sorunlar.length > 0" class="small text-danger mb-0 ps-3" data-test="duzen-sorunlari">
+    <li *ngFor="let sorun of sorunlar; trackBy: sorunIzle">{{ sorun }}</li>
+  </ul>
+</div>

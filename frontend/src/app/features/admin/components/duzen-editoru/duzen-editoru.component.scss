@@ -1,0 +1,109 @@
+@import "tema";
+
+// 50 sütuna kadar çizilir; sığmazsa ızgara kendi içinde kayar
+$editor-hucre-boyu: 1.5rem;
+$editor-hucre-araligi: 0.125rem;
+
+:host {
+  display: block;
+}
+
+.duzen-editoru {
+  &__boyut {
+    width: 4.5rem;
+  }
+
+  &__firca {
+    display: inline-flex;
+    align-items: center;
+    gap: map-get($spacers, 1);
+  }
+
+  &__kaydirma {
+    overflow: auto;
+    max-height: 70vh;
+    padding: map-get($spacers, 2);
+    border: $border-width solid $border-color;
+    border-radius: $border-radius;
+    background-color: $gray-100;
+  }
+
+  // Basılı tutup sürüklerken sayfa kaymaz ve metin seçilmez
+  &__izgara {
+    display: flex;
+    flex-direction: column;
+    gap: $editor-hucre-araligi;
+    width: max-content;
+    touch-action: none;
+    user-select: none;
+  }
+
+  &__satir {
+    display: flex;
+    gap: $editor-hucre-araligi;
+  }
+
+  &__sira {
+    display: inline-flex;
+    width: $editor-hucre-boyu;
+    align-items: center;
+    justify-content: center;
+    color: $text-muted;
+    font-size: $font-size-sm * 0.85;
+    font-weight: $font-weight-bold;
+  }
+}
+
+.hucre {
+  display: inline-flex;
+  width: $editor-hucre-boyu;
+  height: $editor-hucre-boyu;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: $border-width dotted $gray-400;
+  border-radius: $border-radius-sm;
+  background-color: $white;
+  color: $body-color;
+  font-size: $font-size-sm * 0.7;
+  line-height: 1;
+
+  &:focus-visible {
+    outline: 0.15rem solid $primary;
+    outline-offset: 0.05rem;
+  }
+
+  &--koltuk {
+    border: $border-width solid $gray-600;
+    border-radius: $border-radius-sm $border-radius-sm 0 0;
+  }
+
+  &--engelli {
+    border-color: $info;
+  }
+
+  &--perde {
+    border: 0;
+    border-bottom: 0.25rem solid $gray-600;
+    border-radius: 0;
+    background-color: $gray-300;
+  }
+
+  &--giris,
+  &--cikis {
+    border: $border-width dashed $success;
+    color: $success;
+    font-weight: $font-weight-bold;
+  }
+
+  &--duvar {
+    border: $border-width solid $gray-500;
+    background-color: $gray-500;
+  }
+
+  // Fırça düğmelerindeki örnek kutucuk
+  &--ornek {
+    width: 1rem;
+    height: 1rem;
+  }
+}

@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '../../shared/shared.module';
 import { AdminRoutingModule } from './admin-routing.module';
+import { DuzenEditoruComponent } from './components/duzen-editoru/duzen-editoru.component';
 import { FilmFormuComponent } from './components/film-formu/film-formu.component';
 import { SalonFormuComponent } from './components/salon-formu/salon-formu.component';
 import { SubeFormuComponent } from './components/sube-formu/sube-formu.component';
@@ -26,6 +27,7 @@ import { YoneticiEklemeSayfasiComponent } from './containers/yonetici-ekleme-say
     SubeYonetimiSayfasiComponent,
     SubeFormuComponent,
     SalonFormuComponent,
+    DuzenEditoruComponent,
     YoneticiEklemeSayfasiComponent,
   ],
   imports: [SharedModule, NgbPaginationModule, AdminRoutingModule],
