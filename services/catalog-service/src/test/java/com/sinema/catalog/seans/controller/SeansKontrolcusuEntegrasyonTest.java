@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import com.sinema.catalog.KatalogTestVerisi;
 import com.sinema.testdestegi.MysqlTestYapilandirmasi;
 import com.sinema.testdestegi.TestTokenUretici;
 import java.sql.Timestamp;
@@ -118,8 +119,10 @@ class SeansKontrolcusuEntegrasyonTest {
     }
 
     @Test
-    void shouldKeepSealedLayoutForExistingShowtime_whenNewLayoutPublished() throws Exception {
+    void shouldKeepSealedLayoutForPastShowtime_whenNewLayoutPublished() throws Exception {
         long eskiSeans = idOku(seansOlustur(baslangic, null));
+        // K51: başlamamış seans varken yayım göç ister; geçmiş seans eski sürümde kalır
+        KatalogTestVerisi.seansiGecmiseAl(jdbcTemplate, eskiSeans);
         long yeniDuzen = duzenYayimla(salonId);
 
         mockMvc.perform(get("/api/v1/catalog/showtimes/" + eskiSeans + "/layout"))

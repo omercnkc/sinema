@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -32,6 +33,9 @@ class SeansIcKontrolcusuEntegrasyonTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private KatalogTestVerisi veri;
     private long salonId;
@@ -75,7 +79,9 @@ class SeansIcKontrolcusuEntegrasyonTest {
     }
 
     @Test
-    void shouldRejectCellsOfNewLayout_whenShowtimeSealedToOldOne() throws Exception {
+    void shouldRejectCellsOfNewLayout_whenPastShowtimeSealedToOldOne() throws Exception {
+        // K51: yalnızca başlamış/geçmiş seans eski sürümde kalır (başlamamışlar göçle yeni sürüme geçer)
+        KatalogTestVerisi.seansiGecmiseAl(jdbcTemplate, seansId);
         veri.duzenYayimla(salonId, KatalogTestVerisi.KUCUK_DUZEN);
         String yeniDuzen = mockMvc.perform(get("/api/v1/catalog/showtimes/" + veri.seansOlustur(
                         veri.filmOlustur(90), salonId, baslangic.plus(1, ChronoUnit.DAYS)) + "/layout"))

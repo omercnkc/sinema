@@ -5,9 +5,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.sinema.testdestegi.TestTokenUretici;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -75,6 +78,16 @@ public final class KatalogTestVerisi {
             istek.contentType(MediaType.APPLICATION_JSON).content(govde);
         }
         return mockMvc.perform(istek);
+    }
+
+    /**
+     * Seansı bitmiş bir geçmiş seansa çevirir (API geçmişe seans eklemez). K51: başlamış/geçmiş seans eski düzen
+     * sürümünde kalır ve yayımlamayı göçe zorlamaz.
+     */
+    public static void seansiGecmiseAl(JdbcTemplate jdbcTemplate, long seansId) {
+        Instant simdi = Instant.now();
+        jdbcTemplate.update("UPDATE showtimes SET starts_at = ?, ends_at = ? WHERE id = ?",
+                Timestamp.from(simdi.minus(5, ChronoUnit.HOURS)), Timestamp.from(simdi.minus(3, ChronoUnit.HOURS)), seansId);
     }
 
     /** Oluşturma isteği 201 dönmeliydi; değilse test burada anlaşılır biçimde düşer. */

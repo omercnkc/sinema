@@ -161,7 +161,7 @@ Parola kuralı: en az 8 karakter, en çok 72 bayt (BCrypt sınırı; Türkçe ha
 | `GET/POST /cinemas`, `PUT /cinemas/{id}` | Şube |
 | `POST /halls`, `PUT /halls/{id}` | Salon ve varsayılan bilet fiyatı |
 | `GET/POST /halls/{id}/layouts`, `GET/PUT /halls/{id}/layouts/{layoutId}` | Düzen taslağı (salon başına bir taslak; hatalarda 422 `violations`) |
-| `POST /halls/{id}/layouts/{layoutId}/publish` | Taslağı sürüm yapar, salonun aktif düzeni olur; salonda süren seans varken 409 |
+| `POST /halls/{id}/layouts/{layoutId}/publish` | Taslağı sürüm yapar, salonun aktif düzeni olur; salonda süren seans varken 409 `HALL_SHOWTIME_IN_PROGRESS`, başlamamış seans varken 409 `LAYOUT_MIGRATION_REQUIRED` (yayım bilet göçüyle yapılır, K35/K51) |
 | `GET/POST /movies`, `GET/PUT /movies/{id}`, `PATCH /movies/{id}/visibility` | Film (silinmez, gizlenir) |
 | `GET /tmdb/search?query`, `GET /tmdb/movies/{tmdbId}` | TMDB araması ve form ön doldurma (kaydetmez); TMDB yoksa 503 |
 | `GET /showtimes?hallId&date` | Salonun günlük çizelgesi (`date` Europe/Istanbul günü, boşsa bugün; gizli filmlerin seansları dahil) |
