@@ -127,13 +127,14 @@ describe('RezervasyonSayfasiComponent', () => {
         seatChanges: [
           { oldLabel: 'D-3', newLabel: 'C-3', reason: 'LABEL_CHANGED', changedAt: '2026-11-01T10:00:00Z' },
           { oldLabel: 'D-4', newLabel: 'C-5', reason: 'REPLACEMENT', changedAt: '2026-11-01T10:00:00Z' },
+          { oldLabel: 'E-1', newLabel: 'E-1', reason: 'REPLACEMENT', changedAt: '2026-11-01T10:00:00Z' },
         ],
       }));
       const fixture = olustur();
 
       const bant = fixture.nativeElement.querySelector('[data-test="koltuk-degisti"]').textContent.replace(/\s+/g, ' ');
       expect(bant).toContain('Koltuğunuz değişti.');
-      expect(bant).toContain('D-3 → C-3, D-4 → C-5.');
+      expect(bant).toContain('D-3 → C-3, D-4 → C-5, E-1 (yeni yer).');
     });
 
     it('should not show seat change banner when seats never changed', () => {

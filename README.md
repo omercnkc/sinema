@@ -24,6 +24,9 @@ MySQL 8.4: tek instance, servis başına ayrı şema ve kullanıcı
 - Koltuk tutma (hold) 3 dakika, sunucu saatine göre; süresi dolan koltuk kendiliğinden serbest kalır.
 - Servisler arası çağrılar tek yönlü: `payment → booking → catalog`. auth yalnızca servis token'ı ve (payment için) alıcı
   bilgisi verir, kimseyi çağırmaz: [docs/adr/0001](docs/adr/0001-servisler-arasi-auth-cagrilari.md).
+- Salon düzeni değişince başlamamış seansların biletleri yeni düzene taşınır (aynı yer, gerekirse yakın ve bitişik yedek
+  koltuk); göçü booking yönetir, catalog'da yalnızca yayımlatır. Satılmış biletin koltuğu yalnızca bu işlemle ve denetim
+  kaydıyla değişir: [docs/adr/0002](docs/adr/0002-duzen-gocu-booking-catalog-yazma-ve-sold-istisnasi.md).
 
 ## Teknolojiler
 
@@ -201,11 +204,16 @@ npx ng build                # üretim derlemesi (dist/sinema-frontend)
   - **Şubeler ve salonlar:** sayfa içi formlarla ekle/düzenle (silme yok), salonun varsayılan fiyatı.
   - **Salon düzeni** (`/admin/subeler/salonlar/:id/duzen`): ızgara editörü (koltuk, engelli koltuğu, perde, giriş,
     çıkış, duvar, sil; tıkla ya da sürükle, klavyeyle de). Sıra harfleri perdeye en yakın sıradan, numaralar soldan
-    sağa otomatik verilir. Taslak kaydedilir, müşteri gözüyle önizlenir, onayla yayımlanır; yeni seanslar yeni sürümü
-    kullanır, mevcut seanslar eski sürümde kalır. Salonda süren seans varken yayımlanamaz.
+    sağa otomatik verilir. Taslak kaydedilir ve müşteri gözüyle önizlenir. "Yayımla…" önce bilet göçü raporunu
+    gösterir (etiketi değişen, yedek koltuk atanan ve yerleştirilemeyen biletler); "Uygula ve yayımla" ile salonun
+    başlamamış seansları ve biletleri yeni düzene geçer, başlamış seanslar eski düzende kalır. Yerleştirilemeyen bilet
+    varsa ya da salonda süren seans varken yayımlanamaz.
   - **Seanslar** (`/admin/seanslar?salon=&gun=`): salonun günlük çizelgesi (İstanbul saati), görünür filmlerden seans
     ekleme (çakışma uyarısı), fiyat ve satış kapanışı düzenleme.
   - **Yöneticiler:** yeni yönetici hesabı.
+- Bildirimler: üst menüdeki zil okunmamış sayısını gösterir (açılışta, sayfa değişiminde ve 60 sn'de bir; sekme
+  gizliyken durur). Düzen göçünde koltuğu ya da etiketi değişen biletin sahibi bildirim alır, bilet sayfasında
+  "Koltuğunuz değişti" bandı çıkar.
 - Access token yalnızca bellekte tutulur; sayfa yenilenince HttpOnly refresh cookie'si ile oturum sessizce geri kurulur.
 - nginx: SPA yönlendirmesi, içerik özetli dosyalara uzun önbellek, `index.html`'e `no-cache`, CSP ve güvenlik başlıkları.
 
@@ -338,6 +346,9 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | `Access denied for user 'xxx_user'` | `.env`'deki DB parolası değişti ama MySQL eski parolayla kurulmuştu. Init betiği yalnızca ilk açılışta çalışır: `docker compose down -v`. |
 | Refresh/logout `403 ORIGIN_NOT_ALLOWED` | İstek izinli bir frontend'den gelmiyor; `CORS_ALLOWED_ORIGINS`'e frontend adresini ekleyin. |
 | Giriş/kayıt `503 RATE_LIMIT_UNAVAILABLE` | Redis'e ulaşılamıyor (`docker compose ps redis`); bu iki uç Redis olmadan bilerek kapalıdır. |
+| Koltuk tutarken `409 HALL_UNDER_MAINTENANCE` | Salonda düzen göçü sürüyor; birkaç saniye sonra tekrar deneyin. Uzun sürerse göç askıda kalmış olabilir (aşağıdaki satır). |
+| Göç uygularken `503 MIGRATION_PENDING` | catalog etkinleştirmeye cevap vermedi; biletler korunuyor, salon kilitli. catalog ayaktayken aynı göçü (aynı taslakla) tekrar uygulayın, kaldığı yerden tamamlanır. |
+| Yayımlarken `409 LAYOUT_MIGRATION_REQUIRED` | Salonun başlamamış seansları var; yayım bilet göçüyle yapılır (`POST /api/v1/admin/bookings/layout-migrations` ya da yönetim panelindeki "Yayımla…"). |
 | `429 RATE_LIMITED` | İstek sınırı aşıldı; `Retry-After` saniye bekleyin. Docker'da tüm yerel istekler aynı IP'den görünür. |
 | Servis `unhealthy`, logda `Validate failed: Migrations have failed validation` | Uygulanmış bir migration dosyası değiştirilmiş. Dosyayı geri alın, değişikliği yeni `V<n>__` dosyasıyla yapın. |
 | Yerel çalıştırmada `Could not resolve placeholder 'DB_PASSWORD'` | `DB_PASSWORD` ortam değişkeni verilmemiş (bkz. Yerel geliştirme). |
@@ -372,8 +383,8 @@ tüm token'ları geçersiz kılar (herkes yeniden giriş yapar).
 | M5 | Angular ön yüz: oturum, giriş/kayıt, film listesi/detayı, seans seçimi, nginx container'ı | Tamamlandı |
 | M6 | Koltuk haritası → tutma → ödeme → QR'lı bilet, rezervasyonlarım, bilet doğrulama | Tamamlandı |
 | M7 | Admin paneli (film + TMDB, şube/salon, düzen editörü, seans) | Tamamlandı |
-| M8 | Salon düzeni değişikliğinde bilet göçü | Sırada |
-| M9 | Sertleştirme, güvenlik taraması, demo | |
+| M8 | Salon düzeni değişikliğinde bilet göçü, uygulama içi bildirimler | Tamamlandı |
+| M9 | Sertleştirme, güvenlik taraması, demo | Sırada |
 
 ## Lisans / atıf
 

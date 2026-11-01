@@ -113,6 +113,14 @@ else
 fi
 
 echo "6. Rezervasyon"
+adim "bildirimler token'sız" 401 "$(kod "$GATEWAY/api/v1/bookings/notifications/unread-count")"
+adim "bildirimler (kullanıcı)" 200 "$(kod -H "Authorization: Bearer $TOKEN" "$GATEWAY/api/v1/bookings/notifications")"
+adim "okunmamış bildirim sayısı" 200 "$(kod -H "Authorization: Bearer $TOKEN" \
+    "$GATEWAY/api/v1/bookings/notifications/unread-count")"
+adim "olmayan bildirimi okundu işaretleme" 404 "$(kod -X POST -H "Authorization: Bearer $TOKEN" \
+    "$GATEWAY/api/v1/bookings/notifications/999999999/read")"
+adim "göç önizlemesi USER ile" 403 "$(kod -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+    -d '{"hallId":1,"toLayoutId":1}' "$GATEWAY/api/v1/admin/bookings/layout-migrations/preview")"
 adim "koltuk tutma token'sız" 401 "$(kod -H 'Content-Type: application/json' \
     -d '{"showtimeId":1,"seatCellIds":[1]}' "$GATEWAY/api/v1/bookings/reservations")"
 adim "rezervasyon iç ucu dışarıya kapalı" 401 "$(kod "$GATEWAY/internal/v1/bookings/reservations/1/payment-info")"
@@ -215,6 +223,10 @@ if [[ -n "${ADMIN_EMAIL:-}" && -n "${ADMIN_PASSWORD:-}" ]]; then
         "$GATEWAY/api/v1/admin/catalog/halls/$SALON_ID/layouts")"
     adim "geçersiz yönetici isteği doğrulanır" 400 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H 'Content-Type: application/json' -d '{}' "$GATEWAY/api/v1/admin/auth/admins")"
+    # booking → catalog iç çağrısı (servis token'ı) uçtan uca: catalog'un 404'ü booking'den aynen geçer
+    adim "göç önizlemesi olmayan taslakla (booking → catalog)" 404 "$(kod -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H 'Content-Type: application/json' -d "{\"hallId\":$SALON_ID,\"toLayoutId\":999999999}" \
+        "$GATEWAY/api/v1/admin/bookings/layout-migrations/preview")"
 else
     echo "  - ADMIN_EMAIL/ADMIN_PASSWORD verilmedi: admin katalog adımları atlandı"
 fi

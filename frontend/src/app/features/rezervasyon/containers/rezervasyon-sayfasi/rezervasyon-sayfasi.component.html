@@ -17,7 +17,10 @@
       <div *ngIf="rezervasyon.seatChanges.length > 0" class="alert alert-info" role="status" data-test="koltuk-degisti">
         <strong>Koltuğunuz değişti.</strong> Salon düzeni güncellendi:&ngsp;
         <span *ngFor="let degisiklik of rezervasyon.seatChanges; trackBy: degisiklikIzle; let son = last">
-          {{ degisiklik.oldLabel }} → <strong>{{ degisiklik.newLabel }}</strong>{{ son ? '.' : ', ' }}
+          <ng-container *ngIf="degisiklik.oldLabel !== degisiklik.newLabel; else ayniEtiket"
+            >{{ degisiklik.oldLabel }} → <strong>{{ degisiklik.newLabel }}</strong></ng-container
+          >
+          <ng-template #ayniEtiket><strong>{{ degisiklik.newLabel }}</strong> (yeni yer)</ng-template>{{ son ? '.' : ', ' }}
         </span>
         Biletinizdeki koltuk bilgisi güncel.
       </div>

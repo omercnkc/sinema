@@ -155,17 +155,9 @@ class GocIslemleri {
         rezervasyonaGore.forEach((rezervasyonId, degisiklikler) -> {
             Rezervasyon rezervasyon = rezervasyonlar.get(rezervasyonId);
             bildirimRepository.save(Bildirim.koltukDegisti(rezervasyon.getKullaniciId(), rezervasyonId,
-                    mesaj(rezervasyon, degisiklikler), simdi));
+                    KoltukDegisikligiMesaji.olustur(rezervasyon.getFilmAdi(), rezervasyon.getSubeAdi(),
+                            rezervasyon.getSalonAdi(), degisiklikler), simdi));
         });
-    }
-
-    private static String mesaj(Rezervasyon rezervasyon, List<KoltukGocKaydi> degisiklikler) {
-        String koltuklar = degisiklikler.stream()
-                .sorted(Comparator.comparing(KoltukGocKaydi::getEskiEtiket))
-                .map(kayit -> kayit.getEskiEtiket() + " → " + kayit.getYeniEtiket())
-                .collect(Collectors.joining(", "));
-        return "Salon düzeni değişti: %s (%s, %s) biletinizdeki koltuk %s oldu."
-                .formatted(rezervasyon.getFilmAdi(), rezervasyon.getSubeAdi(), rezervasyon.getSalonAdi(), koltuklar);
     }
 
     private void doluluguTemizle(List<KoltukGocKaydi> kayitlar) {
