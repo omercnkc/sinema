@@ -6,9 +6,12 @@ import { of, Subject, throwError } from 'rxjs';
 import { BildirimService } from '../../../../core/bildirim/bildirim.service';
 import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
 import { SharedModule } from '../../../../shared/shared.module';
+import { GocRaporuComponent } from '../../components/goc-raporu/goc-raporu.component';
 import { boya, bosDuzen, EditorDuzeni } from '../../models/duzen-editoru.models';
+import { GocRaporu } from '../../models/duzen-gocu.models';
 import { DuzenCevabi, DuzenOzeti } from '../../models/duzen-yonetimi.models';
 import { YonetimSube } from '../../models/sube-yonetimi.models';
+import { DuzenGocuService } from '../../services/duzen-gocu.service';
 import { DuzenYonetimiService } from '../../services/duzen-yonetimi.service';
 import { KaydedilmemisDegisiklikGuard } from '../../services/kaydedilmemis-degisiklik.guard';
 import { SubeYonetimiService } from '../../services/sube-yonetimi.service';
@@ -30,17 +33,30 @@ describe('DuzenSayfasiComponent', () => {
       { cellId: 2, row: 2, col: 1, type: 'SEAT', seatRowLabel: 'A', seatNumber: 1, seatType: 'STANDARD' },
     ],
   };
+  const RAPOR: GocRaporu = {
+    hallId: 11, toLayoutId: 7, applicable: true,
+    summary: { migratedShowtimes: 2, seats: 3, unchanged: 1, labelChanged: 1, replaced: 1, unresolvedReservations: 0 },
+    showtimes: [{
+      showtimeId: 101, startsAt: '2026-11-02T17:00:00Z', unchanged: 1, unresolved: [],
+      changes: [
+        { reservationId: 5, oldLabel: 'F-7', newLabel: 'E-7', reason: 'LABEL_CHANGED' },
+        { reservationId: 6, oldLabel: 'A-2', newLabel: 'B-3', reason: 'REPLACEMENT' },
+      ],
+    }],
+  };
   /** Geçerli (perde + koltuk) çizim. */
   const CIZIM: EditorDuzeni = boya(boya(bosDuzen(3, 3), 0, 0, 'PERDE'), 2, 2, 'KOLTUK');
 
   let fixture: ComponentFixture<DuzenSayfasiComponent>;
   let bilesen: DuzenSayfasiComponent;
   let duzenService: jasmine.SpyObj<DuzenYonetimiService>;
+  let gocService: jasmine.SpyObj<DuzenGocuService>;
   let bildirim: jasmine.SpyObj<BildirimService>;
 
   function olustur(salonId: string, surumler: DuzenOzeti[]): void {
     duzenService = jasmine.createSpyObj<DuzenYonetimiService>('DuzenYonetimiService',
-      ['listele', 'getir', 'taslakOlustur', 'taslakGuncelle', 'yayimla']);
+      ['listele', 'getir', 'taslakOlustur', 'taslakGuncelle']);
+    gocService = jasmine.createSpyObj<DuzenGocuService>('DuzenGocuService', ['onizle', 'uygula']);
     duzenService.listele.and.returnValue(of(surumler));
     duzenService.getir.and.callFake((_, duzenId) => of({ ...CEVAP, id: duzenId }));
     const subeService = jasmine.createSpyObj<SubeYonetimiService>('SubeYonetimiService', ['listele']);
@@ -48,9 +64,10 @@ describe('DuzenSayfasiComponent', () => {
     bildirim = jasmine.createSpyObj<BildirimService>('BildirimService', ['basari']);
     TestBed.configureTestingModule({
       imports: [RouterTestingModule, SharedModule],
-      declarations: [DuzenSayfasiComponent],
+      declarations: [DuzenSayfasiComponent, GocRaporuComponent],
       providers: [
         { provide: DuzenYonetimiService, useValue: duzenService },
+        { provide: DuzenGocuService, useValue: gocService },
         { provide: SubeYonetimiService, useValue: subeService },
         { provide: BildirimService, useValue: bildirim },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ salonId }) } } },
@@ -99,10 +116,11 @@ describe('DuzenSayfasiComponent', () => {
     expect(metin('[data-test="kayit-durumu"]')).toBe('Taslak kayıtlı.');
   });
 
-  it('should start from active version copy, create draft on save, then publish after confirmation', () => {
+  it('should start from active version copy, create draft on save, then preview migration and apply it', () => {
     olustur('11', [AKTIF]);
     duzenService.taslakOlustur.and.returnValue(of({ ...CEVAP, id: 7, status: 'DRAFT' }));
-    duzenService.yayimla.and.returnValue(of({ ...CEVAP, id: 7, version: 3 }));
+    gocService.onizle.and.returnValue(of(RAPOR));
+    gocService.uygula.and.returnValue(of({ migrationId: 1, status: 'COMPLETED', layoutVersion: 3, migratedShowtimes: 2, report: RAPOR }));
 
     expect(metin('[data-test="duzen-kaynagi"]')).toContain('sürüm 2');
     expect(dugme('Taslağı kaydet').disabled).toBeFalse();
@@ -115,13 +133,18 @@ describe('DuzenSayfasiComponent', () => {
 
     dugme('Yayımla').click();
     yenile();
-    expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).not.toBeNull();
+    expect(gocService.onizle).toHaveBeenCalledWith(11, 7);
+    expect(metin('[data-test="goc-ozeti"]')).toContain('2 başlamamış seans yeni düzene geçecek');
+    expect(metin('[data-test="goc-seansi"]')).toContain('Rezervasyon #5: F-7 → E-7 (etiket değişti)');
+    expect(metin('[data-test="goc-seansi"]')).toContain('Rezervasyon #6: A-2 → B-3 (yedek koltuk)');
+    expect(metin('[data-test="goc-seansi"]')).toContain('20:00');
     duzenService.listele.and.returnValue(of([{ ...AKTIF, id: 7, version: 3 }, { ...AKTIF, active: false }]));
-    dugme('Evet, yayımla').click();
+    dugme('Uygula ve yayımla').click();
     yenile();
 
-    expect(duzenService.yayimla).toHaveBeenCalledWith(11, 7);
-    expect(bildirim.basari).toHaveBeenCalledWith('Sürüm 3 yayımlandı. Bundan sonra eklenen seanslar bu düzeni kullanır.');
+    expect(gocService.uygula).toHaveBeenCalledWith(11, 7);
+    expect(bildirim.basari).toHaveBeenCalledWith(
+      'Sürüm 3 yayımlandı; 2 seans yeni düzene geçti. 2 koltuğun sahibine değişiklik bildirildi.');
     expect(fixture.nativeElement.querySelector('[role="alertdialog"]')).toBeNull();
     expect(metin('[data-test="duzen-kaynagi"]')).toContain('sürüm 3');
   });
@@ -164,13 +187,60 @@ describe('DuzenSayfasiComponent', () => {
 
     duzenService.taslakGuncelle.and.returnValue(of({ ...CEVAP, id: 6 }));
     bilesen.kaydetIstendi();
-    duzenService.yayimla.and.returnValue(throwError(() => new UygulamaHatasi(409, 'HALL_SHOWTIME_IN_PROGRESS',
+    gocService.onizle.and.returnValue(of(RAPOR));
+    gocService.uygula.and.returnValue(throwError(() => new UygulamaHatasi(409, 'HALL_SHOWTIME_IN_PROGRESS',
       'Salonda süren bir seans var; düzen seanssız aralıkta yayımlanabilir (K13).')));
-    bilesen.yayimlaIstendi();
+    bilesen.yayimlamayiOnizle();
+    bilesen.gocuUygula();
     yenile();
 
     expect(fixture.nativeElement.querySelector('app-hata-mesaji').textContent).toContain('süren bir seans');
     expect(fixture.nativeElement.querySelector('[data-test="sunucu-ihlalleri"]')).toBeNull();
+  });
+
+  it('should block apply when reservations cannot be seated and show refreshed report from server', () => {
+    olustur('11', [TASLAK]);
+    const uygulanamaz: GocRaporu = {
+      ...RAPOR, applicable: false,
+      summary: { ...RAPOR.summary, unresolvedReservations: 1 },
+      showtimes: [{ ...RAPOR.showtimes[0], unresolved: [{ reservationId: 9, oldLabels: ['C-1', 'C-2'] }] }],
+    };
+    gocService.onizle.and.returnValue(of(RAPOR));
+    gocService.uygula.and.returnValue(throwError(() => new UygulamaHatasi(409, 'MIGRATION_NOT_APPLICABLE',
+      'Bazı biletler yeni düzende yan yana yerleştirilemiyor.', [], null, null, { report: uygulanamaz })));
+
+    bilesen.yayimlamayiOnizle();
+    yenile();
+    dugme('Uygula ve yayımla').click();
+    yenile();
+
+    expect(metin('[data-test="goc-uygulanamaz"]')).toContain('1 rezervasyonun koltukları');
+    expect(metin('[data-test="goc-seansi"]')).toContain('Rezervasyon #9: C-1, C-2 için yan yana boş yer yok');
+    expect(dugme('Uygula ve yayımla').disabled).toBeTrue();
+    expect(fixture.nativeElement.querySelector('app-hata-mesaji').textContent).toContain('yan yana');
+  });
+
+  it('should close stale migration preview when drawing changes or plan changed on server', () => {
+    olustur('11', [TASLAK]);
+    gocService.onizle.and.returnValue(of(RAPOR));
+    bilesen.yayimlamayiOnizle();
+    yenile();
+    expect(fixture.nativeElement.querySelector('app-goc-raporu')).not.toBeNull();
+
+    bilesen.duzenDegisti(CIZIM);
+    yenile();
+    expect(fixture.nativeElement.querySelector('app-goc-raporu')).toBeNull();
+
+    duzenService.taslakGuncelle.and.returnValue(of({ ...CEVAP, id: 6 }));
+    bilesen.kaydetIstendi();
+    gocService.uygula.and.returnValue(throwError(() => new UygulamaHatasi(409, 'MIGRATION_SHOWTIMES_CHANGED',
+      'Göç planındaki bazı seanslar başladı; göç yeniden hesaplanmalı.')));
+    bilesen.yayimlamayiOnizle();
+    bilesen.gocuUygula();
+    yenile();
+
+    expect(fixture.nativeElement.querySelector('app-goc-raporu')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-hata-mesaji').textContent).toContain('yeniden hesaplanmalı');
   });
 
   it('should toggle customer preview with current drawing', () => {

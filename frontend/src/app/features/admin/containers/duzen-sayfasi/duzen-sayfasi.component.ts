@@ -7,8 +7,10 @@ import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
 import { IS_SAAT_DILIMI } from '../../../../core/zaman/is-saat-dilimi';
 import { haritaKur, KoltukHaritasiGorunumu } from '../../../../shared/components/koltuk-haritasi/koltuk-haritasi.models';
 import { bosDuzen, cevaptanKur, dogrula, EditorDuzeni, istegeCevir, onizlemeDuzeni } from '../../models/duzen-editoru.models';
+import { GocRaporu, GocSonucu } from '../../models/duzen-gocu.models';
 import { DuzenCevabi, DuzenOzeti } from '../../models/duzen-yonetimi.models';
 import { YonetimSalon } from '../../models/sube-yonetimi.models';
+import { DuzenGocuService } from '../../services/duzen-gocu.service';
 import { DuzenYonetimiService } from '../../services/duzen-yonetimi.service';
 import { KaydedilmemisDegisiklikli } from '../../services/kaydedilmemis-degisiklik.guard';
 import { SubeYonetimiService } from '../../services/sube-yonetimi.service';
@@ -20,6 +22,9 @@ const SALON_YOK = new UygulamaHatasi(404, 'HALL_NOT_FOUND', 'Salon bulunamadı.'
 const BEKLENMEYEN_HATA = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
 const GECERSIZ_DUZEN_KODU = 'LAYOUT_INVALID';
 const IHLALLER_ALANI = 'violations';
+const GOC_UYGULANAMAZ_KODU = 'MIGRATION_NOT_APPLICABLE';
+/** Bu hatalarda önizlenen plan bayatlamıştır: rapor kapanır, yeniden önizlenir. */
+const PLAN_BAYAT_KODLARI: ReadonlySet<string> = new Set(['MIGRATION_SHOWTIMES_CHANGED', 'MIGRATION_CONFLICT']);
 
 /** Editöre ne açıldı: kayıtlı taslak, yayımlı düzenin kopyası (henüz kaydedilmemiş yeni taslak) ya da boş ızgara. */
 export type DuzenKaynagi = 'TASLAK' | 'KOPYA' | 'BOS';
@@ -34,7 +39,7 @@ interface SayfaVerisi {
   readonly duzen: EditorDuzeni;
 }
 
-type Islem = 'KAYDET' | 'YAYIMLA';
+type Islem = 'KAYDET' | 'ONIZLE' | 'UYGULA';
 
 /**
  * /admin/subeler/salonlar/:salonId/duzen (smart). Salon başına tek taslak vardır (sunucu kuralı): taslak varsa
@@ -61,7 +66,8 @@ export class DuzenSayfasiComponent implements OnDestroy, KaydedilmemisDegisiklik
   islemHatasi: string | null = null;
   ihlaller: readonly string[] = [];
   sorunVar = false;
-  yayimlamaOnayiAcik = false;
+  /** Yayımlama önizlemesi (göç raporu); açıkken "Uygula ve yayımla" görünür. */
+  gocRaporu: GocRaporu | null = null;
   onizleme: KoltukHaritasiGorunumu | null = null;
 
   private readonly yukle$ = new BehaviorSubject<void>(undefined);
@@ -71,6 +77,7 @@ export class DuzenSayfasiComponent implements OnDestroy, KaydedilmemisDegisiklik
   constructor(
     rota: ActivatedRoute,
     private readonly duzenService: DuzenYonetimiService,
+    private readonly gocService: DuzenGocuService,
     private readonly subeService: SubeYonetimiService,
     private readonly bildirimService: BildirimService,
     private readonly degisiklikAlgilayici: ChangeDetectorRef,
@@ -92,7 +99,7 @@ export class DuzenSayfasiComponent implements OnDestroy, KaydedilmemisDegisiklik
 
     this.islem$.pipe(
       tap(() => this.islemBasladi()),
-      exhaustMap((islem) => (islem === 'KAYDET' ? this.kaydet() : this.yayimla()).pipe(
+      exhaustMap((islem) => this.islemAkisi(islem).pipe(
         catchError((hata: unknown) => {
           this.islemHatasiniGoster(hata);
           return EMPTY;
@@ -116,7 +123,7 @@ export class DuzenSayfasiComponent implements OnDestroy, KaydedilmemisDegisiklik
   duzenDegisti(duzen: EditorDuzeni): void {
     this.duzen = duzen;
     this.kaydedilmemisDegisiklikVar = true;
-    this.yayimlamaOnayiAcik = false;
+    this.gocRaporu = null;
     this.duzenDurumunuGuncelle();
   }
 
@@ -126,18 +133,21 @@ export class DuzenSayfasiComponent implements OnDestroy, KaydedilmemisDegisiklik
     }
   }
 
-  yayimlamaOnayiniAc(): void {
-    this.yayimlamaOnayiAcik = this.yayimlanabilir;
-  }
-
-  yayimlamaOnayiniKapat(): void {
-    this.yayimlamaOnayiAcik = false;
-  }
-
-  yayimlaIstendi(): void {
+  /** Yayımlama önce göç önizlemesini getirir (K35): biletlere ne olacağı görülmeden yayımlanmaz. */
+  yayimlamayiOnizle(): void {
     if (this.yayimlanabilir) {
-      this.islem$.next('YAYIMLA');
+      this.islem$.next('ONIZLE');
     }
+  }
+
+  gocuUygula(): void {
+    if (this.gocRaporu?.applicable && this.yayimlanabilir) {
+      this.islem$.next('UYGULA');
+    }
+  }
+
+  gocuKapat(): void {
+    this.gocRaporu = null;
   }
 
   onizlemeyiDegistir(): void {
@@ -222,14 +232,28 @@ export class DuzenSayfasiComponent implements OnDestroy, KaydedilmemisDegisiklik
     );
   }
 
-  private yayimla(): Observable<unknown> {
-    return this.duzenService.yayimla(this.salonId, this.taslakId as number).pipe(
-      tap((cevap: DuzenCevabi) => {
-        this.bildirimService.basari(`Sürüm ${cevap.version} yayımlandı. Bundan sonra eklenen seanslar bu düzeni kullanır.`);
-        this.yayimlamaOnayiAcik = false;
-        this.yukle$.next();
-      }),
-    );
+  private islemAkisi(islem: Islem): Observable<unknown> {
+    switch (islem) {
+      case 'KAYDET':
+        return this.kaydet();
+      case 'ONIZLE':
+        return this.gocService.onizle(this.salonId, this.taslakId as number).pipe(
+          tap((rapor) => (this.gocRaporu = rapor)),
+        );
+      case 'UYGULA':
+        return this.gocService.uygula(this.salonId, this.taslakId as number).pipe(
+          tap((sonuc) => this.gocTamamlandi(sonuc)),
+        );
+    }
+  }
+
+  private gocTamamlandi(sonuc: GocSonucu): void {
+    const ozet = sonuc.report?.summary;
+    const bildirilen = ozet ? ozet.labelChanged + ozet.replaced : 0;
+    this.bildirimService.basari(`Sürüm ${sonuc.layoutVersion} yayımlandı; ${sonuc.migratedShowtimes} seans yeni düzene geçti.`
+      + (bildirilen > 0 ? ` ${bildirilen} koltuğun sahibine değişiklik bildirildi.` : ''));
+    this.gocRaporu = null;
+    this.yukle$.next();
   }
 
   private yuklemeBasladi(): void {
@@ -269,6 +293,12 @@ export class DuzenSayfasiComponent implements OnDestroy, KaydedilmemisDegisiklik
       return;
     }
     this.islemHatasi = hata.mesaj;
+    if (hata.kod === GOC_UYGULANAMAZ_KODU && hata.ekAlanlar['report']) {
+      // Önizlemeden sonra satış olmuş olabilir: sunucunun güncel raporu gösterilir
+      this.gocRaporu = hata.ekAlanlar['report'] as GocRaporu;
+    } else if (PLAN_BAYAT_KODLARI.has(hata.kod)) {
+      this.gocRaporu = null;
+    }
     const ihlaller = hata.ekAlanlar[IHLALLER_ALANI];
     this.ihlaller = hata.kod === GECERSIZ_DUZEN_KODU && Array.isArray(ihlaller) ? ihlaller.map(String) : [];
   }

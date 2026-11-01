@@ -6,3 +6,4 @@ import { environment } from '../../../../environments/environment';
  */
 export const ADMIN_AUTH_ADRESI = `${environment.apiTabanAdresi}/admin/auth`;
 export const ADMIN_KATALOG_ADRESI = `${environment.apiTabanAdresi}/admin/catalog`;
+export const ADMIN_REZERVASYON_ADRESI = `${environment.apiTabanAdresi}/admin/bookings`;

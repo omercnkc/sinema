@@ -3,6 +3,7 @@ import { NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 import { SharedModule } from '../../shared/shared.module';
 import { AdminRoutingModule } from './admin-routing.module';
 import { DuzenEditoruComponent } from './components/duzen-editoru/duzen-editoru.component';
+import { GocRaporuComponent } from './components/goc-raporu/goc-raporu.component';
 import { FilmFormuComponent } from './components/film-formu/film-formu.component';
 import { SalonFormuComponent } from './components/salon-formu/salon-formu.component';
 import { SeansDuzenlemeFormuComponent } from './components/seans-duzenleme-formu/seans-duzenleme-formu.component';
@@ -33,6 +34,7 @@ import { YoneticiEklemeSayfasiComponent } from './containers/yonetici-ekleme-say
     SalonFormuComponent,
     DuzenEditoruComponent,
     DuzenSayfasiComponent,
+    GocRaporuComponent,
     SeansYonetimiSayfasiComponent,
     SeansEklemeComponent,
     SeansDuzenlemeFormuComponent,

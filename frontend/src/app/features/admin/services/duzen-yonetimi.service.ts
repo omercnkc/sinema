@@ -7,8 +7,8 @@ import { DuzenCevabi, DuzenOzeti } from '../models/duzen-yonetimi.models';
 import { ADMIN_KATALOG_ADRESI } from './admin-api';
 
 /**
- * Salon düzeni sürümleri (K17): salon başına tek taslak; yayımlanan sürüm değişmez ve salonun aktif düzeni olur,
- * mevcut seanslar eski sürümde kalır. Salonda süren seans varken yayımlanmaz (K13).
+ * Salon düzeni sürümleri: salon başına tek taslak. Yayımlama bilet göçüyle yapılır (DuzenGocuService, K51):
+ * başlamamış seanslar yeni sürüme geçer, başlamış seanslar eski sürümde kalır.
  */
 @Injectable({ providedIn: 'root' })
 export class DuzenYonetimiService {
@@ -28,10 +28,6 @@ export class DuzenYonetimiService {
 
   taslakGuncelle(salonId: number, duzenId: number, istek: DuzenIstegi): Observable<DuzenCevabi> {
     return this.http.put<DuzenCevabi>(`${this.adres(salonId)}/${duzenId}`, istek, { context: sessizBaglam() });
-  }
-
-  yayimla(salonId: number, duzenId: number): Observable<DuzenCevabi> {
-    return this.http.post<DuzenCevabi>(`${this.adres(salonId)}/${duzenId}/publish`, null, { context: sessizBaglam() });
   }
 
   private adres(salonId: number): string {

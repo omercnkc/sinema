@@ -39,7 +39,7 @@
     <button type="button" class="btn btn-outline-secondary" [attr.aria-pressed]="onizleme !== null" (click)="onizlemeyiDegistir()">
       {{ onizleme ? 'Önizlemeyi kapat' : 'Müşteri gözüyle önizle' }}
     </button>
-    <button type="button" class="btn btn-outline-success" [disabled]="!yayimlanabilir" (click)="yayimlamaOnayiniAc()">
+    <button type="button" class="btn btn-outline-success" [disabled]="!yayimlanabilir" (click)="yayimlamayiOnizle()">
       Yayımla…
     </button>
     <span class="small ms-sm-2" role="status" data-test="kayit-durumu">
@@ -48,20 +48,30 @@
     </span>
   </div>
 
-  <div *ngIf="yayimlamaOnayiAcik" class="alert alert-warning" role="alertdialog" aria-labelledby="yayimla-baslik">
-    <p id="yayimla-baslik" class="mb-2">
-      Taslak yeni sürüm olarak yayımlanacak. Bundan sonra eklenen seanslar bu düzeni kullanır; mevcut seanslar ve
-      satılmış biletler eski düzende kalır. Salonda süren bir seans varken yayımlanamaz.
-    </p>
-    <div class="d-flex gap-2">
-      <button type="button" class="btn btn-success btn-sm" [disabled]="islemSuruyor" (click)="yayimlaIstendi()">
-        Evet, yayımla
-      </button>
-      <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="islemSuruyor" (click)="yayimlamaOnayiniKapat()">
-        Vazgeç
-      </button>
+  <section *ngIf="gocRaporu" class="card border-warning mb-3" role="alertdialog" aria-labelledby="goc-baslik">
+    <div class="card-body">
+      <h3 id="goc-baslik" class="h6">Yayımlama önizlemesi</h3>
+      <p class="small text-muted">
+        Yayımlanınca salonun başlamamış seansları yeni düzene geçer; satılmış ve ödemesi süren biletler aşağıdaki gibi
+        taşınır, koltuğu ya da etiketi değişenlere bildirim gider. Başlamış seanslar eski düzende kalır. İşlem
+        sürerken salonda koltuk tutulamaz.
+      </p>
+      <app-goc-raporu [rapor]="gocRaporu"></app-goc-raporu>
+      <div class="d-flex gap-2 mt-3">
+        <button
+          type="button"
+          class="btn btn-success btn-sm"
+          [disabled]="islemSuruyor || !gocRaporu.applicable"
+          (click)="gocuUygula()"
+        >
+          Uygula ve yayımla
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="islemSuruyor" (click)="gocuKapat()">
+          Vazgeç
+        </button>
+      </div>
     </div>
-  </div>
+  </section>
 
   <ng-container *ngIf="islemHatasi">
     <app-hata-mesaji [mesaj]="islemHatasi"></app-hata-mesaji>

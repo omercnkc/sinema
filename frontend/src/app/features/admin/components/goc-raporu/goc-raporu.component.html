@@ -1,0 +1,31 @@
+<p class="mb-2" data-test="goc-ozeti">
+  <strong>{{ rapor.summary.migratedShowtimes }}</strong> başlamamış seans yeni düzene geçecek.
+  <ng-container *ngIf="rapor.summary.seats > 0; else biletYok">
+    {{ rapor.summary.seats }} bilet koltuğundan {{ rapor.summary.unchanged }} aynı yerde kalıyor,
+    {{ rapor.summary.labelChanged }} koltuğun etiketi değişiyor, {{ rapor.summary.replaced }} koltuğa yedek atanıyor.
+  </ng-container>
+  <ng-template #biletYok>Bu seanslarda satılmış ya da ödemesi süren bilet yok.</ng-template>
+</p>
+
+<div *ngIf="!rapor.applicable" class="alert alert-danger py-2" role="alert" data-test="goc-uygulanamaz">
+  {{ rapor.summary.unresolvedReservations }} rezervasyonun koltukları yeni düzende yan yana yerleştirilemiyor. Düzende
+  yer açın (ör. koltuk ekleyin), taslağı kaydedin ve yeniden önizleyin.
+</div>
+
+<ul *ngIf="rapor.showtimes.length > 0" class="list-group small">
+  <li class="list-group-item" *ngFor="let seans of rapor.showtimes; trackBy: seansIzle" data-test="goc-seansi">
+    <div class="fw-semibold">
+      {{ seans.startsAt | date: 'd MMM EEE HH:mm':saatDilimi }}
+      <span class="text-muted fw-normal">· {{ seans.unchanged }} bilet aynı yerde</span>
+    </div>
+    <ul class="list-unstyled mb-0 mt-1">
+      <li *ngFor="let degisiklik of seans.changes; trackBy: degisiklikIzle">
+        Rezervasyon #{{ degisiklik.reservationId }}: {{ degisiklik.oldLabel }} → {{ degisiklik.newLabel }}
+        <span class="text-muted">({{ degisiklik.reason === 'REPLACEMENT' ? 'yedek koltuk' : 'etiket değişti' }})</span>
+      </li>
+      <li *ngFor="let cozulemeyen of seans.unresolved; trackBy: rezervasyonIzle" class="text-danger">
+        Rezervasyon #{{ cozulemeyen.reservationId }}: {{ cozulemeyen.oldLabels.join(', ') }} için yan yana boş yer yok
+      </li>
+    </ul>
+  </li>
+</ul>
