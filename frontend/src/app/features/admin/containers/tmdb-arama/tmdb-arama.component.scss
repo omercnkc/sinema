@@ -1,0 +1,23 @@
+@import "tema";
+
+$tmdb-arama-afis-genisligi: 2.5rem;
+
+.tmdb-arama {
+  &__liste {
+    max-height: 24rem;
+    overflow-y: auto;
+  }
+
+  &__afis {
+    flex-shrink: 0;
+    width: $tmdb-arama-afis-genisligi;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: $border-radius-sm;
+
+    &--bos {
+      display: block;
+      background-color: $gray-300;
+    }
+  }
+}

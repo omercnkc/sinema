@@ -1,0 +1,173 @@
+<form [formGroup]="form" (ngSubmit)="gonder()" novalidate aria-label="Film bilgileri">
+  <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+
+  <p *ngIf="tmdbId !== null" class="small text-muted" data-test="tmdb-kaynagi">
+    Bilgiler TMDB'den (#{{ tmdbId }}) geldi; kaydetmeden önce düzenleyebilirsiniz. TMDB bağlantısı sonradan değişmez.
+  </p>
+
+  <div class="row g-4">
+    <div class="col-sm-4 col-lg-3">
+      <app-film-afisi [afisYolu]="onizlemeAfisi" [baslik]="baslik.value || '?'"></app-film-afisi>
+    </div>
+
+    <div class="col-sm-8 col-lg-9">
+      <div class="row g-3">
+        <div class="col-12">
+          <label for="film-baslik" class="form-label">Başlık</label>
+          <input
+            id="film-baslik"
+            type="text"
+            class="form-control"
+            formControlName="title"
+            aria-describedby="film-baslik-hata"
+            [class.is-invalid]="baslik.touched && baslik.invalid"
+          />
+          <div id="film-baslik-hata" class="invalid-feedback">{{ baslik | alanHatasi: 'Başlık' }}</div>
+        </div>
+
+        <div class="col-sm-4">
+          <label for="film-sure" class="form-label">Süre (dk)</label>
+          <input
+            id="film-sure"
+            type="number"
+            min="1"
+            max="600"
+            class="form-control"
+            formControlName="runtimeMinutes"
+            aria-describedby="film-sure-hata"
+            [class.is-invalid]="sure.touched && sure.invalid"
+          />
+          <div id="film-sure-hata" class="invalid-feedback">{{ sure | alanHatasi: 'Süre' }}</div>
+        </div>
+
+        <div class="col-sm-4">
+          <label for="film-vizyon" class="form-label">Vizyon tarihi</label>
+          <input
+            id="film-vizyon"
+            type="date"
+            class="form-control"
+            formControlName="releaseDate"
+            aria-describedby="film-vizyon-hata"
+            [class.is-invalid]="vizyonTarihi.touched && vizyonTarihi.invalid"
+          />
+          <div id="film-vizyon-hata" class="invalid-feedback">{{ vizyonTarihi | alanHatasi: 'Vizyon tarihi' }}</div>
+        </div>
+
+        <div class="col-sm-4">
+          <label for="film-yas" class="form-label">Yaş sınırı</label>
+          <select id="film-yas" class="form-select" formControlName="certification">
+            <option value="">Belirtilmemiş</option>
+            <option *ngFor="let yas of yasSinirlari; trackBy: yasIzle" [value]="yas">{{ yas }}</option>
+          </select>
+        </div>
+
+        <div class="col-sm-8">
+          <label for="film-afis" class="form-label">Afiş yolu (TMDB)</label>
+          <input
+            id="film-afis"
+            type="text"
+            class="form-control"
+            formControlName="posterPath"
+            placeholder="/abc123.jpg"
+            aria-describedby="film-afis-ipucu film-afis-hata"
+            [class.is-invalid]="afisYolu.touched && afisYolu.invalid"
+          />
+          <div id="film-afis-ipucu" class="form-text">TMDB görsel yolu; boş bırakılırsa afiş yerine baş harf gösterilir.</div>
+          <div id="film-afis-hata" class="invalid-feedback">{{ afisYolu | alanHatasi: 'Afiş yolu' }}</div>
+        </div>
+
+        <div class="col-sm-4">
+          <label for="film-puan" class="form-label">Puan (0–10)</label>
+          <input
+            id="film-puan"
+            type="text"
+            inputmode="decimal"
+            class="form-control"
+            formControlName="voteAverage"
+            aria-describedby="film-puan-hata"
+            [class.is-invalid]="puan.touched && puan.invalid"
+          />
+          <div id="film-puan-hata" class="invalid-feedback">{{ puan | alanHatasi: 'Puan' }}</div>
+        </div>
+
+        <div class="col-12">
+          <label for="film-ozet" class="form-label">Özet</label>
+          <textarea
+            id="film-ozet"
+            rows="4"
+            class="form-control"
+            formControlName="overview"
+            aria-describedby="film-ozet-hata"
+            [class.is-invalid]="ozet.touched && ozet.invalid"
+          ></textarea>
+          <div id="film-ozet-hata" class="invalid-feedback">{{ ozet | alanHatasi: 'Özet' }}</div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="film-yonetmen" class="form-label">Yönetmen</label>
+          <input
+            id="film-yonetmen"
+            type="text"
+            class="form-control"
+            formControlName="director"
+            aria-describedby="film-yonetmen-hata"
+            [class.is-invalid]="yonetmen.touched && yonetmen.invalid"
+          />
+          <div id="film-yonetmen-hata" class="invalid-feedback">{{ yonetmen | alanHatasi: 'Yönetmen' }}</div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="film-turler" class="form-label">Türler</label>
+          <input
+            id="film-turler"
+            type="text"
+            class="form-control"
+            formControlName="genres"
+            placeholder="Dram, Bilim Kurgu"
+            aria-describedby="film-turler-ipucu film-turler-hata"
+            [class.is-invalid]="turler.touched && turler.invalid"
+          />
+          <div id="film-turler-ipucu" class="form-text">Virgülle ayırın.</div>
+          <div id="film-turler-hata" class="invalid-feedback">{{ turler | alanHatasi: 'Türler' }}</div>
+        </div>
+
+        <div class="col-12">
+          <label for="film-oyuncular" class="form-label">Oyuncular</label>
+          <textarea
+            id="film-oyuncular"
+            rows="4"
+            class="form-control"
+            formControlName="cast"
+            aria-describedby="film-oyuncular-ipucu film-oyuncular-hata"
+            [class.is-invalid]="oyuncular.touched && oyuncular.invalid"
+          ></textarea>
+          <div id="film-oyuncular-ipucu" class="form-text">Her satıra bir oyuncu; başrol önce.</div>
+          <div id="film-oyuncular-hata" class="invalid-feedback">{{ oyuncular | alanHatasi: 'Oyuncular' }}</div>
+        </div>
+
+        <fieldset class="col-12" formGroupName="contentDescriptors">
+          <legend class="form-label fs-6">Akıllı işaretler</legend>
+          <div class="form-check" *ngFor="let isaret of isaretler; trackBy: isaretIzle">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [id]="'film-isaret-' + isaret.deger"
+              [formControlName]="isaret.deger"
+            />
+            <label class="form-check-label" [for]="'film-isaret-' + isaret.deger">{{ isaret.ad }}</label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary" [disabled]="gonderiliyor">
+          <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+          {{ duzenleme ? 'Değişiklikleri kaydet' : 'Filmi ekle' }}
+        </button>
+        <button type="button" class="btn btn-outline-secondary" [disabled]="gonderiliyor" (click)="iptal.emit()">
+          Vazgeç
+        </button>
+      </div>
+    </div>
+  </div>
+</form>

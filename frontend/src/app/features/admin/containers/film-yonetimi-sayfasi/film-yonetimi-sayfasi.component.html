@@ -11,6 +11,7 @@
       [formControl]="aramaKontrolu"
     />
   </form>
+  <a class="btn btn-primary" routerLink="/admin/filmler/yeni">Yeni film</a>
 </div>
 
 <ng-container *ngIf="gorunum$ | async as gorunum">
@@ -43,6 +44,9 @@
         <span class="badge" [ngClass]="film.visible ? 'bg-success' : 'bg-secondary'">
           {{ film.visible ? 'Görünür' : 'Gizli' }}
         </span>
+        <a class="btn btn-sm btn-outline-primary" [routerLink]="['/admin/filmler', film.id]" [attr.aria-label]="film.title + ' filmini düzenle'"
+          >Düzenle</a
+        >
         <button
           type="button"
           class="btn btn-sm btn-outline-secondary"

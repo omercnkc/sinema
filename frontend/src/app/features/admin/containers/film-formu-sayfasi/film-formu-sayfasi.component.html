@@ -1,0 +1,45 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a routerLink="/admin/filmler">Filmler</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ filmId === null ? 'Yeni film' : 'Filmi düzenle' }}</li>
+  </ol>
+</nav>
+
+<ng-container *ngIf="gorunum$ | async as gorunum">
+  <app-yukleniyor *ngIf="gorunum.film.yukleniyor" etiket="Film yükleniyor…"></app-yukleniyor>
+
+  <app-hata-mesaji
+    *ngIf="gorunum.film.hata as hata"
+    [mesaj]="hata.mesaj"
+    [tekrarDenenebilir]="hata.durum !== 404"
+    (tekrarDene)="tekrarDene()"
+  ></app-hata-mesaji>
+
+  <ng-container *ngIf="!gorunum.film.yukleniyor && !gorunum.film.hata">
+    <h2 class="h4 mb-4">{{ gorunum.film.veri ? gorunum.film.veri.title : 'Yeni film' }}</h2>
+
+    <ng-container *ngIf="filmId === null">
+      <app-tmdb-arama [kilitli]="gorunum.onizleme?.yukleniyor ?? false" (secildi)="tmdbSecildi($event)"></app-tmdb-arama>
+
+      <ng-container *ngIf="gorunum.onizleme as onizleme">
+        <app-yukleniyor *ngIf="onizleme.yukleniyor" etiket="TMDB bilgileri alınıyor…"></app-yukleniyor>
+        <div *ngIf="onizleme.hata as hata" class="alert alert-warning" role="alert">
+          {{ hata.mesaj }} Bilgileri forma elle girebilirsiniz.
+        </div>
+        <div *ngIf="onizleme.veri?.movieId as mevcutFilmId" class="alert alert-info" role="status">
+          Bu film zaten ekli.
+          <a [routerLink]="['/admin/filmler', mevcutFilmId]">Kayıtlı filmi düzenleyin</a>.
+        </div>
+      </ng-container>
+    </ng-container>
+
+    <app-film-formu
+      [baslangic]="gorunum.baslangic"
+      [duzenleme]="filmId !== null"
+      [gonderiliyor]="gonderiliyor"
+      [hata]="kayitHatasi"
+      (kaydet)="kaydet($event)"
+      (iptal)="vazgec()"
+    ></app-film-formu>
+  </ng-container>
+</ng-container>

@@ -1,4 +1,4 @@
-import { AbstractControl, ValidationErrors } from '@angular/forms';
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 // Kurallar auth-service ile aynı (KayitIstegi, GecerliParola, TelefonNumarasi); asıl güvence sunucudadır (rules §7)
 const PAROLA_EN_AZ_KARAKTER = 8;
@@ -18,6 +18,11 @@ const FIYAT_DESENI = /^\d{1,8}([.,]\d{1,2})?$/;
 /** Kullanıcının yazdığı fiyatı ("150,5") sunucunun beklediği biçime ("150.5") çevirir; para string gider (§7.2). */
 export function fiyatiNormalizeEt(deger: unknown): string {
   return String(deger ?? '').trim().replace(',', '.');
+}
+
+/** Metni ayraca göre öğelere böler (ör. virgülle türler, satır satır oyuncular); boşluklar kırpılır, boş öğe atılır. */
+export function listeyeAyir(deger: unknown, ayrac: RegExp | string): string[] {
+  return String(deger ?? '').split(ayrac).map((oge) => oge.trim()).filter((oge) => oge.length > 0);
 }
 
 /** Boş değeri `Validators.required`'a bırakır: alan zorunlu değilse boş geçerlidir. */
@@ -50,5 +55,14 @@ export class SinemaDogrulayicilar {
 
   static fiyat(kontrol: AbstractControl): ValidationErrors | null {
     return bosMu(kontrol) || FIYAT_DESENI.test(String(kontrol.value).trim()) ? null : { fiyat: true };
+  }
+
+  /** Metin listesinin öğe sayısı ve öğe uzunluğu sınırı (sunucudaki @Size ile aynı değerler verilir). */
+  static liste(ayrac: RegExp | string, enFazlaOge: number, ogeEnFazlaKarakter: number): ValidatorFn {
+    return (kontrol: AbstractControl): ValidationErrors | null => {
+      const ogeler = listeyeAyir(kontrol.value, ayrac);
+      const gecerli = ogeler.length <= enFazlaOge && ogeler.every((oge) => oge.length <= ogeEnFazlaKarakter);
+      return gecerli ? null : { liste: { enFazlaOge, ogeEnFazlaKarakter } };
+    };
   }
 }

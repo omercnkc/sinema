@@ -1,5 +1,5 @@
 import { FormControl } from '@angular/forms';
-import { fiyatiNormalizeEt, SinemaDogrulayicilar } from './sinema-dogrulayicilar';
+import { fiyatiNormalizeEt, listeyeAyir, SinemaDogrulayicilar } from './sinema-dogrulayicilar';
 
 describe('SinemaDogrulayicilar', () => {
   function gecerli(dogrulayici: (kontrol: FormControl) => unknown, deger: string): boolean {
@@ -33,5 +33,14 @@ describe('SinemaDogrulayicilar', () => {
     ['-1', '150,555', '123456789', '1.2.3', 'yüz'].forEach((fiyat) =>
       expect(gecerli(SinemaDogrulayicilar.fiyat, fiyat)).withContext(fiyat).toBeFalse());
     expect(fiyatiNormalizeEt(' 150,5 ')).toBe('150.5');
+  });
+
+  it('should split lists and limit item count and length', () => {
+    expect(listeyeAyir(' Dram, , Bilim Kurgu ,', ',')).toEqual(['Dram', 'Bilim Kurgu']);
+    const ikiKisa = SinemaDogrulayicilar.liste(',', 2, 5);
+    expect(gecerli(ikiKisa, 'a, b')).toBeTrue();
+    expect(gecerli(ikiKisa, '')).toBeTrue();
+    expect(gecerli(ikiKisa, 'a, b, c')).toBeFalse();
+    expect(gecerli(ikiKisa, 'uzunoge')).toBeFalse();
   });
 });

@@ -8,6 +8,13 @@ const MESAJLAR: Readonly<Record<string, MesajUretici>> = {
   required: (etiket) => `${etiket} zorunludur.`,
   email: () => 'Geçerli bir e-posta adresi girin.',
   maxlength: (etiket, ayrinti) => `${etiket} en çok ${(ayrinti as { requiredLength: number }).requiredLength} karakter olabilir.`,
+  min: (etiket, ayrinti) => `${etiket} en az ${(ayrinti as { min: number }).min} olmalı.`,
+  max: (etiket, ayrinti) => `${etiket} en çok ${(ayrinti as { max: number }).max} olabilir.`,
+  pattern: (etiket) => `${etiket} biçimi geçersiz.`,
+  liste: (etiket, ayrinti) => {
+    const sinir = ayrinti as { enFazlaOge: number; ogeEnFazlaKarakter: number };
+    return `${etiket} en çok ${sinir.enFazlaOge} öğe olabilir; her biri en çok ${sinir.ogeEnFazlaKarakter} karakter.`;
+  },
   parola: () => 'Parola en az 8 karakter olmalı ve çok uzun olmamalı.',
   kisiAdi: (etiket) => `${etiket} yalnızca harf, boşluk, kesme ve tire içerebilir.`,
   fiyat: () => 'Geçerli bir tutar girin (ör. 150 ya da 150,50).',

@@ -1,0 +1,78 @@
+<section class="card mb-4" aria-labelledby="tmdb-arama-baslik">
+  <div class="card-body">
+    <h3 id="tmdb-arama-baslik" class="h6">TMDB'den doldur</h3>
+    <p class="small text-muted">
+      Filmi seçince aşağıdaki form TMDB bilgileriyle dolar (yazdıklarınızın yerine geçer). Bulamazsanız formu elle
+      doldurabilirsiniz.
+    </p>
+    <form role="search" (submit)="$event.preventDefault()">
+      <label for="tmdb-arama" class="visually-hidden">TMDB'de film adıyla ara</label>
+      <input
+        id="tmdb-arama"
+        type="search"
+        class="form-control"
+        placeholder="TMDB'de film ara"
+        autocomplete="off"
+        [maxLength]="enFazlaKarakter"
+        [formControl]="aramaKontrolu"
+      />
+    </form>
+
+    <ng-container *ngIf="sonuc$ | async as sonuc">
+      <app-yukleniyor *ngIf="sonuc.yukleniyor" etiket="TMDB'de aranıyor…"></app-yukleniyor>
+
+      <div *ngIf="sonuc.hata as hata" class="alert alert-warning mt-3 mb-0" role="alert">
+        {{ hata.mesaj }} Bilgileri aşağıdaki forma elle girebilirsiniz.
+      </div>
+
+      <ng-container *ngIf="sonuc.veri as veri">
+        <p *ngIf="veri.totalResults === 0" class="text-muted mt-3 mb-0" role="status">TMDB'de sonuç bulunamadı.</p>
+
+        <ul class="list-group mt-3 tmdb-arama__liste" *ngIf="veri.totalResults > 0">
+          <li
+            class="list-group-item d-flex align-items-center gap-3"
+            *ngFor="let aday of veri.results; trackBy: adayIzle"
+            data-test="tmdb-adayi"
+          >
+            <img
+              *ngIf="aday.posterPath | tmdbAfis: 'w92' as adres; else afisYok"
+              class="tmdb-arama__afis"
+              [src]="adres"
+              alt=""
+              loading="lazy"
+            />
+            <ng-template #afisYok><span class="tmdb-arama__afis tmdb-arama__afis--bos" aria-hidden="true"></span></ng-template>
+            <div class="me-auto">
+              <div class="fw-semibold">
+                {{ aday.title }}
+                <span *ngIf="aday.releaseDate" class="text-muted fw-normal">({{ aday.releaseDate | slice: 0:4 }})</span>
+              </div>
+              <div *ngIf="aday.originalTitle && aday.originalTitle !== aday.title" class="small text-muted">
+                {{ aday.originalTitle }}
+              </div>
+            </div>
+            <ng-container *ngIf="aday.movieId !== null; else secimDugmesi">
+              <span class="badge bg-secondary">Ekli</span>
+              <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/admin/filmler', aday.movieId]">Düzenle</a>
+            </ng-container>
+            <ng-template #secimDugmesi>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                [disabled]="kilitli"
+                [attr.aria-label]="aday.title + ' filmini seç'"
+                (click)="secildi.emit(aday.tmdbId)"
+              >
+                Seç
+              </button>
+            </ng-template>
+          </li>
+        </ul>
+        <p *ngIf="veri.totalPages > 1" class="small text-muted mt-2 mb-0">
+          İlk {{ veri.results.length }} sonuç gösteriliyor ({{ veri.totalResults }} sonuç); aradığınızı bulamazsanız
+          aramayı daraltın.
+        </p>
+      </ng-container>
+    </ng-container>
+  </div>
+</section>

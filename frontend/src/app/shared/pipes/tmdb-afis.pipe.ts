@@ -1,8 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { environment } from '../../../environments/environment';
 
-/** TMDB'nin sunduğu görsel genişlikleri (kullandıklarımız): kart için w342, detay için w500. */
-export type TmdbAfisBoyutu = 'w342' | 'w500';
+/** TMDB'nin sunduğu görsel genişlikleri (kullandıklarımız): admin arama listesi w92, kart w342, detay w500. */
+export type TmdbAfisBoyutu = 'w92' | 'w342' | 'w500';
 
 /**
  * Saklanan TMDB görsel yolundan ("/abc.jpg") tam afiş adresi kurar (K41 hotlink; taban adres environment'ta).
