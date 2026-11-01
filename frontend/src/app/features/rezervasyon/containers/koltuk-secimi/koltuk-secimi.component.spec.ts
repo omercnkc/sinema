@@ -12,11 +12,13 @@ import { Kullanici } from '../../../../core/oturum/oturum.models';
 import { OturumService } from '../../../../core/oturum/oturum.service';
 import { SekmeGorunurlugu } from '../../../../core/zaman/sekme-gorunurlugu';
 import { SharedModule } from '../../../../shared/shared.module';
-import { DolulukCevabi, HaritaHucresi, Hucre, KoltukHaritasiGorunumu, SeansDuzeni } from '../../models/koltuk-haritasi.models';
-import { ornekDuzen } from '../../models/koltuk-haritasi.models.spec';
+import { DolulukCevabi, HaritaHucresi, Hucre, KoltukHaritasiGorunumu, SeansDuzeni } from '../../../../shared/components/koltuk-haritasi/koltuk-haritasi.models';
+import { ornekDuzen } from '../../../../shared/components/koltuk-haritasi/koltuk-haritasi.models.spec';
 import { Rezervasyon } from '../../models/rezervasyon.models';
 import { SeansDetayi } from '../../models/seans-detayi.models';
 import { KoltukHaritasiService } from '../../services/koltuk-haritasi.service';
+import { By } from '@angular/platform-browser';
+import { KoltukHaritasiComponent } from '../../../../shared/components/koltuk-haritasi/koltuk-haritasi.component';
 import { RezervasyonService } from '../../services/rezervasyon.service';
 import { KoltukSecimiComponent } from './koltuk-secimi.component';
 
@@ -82,9 +84,10 @@ describe('KoltukSecimiComponent', () => {
     discardPeriodicTasks();
   }
 
-  /** Sayfanın haritaya verdiği görünüm (NO_ERRORS_SCHEMA'da bağlama DOM özelliğine yazılır). */
+  /** Sayfanın haritaya verdiği görünüm (harita SharedModule'den gelen gerçek bileşen). */
   function haritaGorunumu(): KoltukHaritasiGorunumu {
-    return (fixture.nativeElement.querySelector('app-koltuk-haritasi') as { gorunum: KoltukHaritasiGorunumu }).gorunum;
+    const harita = fixture.debugElement.query(By.directive(KoltukHaritasiComponent)).componentInstance as KoltukHaritasiComponent;
+    return harita.gorunumVerisi as KoltukHaritasiGorunumu;
   }
 
   function hucre(id: number): HaritaHucresi {

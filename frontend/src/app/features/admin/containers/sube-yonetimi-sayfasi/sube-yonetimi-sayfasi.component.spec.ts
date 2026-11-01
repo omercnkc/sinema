@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { BildirimService } from '../../../../core/bildirim/bildirim.service';
 import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
@@ -23,7 +24,7 @@ describe('SubeYonetimiSayfasiComponent', () => {
     subeService.listele.and.returnValue(of([SUBE]));
     bildirim = jasmine.createSpyObj<BildirimService>('BildirimService', ['basari']);
     TestBed.configureTestingModule({
-      imports: [SharedModule],
+      imports: [RouterTestingModule, SharedModule],
       declarations: [SubeYonetimiSayfasiComponent, SubeFormuComponent, SalonFormuComponent],
       providers: [
         { provide: SubeYonetimiService, useValue: subeService },
@@ -59,6 +60,7 @@ describe('SubeYonetimiSayfasiComponent', () => {
     expect(kok().querySelector('[data-test="sube-karti"] h3')?.textContent).toContain('Kadıköy');
     expect(salonlar[0].textContent).toContain('₺160');
     expect(salonlar.map((satir) => satir.querySelector('.badge')?.textContent?.trim())).toEqual(['Düzen yayımlı', 'Düzen yok']);
+    expect(salonlar[1].querySelector('a')?.getAttribute('href')).toBe('/admin/subeler/salonlar/12/duzen');
   });
 
   it('should update cinema, notify and refresh list silently', () => {

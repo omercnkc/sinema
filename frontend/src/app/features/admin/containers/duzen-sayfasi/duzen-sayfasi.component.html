@@ -1,0 +1,97 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a routerLink="/admin/subeler">Şubeler ve salonlar</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Salon düzeni</li>
+  </ol>
+</nav>
+
+<app-yukleniyor *ngIf="yukleniyor" etiket="Düzen yükleniyor…"></app-yukleniyor>
+
+<app-hata-mesaji
+  *ngIf="yuklemeHatasi as hata"
+  [mesaj]="hata.mesaj"
+  [tekrarDenenebilir]="hata.durum !== 404"
+  (tekrarDene)="tekrarDene()"
+></app-hata-mesaji>
+
+<ng-container *ngIf="!yukleniyor && veri && duzen">
+  <h2 class="h4 mb-1">{{ veri.subeAdi }} · {{ veri.salon.name }}</h2>
+
+  <p class="text-muted" [ngSwitch]="veri.kaynak" data-test="duzen-kaynagi">
+    <ng-container *ngSwitchCase="'TASLAK'">
+      Kayıtlı taslak düzenleniyor. Yayımlanana kadar müşteriler ve yeni seanslar mevcut düzeni kullanır.
+    </ng-container>
+    <ng-container *ngSwitchCase="'KOPYA'">
+      Yayımlı düzenin (sürüm {{ veri.kopyaSurumu }}) kopyasıyla başladınız. Kaydedince yeni taslak oluşur; yayımlanana
+      kadar mevcut düzen geçerlidir.
+    </ng-container>
+    <ng-container *ngSwitchCase="'BOS'">
+      Bu salonun henüz düzeni yok. Düzeni çizip kaydedin, sonra yayımlayın; düzen yayımlanmadan salona seans
+      eklenemez.
+    </ng-container>
+  </p>
+
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <button type="button" class="btn btn-primary" [disabled]="!kaydedilebilir" (click)="kaydetIstendi()">
+      <span *ngIf="islemSuruyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      Taslağı kaydet
+    </button>
+    <button type="button" class="btn btn-outline-secondary" [attr.aria-pressed]="onizleme !== null" (click)="onizlemeyiDegistir()">
+      {{ onizleme ? 'Önizlemeyi kapat' : 'Müşteri gözüyle önizle' }}
+    </button>
+    <button type="button" class="btn btn-outline-success" [disabled]="!yayimlanabilir" (click)="yayimlamaOnayiniAc()">
+      Yayımla…
+    </button>
+    <span class="small ms-sm-2" role="status" data-test="kayit-durumu">
+      <span *ngIf="kaydedilmemisDegisiklikVar" class="text-warning">Kaydedilmemiş değişiklikler var.</span>
+      <span *ngIf="!kaydedilmemisDegisiklikVar && taslakId !== null" class="text-success">Taslak kayıtlı.</span>
+    </span>
+  </div>
+
+  <div *ngIf="yayimlamaOnayiAcik" class="alert alert-warning" role="alertdialog" aria-labelledby="yayimla-baslik">
+    <p id="yayimla-baslik" class="mb-2">
+      Taslak yeni sürüm olarak yayımlanacak. Bundan sonra eklenen seanslar bu düzeni kullanır; mevcut seanslar ve
+      satılmış biletler eski düzende kalır. Salonda süren bir seans varken yayımlanamaz.
+    </p>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-success btn-sm" [disabled]="islemSuruyor" (click)="yayimlaIstendi()">
+        Evet, yayımla
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="islemSuruyor" (click)="yayimlamaOnayiniKapat()">
+        Vazgeç
+      </button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="islemHatasi">
+    <app-hata-mesaji [mesaj]="islemHatasi"></app-hata-mesaji>
+    <ul *ngIf="ihlaller.length > 0" class="small text-danger" data-test="sunucu-ihlalleri">
+      <li *ngFor="let ihlal of ihlaller; trackBy: ihlalIzle">{{ ihlal }}</li>
+    </ul>
+  </ng-container>
+
+  <section *ngIf="onizleme" class="card mb-4" aria-labelledby="onizleme-baslik">
+    <div class="card-body">
+      <h3 id="onizleme-baslik" class="h6 mb-3">Müşterinin göreceği harita</h3>
+      <app-koltuk-haritasi [gorunum]="onizleme"></app-koltuk-haritasi>
+    </div>
+  </section>
+
+  <app-duzen-editoru [duzen]="duzen" (duzenDegisti)="duzenDegisti($event)"></app-duzen-editoru>
+
+  <section class="mt-5" aria-labelledby="surumler-baslik">
+    <h3 id="surumler-baslik" class="h6">Sürümler</h3>
+    <p *ngIf="veri.surumler.length === 0" class="small text-muted">Henüz kayıtlı düzen yok.</p>
+    <ul *ngIf="veri.surumler.length > 0" class="list-group">
+      <li class="list-group-item d-flex flex-wrap align-items-center gap-2" *ngFor="let surum of veri.surumler; trackBy: surumIzle">
+        <span class="fw-semibold me-auto">{{ surum.status === 'DRAFT' ? 'Taslak' : 'Sürüm ' + surum.version }}</span>
+        <span class="small text-muted">{{ surum.seatCount }} koltuk · {{ surum.gridRows }}×{{ surum.gridCols }}</span>
+        <span *ngIf="surum.publishedAt" class="small text-muted">
+          {{ surum.publishedAt | date: 'd MMM y HH:mm':saatDilimi }}
+        </span>
+        <span *ngIf="surum.active" class="badge bg-success">Aktif</span>
+        <span *ngIf="surum.status === 'DRAFT'" class="badge bg-warning text-dark">Yayımlanmadı</span>
+      </li>
+    </ul>
+  </section>
+</ng-container>

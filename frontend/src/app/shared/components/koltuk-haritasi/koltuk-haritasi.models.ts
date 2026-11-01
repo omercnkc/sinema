@@ -1,4 +1,4 @@
-import { HucreTipi, KoltukTipi } from '../../../shared/models/duzen.models';
+import { HucreTipi, KoltukTipi } from '../../models/duzen.models';
 
 /** `GET /catalog/showtimes/{id}/layout` hücresi. `cellId` koltuğun kalıcı kimliği (tutarken booking'e gider). */
 export interface Hucre {

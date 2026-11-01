@@ -29,7 +29,7 @@ import {
   KoltukDurumu,
   KoltukHaritasiGorunumu,
   SeansDuzeni,
-} from '../../models/koltuk-haritasi.models';
+} from '../../../../shared/components/koltuk-haritasi/koltuk-haritasi.models';
 import { EN_FAZLA_KOLTUK, Rezervasyon } from '../../models/rezervasyon.models';
 import { SeansDetayi } from '../../models/seans-detayi.models';
 import { KoltukHaritasiService } from '../../services/koltuk-haritasi.service';

@@ -86,6 +86,12 @@
               <span class="badge" [ngClass]="salon.activeLayoutId ? 'bg-success' : 'bg-warning text-dark'">
                 {{ salon.activeLayoutId ? 'Düzen yayımlı' : 'Düzen yok' }}
               </span>
+              <a
+                class="btn btn-sm btn-outline-primary"
+                [routerLink]="['/admin/subeler/salonlar', salon.id, 'duzen']"
+                [attr.aria-label]="salon.name + ' salonunun düzeni'"
+                >Düzen</a
+              >
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"

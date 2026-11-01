@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, Output } from '@angular/core';
-import { HaritaHucresi, Hucre, KoltukDurumu, KoltukHaritasiGorunumu } from '../../models/koltuk-haritasi.models';
+import { HaritaHucresi, Hucre, KoltukDurumu, KoltukHaritasiGorunumu } from './koltuk-haritasi.models';
 
 /** Ok tuşu → [satır, sütun] yönü */
 const YONLER: Readonly<Record<string, readonly [number, number]>> = {

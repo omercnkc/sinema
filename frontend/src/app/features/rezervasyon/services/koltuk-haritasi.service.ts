@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { sessizBaglam } from '../../../core/hata/hata.interceptor';
-import { DolulukCevabi, SeansDuzeni } from '../models/koltuk-haritasi.models';
+import { DolulukCevabi, SeansDuzeni } from '../../../shared/components/koltuk-haritasi/koltuk-haritasi.models';
 
 const API = environment.apiTabanAdresi;
 

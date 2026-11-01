@@ -23,8 +23,8 @@ interface Kayit {
 
 /**
  * /admin/subeler (smart): şubeler ve salonları, ekleme ve düzenleme. Formlar sayfa içinde açılır (modal yok).
- * Silme yok: seanslar ve biletler şube/salona bağlı. Salonun düzeni (yayımlı mı) burada görünür; düzen editörü
- * M7 alt görev 5-6'da bağlanır.
+ * Silme yok: seanslar ve biletler şube/salona bağlı. Salonun düzeni (yayımlı mı) burada görünür, düzen sayfasına
+ * buradan geçilir.
  */
 @Component({
   selector: 'app-sube-yonetimi-sayfasi',

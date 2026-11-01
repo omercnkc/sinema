@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HaritaHucresi, haritaKur } from '../../models/koltuk-haritasi.models';
-import { ornekDuzen } from '../../models/koltuk-haritasi.models.spec';
+import { HaritaHucresi, haritaKur } from './koltuk-haritasi.models';
+import { ornekDuzen } from './koltuk-haritasi.models.spec';
 import { KoltukHaritasiComponent } from './koltuk-haritasi.component';
 
 describe('KoltukHaritasiComponent', () => {

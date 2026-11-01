@@ -1,5 +1,5 @@
 import {
-  bosDuzen, boya, boyutDegistir, dogrula, EditorDuzeni, Firca, istegeCevir, koltukEtiketleri, koltukSayilari,
+  bosDuzen, boya, cevaptanKur, onizlemeDuzeni, boyutDegistir, dogrula, EditorDuzeni, Firca, istegeCevir, koltukEtiketleri, koltukSayilari,
   konumAnahtari, silinecekHucreSayisi, siraHarfi,
 } from './duzen-editoru.models';
 
@@ -83,5 +83,22 @@ describe('duzen editoru modeli', () => {
       ],
     });
     expect(koltukSayilari(duzen)).toEqual({ toplam: 2, engelli: 1 });
+  });
+
+  it('should rebuild editor layout from server cells and recompute labels', () => {
+    const duzen = cevaptanKur(3, 3, [
+      { cellId: 9, row: 0, col: 0, type: 'SCREEN', seatRowLabel: null, seatNumber: null, seatType: null },
+      { cellId: 10, row: 2, col: 1, type: 'SEAT', seatRowLabel: 'X', seatNumber: 7, seatType: 'ACCESSIBLE' },
+    ]);
+
+    expect(duzen.hucreler.get('2,1')).toEqual({ satir: 2, sutun: 1, tip: 'SEAT', koltukTipi: 'ACCESSIBLE' });
+    expect(etiket(duzen, 2, 1)).toBe('A-1');
+  });
+
+  it('should build preview layout with temporary cell ids', () => {
+    const onizleme = onizlemeDuzeni(ciz(bosDuzen(2, 2), [[0, 0, 'PERDE'], [1, 1, 'KOLTUK']]));
+
+    expect(onizleme.cells.map((h) => [h.cellId, h.type, h.seatRowLabel])).toEqual([[1, 'SCREEN', null], [2, 'SEAT', 'A']]);
+    expect([onizleme.gridRows, onizleme.gridCols]).toEqual([2, 2]);
   });
 });

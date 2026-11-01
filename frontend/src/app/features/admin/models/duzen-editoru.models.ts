@@ -1,3 +1,4 @@
+import { Hucre, SeansDuzeni } from '../../../shared/components/koltuk-haritasi/koltuk-haritasi.models';
 import { HucreTipi, KoltukTipi } from '../../../shared/models/duzen.models';
 
 /*
@@ -156,6 +157,30 @@ export function istegeCevir(duzen: EditorDuzeni): DuzenIstegi {
       };
     });
   return { gridRows: duzen.satirSayisi, gridCols: duzen.sutunSayisi, cells };
+}
+
+/** Sunucudaki düzeni (taslak ya da kopyalanacak yayımlı sürüm) editör modeline çevirir; etiketler yeniden hesaplanır. */
+export function cevaptanKur(satirSayisi: number, sutunSayisi: number, hucreler: readonly Hucre[]): EditorDuzeni {
+  const harita = new Map<string, EditorHucresi>(hucreler.map((h) => [
+    konumAnahtari(h.row, h.col),
+    { satir: h.row, sutun: h.col, tip: h.type, koltukTipi: h.type === 'SEAT' ? h.seatType ?? 'STANDARD' : null },
+  ]));
+  return { satirSayisi: sinirla(satirSayisi), sutunSayisi: sinirla(sutunSayisi), hucreler: harita };
+}
+
+/**
+ * Müşteri koltuk haritasıyla önizleme için: hücrelere yalnızca görüntüde kullanılan geçici kimlikler verilir
+ * (gerçek kimlikleri sunucu kayıtta üretir).
+ */
+export function onizlemeDuzeni(duzen: EditorDuzeni): SeansDuzeni {
+  const istek = istegeCevir(duzen);
+  return {
+    showtimeId: 0,
+    layoutId: 0,
+    gridRows: istek.gridRows,
+    gridCols: istek.gridCols,
+    cells: istek.cells.map((hucre, sira) => ({ ...hucre, cellId: sira + 1 })),
+  };
 }
 
 /** 0 → A, 25 → Z, 26 → AA (sunucu deseni [A-Z]{1,3}; 50 satırda en çok iki harf). */
