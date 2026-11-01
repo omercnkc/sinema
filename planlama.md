@@ -1017,6 +1017,20 @@ Notlar (M6 alt görev 8): tarayıcıda uçtan uca **bağımlılıksız** yürüt
 
 **M6 tamamlandı (2026-10-31).** Ertelenen notlar: QR'ın telefonla okutulması elle; uçtan uca tarayıcı betiği repoda değil (istenirse `scripts/` altına, Node 24 gerektirir); bildirimler ve düzen göçü M8'de; ng-bootstrap'in ana pakete girmesi M7'de yeniden ölçülür.
 
+**M7 alt görevleri (2026-11-01, taslak; onay bekliyor):**
+Ön bilgi: admin uçlarının çoğu M2'de hazır (TMDB arama/önizleme, film CRUD + gizleme, şube/salon, düzen taslak/yayım, seans ekle/güncelle, `POST /admin/auth/admins`). **Eksik:** admin seans listesi (salon + gün; M2'de M7'ye ertelendi) → alt görev 7'de catalog'a eklenir. Tarih/saat girişleri tarayıcının yerleşik `date`/`time` alanlarıyla (ngb-datepicker ana pakete girerdi, §M5-9). Düzen editöründe geri alma yok (K41).
+1. [ ] Admin iskeleti: tembel `AdminModule` (`/admin`, `RolGuard` ADMIN; yönetici olmayan admin paketini hiç indirmesin diye `CanLoad`), yan menülü admin düzeni (Filmler, Şubeler ve salonlar, Seanslar, Yöneticiler), üst menüde "Yönetim" bağlantısı yalnızca ADMIN'e, admin API servis temeli (hatalar sayfada)
+2. [ ] Film listesi: gizliler dahil sayfalı liste (`GET /admin/catalog/movies?q`), arama (debounce), görünür/gizli rozeti ve gizle/göster (`PATCH …/visibility`), düzenleye ve yeni filme geçiş
+3. [ ] Film formu + TMDB: TMDB'de arama (debounce; zaten ekli olanlar işaretli, ekliye bağlantı) → seçince önizleme formu doldurur (afiş görünür) → admin düzenler → kaydet; elle giriş (TMDB 503'te de çalışır); alanlar: başlık, özet, afiş yolu (önizlemeli), süre, vizyon tarihi, TR yaş sınırı (sabit liste), puan, yönetmen, türler ve oyuncular (liste girişi), akıllı işaretler (onay kutuları); düzenlemede `tmdbId` değiştirilemez; sunucu alan hataları forma (`formHatasiniIsle`)
+4. [ ] Şube ve salon: şube listesi + ekle/düzenle (ad, şehir, adres); şubenin salonları + ekle/düzenle (ad, varsayılan bilet fiyatı); salonun aktif düzen sürümü göstergesi ve düzen editörüne geçiş
+5. [ ] Düzen editörü (çekirdek): ızgara boyutu, fırçalar (standart/engelli koltuk, perde, giriş, çıkış, duvar, sil), tıkla-sürükle boyama (pointer olayları, dokunmatikte de), otomatik etiketleme (perdeden uzaklaşarak sıra harfi A, B…; soldan sağa numara, koridor atlanır), istemci doğrulaması (≥ 1 koltuk, perde var, etiketler benzersiz; asıl doğrulama sunucuda); saf model + dumb bileşen, `OnPush`
+6. [ ] Düzen kaydetme ve yayımlama: taslak oluştur/güncelle (`POST`/`PUT …/layouts`), yayımlı düzeni taslağa kopyalayarak başlama, sürüm listesi (aktif işaretli), yayımlamadan önce müşteri gözüyle önizleme (koltuk haritası bileşeni `shared`'a taşınıp yeniden kullanılır), yayımla (`…/publish`; 409 `HALL_SHOWTIME_IN_PROGRESS` = K13 mesajı)
+7. [ ] Seanslar: **catalog** `GET /api/v1/admin/catalog/showtimes?hallId&date` (İstanbul günü, gizli filmler dahil; + test); ön yüzde şube → salon → gün seçimi, günün seans çizelgesi, seans ekle (görünür film seçimi, İstanbul saatiyle başlangıç, boşsa salon fiyatı, satış kapanış ofseti), 409 çakışma mesajı (çakışan seans), fiyat/ofset düzenleme
+8. [ ] Yönetici ekleme: e-posta + parola formu (`POST /admin/auth/admins`), e-posta kayıtlıysa alanın altında
+9. [ ] Kapanış: paket boyutu ölçümü (admin paketi ve ana paket), tarayıcıda uçtan uca (admin girişi → TMDB'den afişli film ekle → salon düzeni çiz, kaydet, yayımla → seans ekle → müşteri tarafında film/seans/harita görünüyor → yönetici olmayanın `/admin`'e giremediği), README, duman testine admin adımları, tam test + sıfırdan yığın, M7 kapanışı
+
+Gruplar (öneri): [1+8], [2+4], [3], [5], [6], [7], [9]. Kısa olanlar (iskelet ile yönetici ekleme; film listesi ile şube/salon) ikişer; film formu, düzen editörü, kaydetme/yayımlama, seanslar ve kapanış tek başına.
+
 Eski sorular (referans):
 1. **Sıra** (özellikle düzen göçünün M8'de, en sonda olması) uygun mu?
 2. **Örnek veri** (M2) Flyway migration'ı olarak mı (her ortamda gelir), yoksa yalnızca `dev` profilinde çalışan ayrı bir seed olarak mı? Önerim `dev` seed.
