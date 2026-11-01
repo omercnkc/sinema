@@ -1,0 +1,47 @@
+<h2 class="h4 mb-2">Yönetici ekle</h2>
+<p class="text-muted mb-4">
+  Yeni yönetici bu e-posta ve parolayla giriş yapar ve tüm yönetim yetkilerine sahip olur. Parolayı kendisine güvenli
+  bir yoldan iletin.
+</p>
+
+<div class="row">
+  <div class="col-lg-8 col-xl-6">
+    <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+
+    <form [formGroup]="form" (ngSubmit)="gonder()" novalidate>
+      <div class="mb-3">
+        <label for="yonetici-eposta" class="form-label">E-posta</label>
+        <input
+          id="yonetici-eposta"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          autocomplete="off"
+          aria-describedby="yonetici-eposta-hata"
+          [class.is-invalid]="eposta.touched && eposta.invalid"
+        />
+        <div id="yonetici-eposta-hata" class="invalid-feedback">{{ eposta | alanHatasi: 'E-posta' }}</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="yonetici-parola" class="form-label">Parola</label>
+        <input
+          id="yonetici-parola"
+          type="password"
+          class="form-control"
+          formControlName="password"
+          autocomplete="new-password"
+          aria-describedby="yonetici-parola-ipucu yonetici-parola-hata"
+          [class.is-invalid]="parola.touched && parola.invalid"
+        />
+        <div id="yonetici-parola-ipucu" class="form-text">En az 8 karakter.</div>
+        <div id="yonetici-parola-hata" class="invalid-feedback">{{ parola | alanHatasi: 'Parola' }}</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" [disabled]="gonderiliyor">
+        <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+        Yönetici ekle
+      </button>
+    </form>
+  </div>
+</div>

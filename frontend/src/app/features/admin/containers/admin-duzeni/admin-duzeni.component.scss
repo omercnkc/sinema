@@ -1,0 +1,14 @@
+@import "tema";
+
+.admin-duzeni {
+  &__baslik {
+    letter-spacing: 0.05em;
+  }
+
+  // Küçük ekranda menü yatay; sığmazsa satır kırılmadan kayar
+  &__menu {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: map-get($spacers, 1);
+  }
+}

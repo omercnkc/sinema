@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivate, CanLoad, Route, Router, RouterStateSnapshot, UrlSegment, UrlTree } from '@angular/router';
 import { Rol } from './oturum.models';
 import { OturumService } from './oturum.service';
 
@@ -19,17 +19,30 @@ export class GirisGerekliGuard implements CanActivate {
   }
 }
 
-/** Rota verisindeki rolü (`data: { rol: 'ADMIN' }`) ister; rolü uymayan giriş yapmış kullanıcı ana sayfaya döner. */
+/**
+ * Rota verisindeki rolü (`data: { rol: 'ADMIN' }`) ister; rolü uymayan giriş yapmış kullanıcı ana sayfaya döner.
+ * Tembel modülde `canLoad` ile birlikte kullanılır: yetkisiz kullanıcı modülün kodunu hiç indirmez. `canActivate`
+ * de kalır, çünkü modül bir kez yüklendikten sonra (ör. yönetici çıkış yapıp başka hesapla girince) canLoad
+ * yeniden çalışmaz.
+ */
 @Injectable({ providedIn: 'root' })
-export class RolGuard implements CanActivate {
+export class RolGuard implements CanActivate, CanLoad {
   constructor(private readonly oturumService: OturumService, private readonly router: Router) {}
 
   canActivate(rota: ActivatedRouteSnapshot, durum: RouterStateSnapshot): boolean | UrlTree {
+    return this.denetle(rota.data?.['rol'] as Rol | undefined, durum.url);
+  }
+
+  canLoad(rota: Route, parcalar: UrlSegment[]): boolean | UrlTree {
+    const adres = '/' + parcalar.map((parca) => parca.path).join('/');
+    return this.denetle(rota.data?.['rol'] as Rol | undefined, adres);
+  }
+
+  private denetle(istenenRol: Rol | undefined, adres: string): boolean | UrlTree {
     const kullanici = this.oturumService.kullanici;
     if (kullanici === null) {
-      return girisSayfasi(this.router, durum.url);
+      return girisSayfasi(this.router, adres);
     }
-    const istenenRol = rota.data['rol'] as Rol | undefined;
     return istenenRol === undefined || kullanici.role === istenenRol || this.router.parseUrl('/');
   }
 }

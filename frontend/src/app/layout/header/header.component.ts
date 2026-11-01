@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Kullanici } from '../../core/oturum/oturum.models';
 import { OturumService } from '../../core/oturum/oturum.service';
 
@@ -17,9 +18,12 @@ import { OturumService } from '../../core/oturum/oturum.service';
 export class HeaderComponent {
   menuKapali = true;
   readonly kullanici$: Observable<Kullanici | null>;
+  /** "Yönetim" bağlantısı yalnızca yöneticiye görünür (yetkiyi asıl sunucu denetler). */
+  readonly yonetici$: Observable<boolean>;
 
   constructor(private readonly oturumService: OturumService, private readonly router: Router) {
     this.kullanici$ = oturumService.kullanici$;
+    this.yonetici$ = this.kullanici$.pipe(map((kullanici) => kullanici?.role === 'ADMIN'));
   }
 
   menuyuDegistir(): void {

@@ -1,0 +1,20 @@
+<div class="row g-4">
+  <nav class="col-md-3 col-lg-2" aria-label="Yönetim menüsü">
+    <h1 class="h6 text-uppercase text-muted admin-duzeni__baslik">Yönetim</h1>
+    <ul class="nav nav-pills flex-md-column admin-duzeni__menu">
+      <li class="nav-item" *ngFor="let oge of menu; trackBy: menuIzi">
+        <a
+          #baglanti="routerLinkActive"
+          class="nav-link"
+          [routerLink]="oge.yol"
+          routerLinkActive="active"
+          [attr.aria-current]="baglanti.isActive ? 'page' : null"
+          >{{ oge.etiket }}</a
+        >
+      </li>
+    </ul>
+  </nav>
+  <section class="col-md-9 col-lg-10">
+    <router-outlet></router-outlet>
+  </section>
+</div>

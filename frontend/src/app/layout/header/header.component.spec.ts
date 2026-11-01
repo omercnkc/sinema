@@ -69,4 +69,19 @@ describe('HeaderComponent', () => {
 
     expect(oturumAlani().querySelector('#kullanici-menusu')?.textContent?.trim()).toBe('admin@sinema.local');
   });
+
+  it('should show admin link only to admins', () => {
+    const menuBaglantilari = (): string[] =>
+      Array.from(kok.querySelectorAll('a.nav-link')).map((a) => a.textContent?.trim() ?? '');
+    expect(menuBaglantilari()).toEqual(['Filmler']);
+
+    kullanici$.next({ id: 1, email: 'ayse@ornek.com', role: 'USER', firstName: 'Ayşe', lastName: null, phone: null });
+    fixture.detectChanges();
+    expect(menuBaglantilari()).toEqual(['Filmler']);
+
+    kullanici$.next({ id: 2, email: 'admin@sinema.local', role: 'ADMIN', firstName: null, lastName: null, phone: null });
+    fixture.detectChanges();
+    expect(menuBaglantilari()).toEqual(['Filmler', 'Yönetim']);
+    expect(kok.querySelectorAll('a.nav-link')[1].getAttribute('href')).toBe('/admin');
+  });
 });

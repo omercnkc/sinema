@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Route, Router, RouterStateSnapshot, UrlSegment, UrlTree } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Kullanici, Rol } from './oturum.models';
 import { GirisGerekliGuard, MisafirGuard, RolGuard } from './oturum.guards';
@@ -47,6 +47,20 @@ describe('Oturum guards', () => {
 
     oturum.kullanici = kullanici('ADMIN');
     expect(guard.canActivate(rota('ADMIN'), durum)).toBeTrue();
+  });
+
+  it('should not load role protected module for guest or wrong role', () => {
+    const guard = TestBed.inject(RolGuard);
+    const modul: Route = { path: 'admin', data: { rol: 'ADMIN' } };
+    const parcalar = [new UrlSegment('admin', {}), new UrlSegment('yoneticiler', {})];
+
+    expect(adres(guard.canLoad(modul, parcalar))).toBe('/giris?donus=%2Fadmin%2Fyoneticiler');
+
+    oturum.kullanici = kullanici('USER');
+    expect(adres(guard.canLoad(modul, parcalar))).toBe('/');
+
+    oturum.kullanici = kullanici('ADMIN');
+    expect(guard.canLoad(modul, parcalar)).toBeTrue();
   });
 
   it('should keep logged in user away from login and register pages', () => {

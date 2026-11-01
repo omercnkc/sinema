@@ -28,6 +28,17 @@
               >Filmler</a
             >
           </li>
+          <li class="nav-item" *ngIf="yonetici$ | async">
+            <a
+              #yonetimBaglantisi="routerLinkActive"
+              class="nav-link"
+              routerLink="/admin"
+              routerLinkActive="active"
+              [attr.aria-current]="yonetimBaglantisi.isActive ? 'page' : null"
+              (click)="menuyuKapat()"
+              >Yönetim</a
+            >
+          </li>
         </ul>
         <div class="header__oturum" data-test="oturum-alani">
           <ng-container *ngIf="kullanici$ | async as kullanici; else misafir">
