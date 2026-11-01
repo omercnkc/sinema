@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * catalog-service'in iç uçları (planlama §3.3, §7.4). İstemci adı çağrılan servisin adıdır: servis token'ının
@@ -25,4 +26,8 @@ public interface KatalogIstemcisi {
     @PostMapping("/internal/v1/catalog/showtimes/{seansId}/seats/resolve")
     KoltukCozumlemeSonucu koltuklariCoz(@PathVariable("seansId") Long seansId,
             @RequestBody KoltukCozumlemeIstegi istek);
+
+    /** K35 göç planı için: hedef taslak, salonun başlamamış seansları ve onların düzen sürümleri. */
+    @GetMapping("/internal/v1/catalog/halls/{salonId}/migration-source")
+    KatalogGocKaynagi gocKaynagi(@PathVariable("salonId") Long salonId, @RequestParam("toLayoutId") Long hedefDuzenId);
 }

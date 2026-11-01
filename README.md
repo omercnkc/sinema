@@ -245,6 +245,7 @@ Port `SERVER_PORT`, DB adresi `DB_HOST` / `DB_PORT` ile değiştirilebilir.
 | `GET /api/v1/bookings/reservations/{id}` | Sahibi | Durum, koltuklar, tutar, bilet bilgileri; onaylıysa `ticketCode` |
 | `GET /api/v1/bookings/reservations?page&size` | USER/ADMIN | Kendi rezervasyonları, en yeni önce (`size` ≤ 50) |
 | `DELETE /api/v1/bookings/reservations/{id}` | Sahibi | Ödeme başlamadan hold'u bırakır (204), koltuklar hemen boşalır |
+| `POST /api/v1/admin/bookings/layout-migrations/preview` | ADMIN | `{hallId, toLayoutId}` → düzen göçü raporu (K35/K51): seans başına etiketi değişen ve yedek atanan biletler, çözülemeyenler, `applicable`; hiçbir şey yazmaz |
 
 Koltuk tutma hataları: `409 SEATS_UNAVAILABLE` (+`unavailableCellIds`), `409 ACTIVE_RESERVATION_EXISTS` (+`reservationId`),
 `429 HOLD_COOLDOWN` (+`Retry-After`), `422 SALES_CLOSED`, `400 INVALID_SEATS` / `TOO_MANY_SEATS` / `DUPLICATE_SEATS`,

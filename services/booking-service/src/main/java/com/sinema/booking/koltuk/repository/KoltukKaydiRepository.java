@@ -23,4 +23,17 @@ public interface KoltukKaydiRepository extends JpaRepository<KoltukKaydi, Long> 
                and (k.durum = com.sinema.booking.koltuk.entity.KoltukDurumu.SOLD or k.tutmaBitisi > :simdi)
              order by k.hucreId""")
     List<DoluKoltuk> doluKoltuklar(@Param("seansId") Long seansId, @Param("simdi") Instant simdi);
+
+    /**
+     * Göç planı için seansın dolu koltukları ve sahibi rezervasyonlar (K51: SOLD ve süresi dolmamış HELD ikisi de
+     * taşınır). Süresi dolmuş HELD satır boş sayılır ve taşınmaz.
+     */
+    @Query("""
+            select new com.sinema.booking.goc.plan.DoluKoltuk(k.rezervasyonId, k.hucreId)
+              from KoltukKaydi k
+             where k.seansId = :seansId
+               and (k.durum = com.sinema.booking.koltuk.entity.KoltukDurumu.SOLD or k.tutmaBitisi > :simdi)
+             order by k.rezervasyonId, k.hucreId""")
+    List<com.sinema.booking.goc.plan.DoluKoltuk> gocIcinDoluKoltuklar(@Param("seansId") Long seansId,
+            @Param("simdi") Instant simdi);
 }

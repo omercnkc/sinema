@@ -16,6 +16,7 @@ public class KatalogIstemcisiYedegi implements FallbackFactory<KatalogIstemcisi>
 
     static final String KOD = "CATALOG_UNAVAILABLE";
     private static final String MESAJ = "Seans bilgisi şu an alınamıyor, lütfen biraz sonra tekrar deneyin.";
+    private static final String GOC_MESAJI = "Salon düzeni bilgisi şu an alınamıyor, lütfen biraz sonra tekrar deneyin.";
 
     @Override
     public KatalogIstemcisi create(Throwable neden) {
@@ -31,6 +32,11 @@ public class KatalogIstemcisiYedegi implements FallbackFactory<KatalogIstemcisi>
             @Override
             public KoltukCozumlemeSonucu koltuklariCoz(Long seansId, KoltukCozumlemeIstegi istek) {
                 throw BagimlilikHatalari.cevir(neden, KOD, MESAJ);
+            }
+
+            @Override
+            public KatalogGocKaynagi gocKaynagi(Long salonId, Long hedefDuzenId) {
+                throw BagimlilikHatalari.cevir(neden, KOD, GOC_MESAJI);
             }
         };
     }
