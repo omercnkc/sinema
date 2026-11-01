@@ -6,20 +6,15 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static com.sinema.booking.goc.GocTestKatalogu.YENI_DUZEN;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.sinema.booking.katalog.istemci.KatalogGocKaynagi;
-import com.sinema.booking.katalog.istemci.KatalogGocKaynagi.DuzenHucreleri;
-import com.sinema.booking.katalog.istemci.KatalogGocKaynagi.Hucre;
+import com.sinema.booking.goc.GocTestKatalogu;
 import com.sinema.booking.rezervasyon.RezervasyonEntegrasyonTesti;
 import com.sinema.common.hata.CakismaIstisnasi;
 import com.sinema.testdestegi.TestTokenUretici;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -29,8 +24,6 @@ class DuzenGocuOnizlemeEntegrasyonTest extends RezervasyonEntegrasyonTesti {
 
     private static final String ADMIN = "Bearer " + TestTokenUretici.kullaniciTokeni(1, "ADMIN");
     private static final long SALON = 77;
-    private static final long ESKI_DUZEN = 900;
-    private static final long YENI_DUZEN = 950;
 
     private long biletliSeans;
     private long biletsizSeans;
@@ -41,39 +34,9 @@ class DuzenGocuOnizlemeEntegrasyonTest extends RezervasyonEntegrasyonTesti {
         biletsizSeans = yeniSeansId();
     }
 
-    /**
-     * Eski düzen: perde, 1. satır A-1..A-4 (901-904), 2. satır B-1..B-4 (911-914). Yeni düzenin satır dizileri
-     * {@code yeniSatirlar}. Hücre kimliği = düzen + (satır - 1) * 10 + sütun + 1; etiketler perdeden itibaren A, B…
-     */
     private void katalog(String... yeniSatirlar) {
-        DuzenHucreleri eski = duzen(ESKI_DUZEN, "PPPP", "KKKK", "KKKK");
-        DuzenHucreleri yeni = duzen(YENI_DUZEN, yeniSatirlar);
-        Instant yarin = Instant.now().plus(Duration.ofDays(1));
-        KatalogGocKaynagi kaynak = new KatalogGocKaynagi(SALON, yeni,
-                List.of(new KatalogGocKaynagi.Seans(biletliSeans, yarin, ESKI_DUZEN),
-                        new KatalogGocKaynagi.Seans(biletsizSeans, yarin.plus(Duration.ofHours(3)), ESKI_DUZEN)),
-                List.of(eski));
-        when(katalogIstemcisi.gocKaynagi(eq(SALON), eq(YENI_DUZEN))).thenReturn(kaynak);
-    }
-
-    private static DuzenHucreleri duzen(long duzenId, String... satirlar) {
-        List<Hucre> hucreler = new ArrayList<>();
-        char sira = 'A';
-        for (int satir = 0; satir < satirlar.length; satir++) {
-            int numara = 1;
-            for (int sutun = 0; sutun < satirlar[satir].length(); sutun++) {
-                long id = duzenId + (satir - 1) * 10L + sutun + 1;
-                switch (satirlar[satir].charAt(sutun)) {
-                    case 'P' -> hucreler.add(new Hucre(id, satir, sutun, "SCREEN", null, null, null));
-                    case 'K' -> hucreler.add(new Hucre(id, satir, sutun, "SEAT", String.valueOf(sira), numara++, "STANDARD"));
-                    default -> { }
-                }
-            }
-            if (satirlar[satir].indexOf('K') >= 0) {
-                sira++;
-            }
-        }
-        return new DuzenHucreleri(duzenId, satirlar.length, satirlar[0].length(), hucreler);
+        when(katalogIstemcisi.gocKaynagi(eq(SALON), eq(YENI_DUZEN)))
+                .thenReturn(GocTestKatalogu.kaynak(SALON, biletliSeans, biletsizSeans, yeniSatirlar));
     }
 
     private ResultActions onizle(String yetki) throws Exception {

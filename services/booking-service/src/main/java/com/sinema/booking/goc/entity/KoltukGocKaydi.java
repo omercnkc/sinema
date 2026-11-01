@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import com.sinema.booking.goc.plan.KoltukTasima;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -54,6 +55,25 @@ public class KoltukGocKaydi {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant olusturulmaZamani;
+
+    /**
+     * @param biletEtiketi taşımadan önce biletin üzerinde yazan etiket (eski düzenin etiketiyle aynı olmalı; telafi
+     *                     ve bildirim biletin gerçekte taşıdığı değeri kullanır)
+     */
+    public static KoltukGocKaydi olustur(Long gocId, Long seansId, KoltukTasima tasima, String biletEtiketi,
+            Instant simdi) {
+        KoltukGocKaydi kayit = new KoltukGocKaydi();
+        kayit.gocId = gocId;
+        kayit.rezervasyonId = tasima.rezervasyonId();
+        kayit.seansId = seansId;
+        kayit.eskiHucreId = tasima.eskiHucreId();
+        kayit.yeniHucreId = tasima.yeniHucreId();
+        kayit.eskiEtiket = biletEtiketi;
+        kayit.yeniEtiket = tasima.yeniEtiket();
+        kayit.neden = tasima.neden();
+        kayit.olusturulmaZamani = simdi;
+        return kayit;
+    }
 
     @Override
     public boolean equals(Object diger) {

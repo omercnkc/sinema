@@ -38,6 +38,11 @@ public class KatalogIstemcisiYedegi implements FallbackFactory<KatalogIstemcisi>
             public KatalogGocKaynagi gocKaynagi(Long salonId, Long hedefDuzenId) {
                 throw BagimlilikHatalari.cevir(neden, KOD, GOC_MESAJI);
             }
+
+            @Override
+            public KatalogEtkinlestirmeSonucu etkinlestir(Long salonId, Long duzenId, KatalogEtkinlestirmeIstegi istek) {
+                throw BagimlilikHatalari.cevir(neden, KOD, GOC_MESAJI);
+            }
         };
     }
 }

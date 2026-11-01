@@ -30,4 +30,12 @@ public interface KatalogIstemcisi {
     /** K35 göç planı için: hedef taslak, salonun başlamamış seansları ve onların düzen sürümleri. */
     @GetMapping("/internal/v1/catalog/halls/{salonId}/migration-source")
     KatalogGocKaynagi gocKaynagi(@PathVariable("salonId") Long salonId, @RequestParam("toLayoutId") Long hedefDuzenId);
+
+    /**
+     * Göçün son adımı: taslağı yayımlar ve başlamamış seansları yeni sürüme taşır. POST olduğu için yeniden
+     * denenmez; catalog tarafında aynı düzenle tekrar çağrı güvenlidir (idempotent), sürdürme bunu kullanır.
+     */
+    @PostMapping("/internal/v1/catalog/halls/{salonId}/layouts/{duzenId}/activate")
+    KatalogEtkinlestirmeSonucu etkinlestir(@PathVariable("salonId") Long salonId, @PathVariable("duzenId") Long duzenId,
+            @RequestBody KatalogEtkinlestirmeIstegi istek);
 }

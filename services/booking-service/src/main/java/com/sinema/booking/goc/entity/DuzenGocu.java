@@ -46,6 +46,40 @@ public class DuzenGocu {
     @Column(name = "completed_at")
     private Instant tamamlanmaZamani;
 
+    /** Uygulama başlar: kayıt RUNNING açılır (salon kilidiyle aynı transaction'da). */
+    public static DuzenGocu basla(Long salonId, Long hedefDuzenId, Long baslatanKullaniciId, Instant simdi) {
+        DuzenGocu gocu = new DuzenGocu();
+        gocu.salonId = salonId;
+        gocu.hedefDuzenId = hedefDuzenId;
+        gocu.baslatanKullaniciId = baslatanKullaniciId;
+        gocu.durum = GocDurumu.RUNNING;
+        gocu.olusturulmaZamani = simdi;
+        return gocu;
+    }
+
+    public void tamamla(Instant simdi) {
+        durum = GocDurumu.COMPLETED;
+        tamamlanmaZamani = simdi;
+    }
+
+    /** Hiçbir şey kalıcı olarak değişmedi (yazılmadı ya da telafi edildi). */
+    public void geriAlindi(String hataKodu, Instant simdi) {
+        durum = GocDurumu.ROLLED_BACK;
+        this.hataKodu = hataKodu;
+        tamamlanmaZamani = simdi;
+    }
+
+    /** catalog'un durumu belirsiz (cevap alınamadı): biletler taşınmış kalır, salon kilitli; aynı göç sürdürülür. */
+    public void askiyaAlindi(String hataKodu) {
+        durum = GocDurumu.FAILED;
+        this.hataKodu = hataKodu;
+    }
+
+    /** Aynı hedefle yeniden uygulandığında kaldığı yerden (catalog activate) sürdürülebilir mi. */
+    public boolean surdurulebilir(Long hedef) {
+        return durum == GocDurumu.FAILED && hedefDuzenId.equals(hedef);
+    }
+
     @Override
     public boolean equals(Object diger) {
         if (this == diger) {

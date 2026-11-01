@@ -246,10 +246,11 @@ Port `SERVER_PORT`, DB adresi `DB_HOST` / `DB_PORT` ile değiştirilebilir.
 | `GET /api/v1/bookings/reservations?page&size` | USER/ADMIN | Kendi rezervasyonları, en yeni önce (`size` ≤ 50) |
 | `DELETE /api/v1/bookings/reservations/{id}` | Sahibi | Ödeme başlamadan hold'u bırakır (204), koltuklar hemen boşalır |
 | `POST /api/v1/admin/bookings/layout-migrations/preview` | ADMIN | `{hallId, toLayoutId}` → düzen göçü raporu (K35/K51): seans başına etiketi değişen ve yedek atanan biletler, çözülemeyenler, `applicable`; hiçbir şey yazmaz |
+| `POST /api/v1/admin/bookings/layout-migrations` | ADMIN | `{hallId, toLayoutId}` → göçü uygular: salon kilitlenir, başlamamış seansların biletleri (satılmış ve tutulmuş) yeni düzene taşınır, taslak catalog'da yayımlanır, etiketi değişen/yedek atanan bilet sahiplerine bildirim. `409 MIGRATION_NOT_APPLICABLE` (+`report`), `409 MIGRATION_IN_PROGRESS`, `503 MIGRATION_PENDING` (catalog cevap vermedi; salon kilitli kalır, aynı istek tekrar gönderilince sürdürülür) |
 
 Koltuk tutma hataları: `409 SEATS_UNAVAILABLE` (+`unavailableCellIds`), `409 ACTIVE_RESERVATION_EXISTS` (+`reservationId`),
 `429 HOLD_COOLDOWN` (+`Retry-After`), `422 SALES_CLOSED`, `400 INVALID_SEATS` / `TOO_MANY_SEATS` / `DUPLICATE_SEATS`,
-`503 CATALOG_UNAVAILABLE`. payment-service'in iç uçları (`/internal/v1/bookings/reservations/{id}/payment-info`,
+`409 HALL_UNDER_MAINTENANCE` (salonda düzen göçü sürüyor), `503 CATALOG_UNAVAILABLE`. payment-service'in iç uçları (`/internal/v1/bookings/reservations/{id}/payment-info`,
 `extend-payment-window`, `confirm`, `fail`) gateway'den erişilemez.
 
 **Kurallar:** hold 3 dk (satış kapanışını aşmaz); bir işlemde en çok 5 koltuk; kullanıcının seans başına tek aktif işlemi

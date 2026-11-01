@@ -43,6 +43,16 @@ public class Bildirim {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant olusturulmaZamani;
 
+    public static Bildirim koltukDegisti(Long kullaniciId, Long rezervasyonId, String mesaj, Instant simdi) {
+        Bildirim bildirim = new Bildirim();
+        bildirim.kullaniciId = kullaniciId;
+        bildirim.tur = BildirimTuru.SEAT_CHANGED;
+        bildirim.rezervasyonId = rezervasyonId;
+        bildirim.mesaj = mesaj;
+        bildirim.olusturulmaZamani = simdi;
+        return bildirim;
+    }
+
     @Override
     public boolean equals(Object diger) {
         if (this == diger) {
