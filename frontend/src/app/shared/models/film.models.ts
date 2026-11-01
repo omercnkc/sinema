@@ -8,7 +8,7 @@ export const AKILLI_ISARET_ADLARI: Readonly<Record<AkilliIsaret, string>> = {
   OLUMSUZ_ORNEK: 'Olumsuz örnek oluşturabilecek davranışlar',
 };
 
-/** `GET /catalog/movies` liste kartı. Tarih `YYYY-MM-DD`, puan 0–10 (TMDB). */
+/** `GET /catalog/movies` liste kartı (admin listesi de aynı alanlarla, ek olarak görünürlük döner). Tarih `YYYY-MM-DD`, puan 0–10 (TMDB). */
 export interface FilmOzeti {
   readonly id: number;
   readonly title: string;
@@ -27,11 +27,4 @@ export interface FilmDetayi extends FilmOzeti {
   readonly director: string | null;
   readonly cast: readonly string[];
   readonly contentDescriptors: readonly AkilliIsaret[];
-}
-
-/** Liste filtresi (adres çubuğundaki sorgu parametrelerinden okunur). `sayfa` sıfırdan başlar. */
-export interface FilmFiltresi {
-  readonly arama: string;
-  readonly tur: string;
-  readonly sayfa: number;
 }

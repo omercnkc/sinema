@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { FilmOzeti } from '../../models/film.models';
+import { FilmOzeti } from '../../../../shared/models/film.models';
 
 /** Listede bir film (dumb): afiş, ad, yaş sınırı, süre, türler, TMDB puanı. Kartın tamamı detaya bağlantıdır. */
 @Component({

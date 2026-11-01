@@ -1,0 +1,125 @@
+<div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+  <h2 class="h4 mb-0 me-auto">Şubeler ve salonlar</h2>
+  <button
+    type="button"
+    class="btn btn-primary btn-sm"
+    [disabled]="gonderiliyor || duzenleme?.tur === 'yeni-sube'"
+    (click)="yeniSube()"
+  >
+    Yeni şube
+  </button>
+</div>
+
+<div class="card mb-4" *ngIf="duzenleme?.tur === 'yeni-sube'">
+  <div class="card-body">
+    <h3 class="h6 mb-3">Yeni şube</h3>
+    <app-sube-formu
+      [gonderiliyor]="gonderiliyor"
+      [hata]="kayitHatasi"
+      (kaydet)="subeKaydet($event)"
+      (iptal)="vazgec()"
+    ></app-sube-formu>
+  </div>
+</div>
+
+<ng-container *ngIf="durum$ | async as durum">
+  <app-yukleniyor *ngIf="durum.yukleniyor" etiket="Şubeler yükleniyor…"></app-yukleniyor>
+
+  <app-hata-mesaji
+    *ngIf="durum.hata as hata"
+    [mesaj]="hata.mesaj"
+    [tekrarDenenebilir]="true"
+    (tekrarDene)="tekrarDene()"
+  ></app-hata-mesaji>
+
+  <ng-container *ngIf="durum.veri as subeler">
+    <p *ngIf="subeler.length === 0" class="text-muted" role="status">Henüz şube yok.</p>
+
+    <section class="card mb-4" *ngFor="let sube of subeler; trackBy: subeIzle" data-test="sube-karti">
+      <div class="card-header">
+        <app-sube-formu
+          *ngIf="duzenleme?.anahtar === 'sube-' + sube.id; else subeBilgisi"
+          [sube]="sube"
+          [gonderiliyor]="gonderiliyor"
+          [hata]="kayitHatasi"
+          (kaydet)="subeKaydet($event)"
+          (iptal)="vazgec()"
+        ></app-sube-formu>
+        <ng-template #subeBilgisi>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="me-auto">
+              <h3 class="h5 mb-0">{{ sube.name }}</h3>
+              <div class="small text-muted">{{ sube.city }} · {{ sube.address }}</div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              [disabled]="gonderiliyor"
+              [attr.aria-label]="sube.name + ' şubesini düzenle'"
+              (click)="subeDuzenle(sube)"
+            >
+              Düzenle
+            </button>
+          </div>
+        </ng-template>
+      </div>
+
+      <ul class="list-group list-group-flush">
+        <li *ngIf="sube.halls.length === 0" class="list-group-item text-muted">Bu şubede henüz salon yok.</li>
+        <li class="list-group-item" *ngFor="let salon of sube.halls; trackBy: salonIzle" data-test="salon-satiri">
+          <app-salon-formu
+            *ngIf="duzenleme?.anahtar === 'salon-' + salon.id; else salonBilgisi"
+            [salon]="salon"
+            [gonderiliyor]="gonderiliyor"
+            [hata]="kayitHatasi"
+            (kaydet)="salonKaydet($event)"
+            (iptal)="vazgec()"
+          ></app-salon-formu>
+          <ng-template #salonBilgisi>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <div class="me-auto">
+                <span class="fw-semibold">{{ salon.name }}</span>
+                <span class="text-muted">
+                  · {{ salon.defaultTicketPrice | currency: 'TRY':'symbol-narrow':'1.0-2' }}</span
+                >
+              </div>
+              <span class="badge" [ngClass]="salon.activeLayoutId ? 'bg-success' : 'bg-warning text-dark'">
+                {{ salon.activeLayoutId ? 'Düzen yayımlı' : 'Düzen yok' }}
+              </span>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                [disabled]="gonderiliyor"
+                [attr.aria-label]="salon.name + ' salonunu düzenle'"
+                (click)="salonDuzenle(salon)"
+              >
+                Düzenle
+              </button>
+            </div>
+          </ng-template>
+        </li>
+        <li class="list-group-item">
+          <app-salon-formu
+            *ngIf="duzenleme?.anahtar === 'yeni-salon-' + sube.id; else salonEkleDugmesi"
+            [salon]="null"
+            [gonderiliyor]="gonderiliyor"
+            [hata]="kayitHatasi"
+            (kaydet)="salonKaydet($event)"
+            (iptal)="vazgec()"
+          ></app-salon-formu>
+          <ng-template #salonEkleDugmesi>
+            <button
+              type="button"
+              class="btn btn-sm btn-link px-0"
+              [disabled]="gonderiliyor"
+              [attr.aria-label]="sube.name + ' şubesine salon ekle'"
+              (click)="yeniSalon(sube)"
+            >
+              + Salon ekle
+            </button>
+          </ng-template>
+        </li>
+      </ul>
+    </section>
+  </ng-container>
+</ng-container>

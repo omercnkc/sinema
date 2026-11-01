@@ -1,6 +1,6 @@
 import { of, throwError } from 'rxjs';
 import { UygulamaHatasi } from '../../core/hata/uygulama-hatasi';
-import { YuklemeDurumu, yuklemeDurumu } from './yukleme-durumu';
+import { sessizYukleme, YuklemeDurumu, yuklemeDurumu } from './yukleme-durumu';
 
 describe('yuklemeDurumu', () => {
   function topla<T>(kaynak: ReturnType<typeof yuklemeDurumu>): YuklemeDurumu<T>[] {
@@ -22,5 +22,10 @@ describe('yuklemeDurumu', () => {
 
     expect(durumlar[1]).toEqual({ yukleniyor: false, veri: null, hata });
     expect(topla(yuklemeDurumu(throwError(() => new Error('x'))))[1].hata?.kod).toBe('UNEXPECTED');
+  });
+
+  it('should refresh silently: no loading state and errors swallowed', () => {
+    expect(topla<number>(sessizYukleme(of(7)))).toEqual([{ yukleniyor: false, veri: 7, hata: null }]);
+    expect(topla(sessizYukleme(throwError(() => new Error('x'))))).toEqual([]);
   });
 });

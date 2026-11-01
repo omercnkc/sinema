@@ -6,7 +6,7 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
 import { Sayfa } from '../../../../shared/models/sayfa.models';
 import { SharedModule } from '../../../../shared/shared.module';
-import { FilmOzeti } from '../../models/film.models';
+import { FilmOzeti } from '../../../../shared/models/film.models';
 import { FilmService } from '../../services/film.service';
 import { FilmListesiSayfasiComponent } from './film-listesi-sayfasi.component';
 

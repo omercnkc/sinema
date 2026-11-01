@@ -5,7 +5,8 @@ import { BehaviorSubject, combineLatest, Observable, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, shareReplay, switchMap, takeUntil } from 'rxjs/operators';
 import { Sayfa } from '../../../../shared/models/sayfa.models';
 import { YuklemeDurumu, yuklemeDurumu } from '../../../../shared/yukleme/yukleme-durumu';
-import { FilmFiltresi, FilmOzeti } from '../../models/film.models';
+import { FilmOzeti } from '../../../../shared/models/film.models';
+import { FilmFiltresi } from '../../models/film-filtresi.models';
 import { FILM_SAYFA_BOYUTU, FilmService } from '../../services/film.service';
 
 /** Aramada her tuşta değil, yazma durunca istek gider (rules §6.4 typeahead). */

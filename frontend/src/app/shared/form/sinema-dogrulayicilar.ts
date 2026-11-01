@@ -12,6 +12,14 @@ const KISI_ADI_DESENI = new RegExp("^\\s*\\p{L}[\\p{L} '\\-]*\\s*$", 'u');
 const TELEFON_AYRACLARI = /[\s\-().]/g;
 const TR_CEP_DESENI = /^(?:\+90|0090|90|0)?5\d{9}$/;
 
+// Para: en çok 8 tam, 2 ondalık basamak (sunucuda @Digits(integer = 8, fraction = 2)); ondalık ayracı virgül ya da nokta
+const FIYAT_DESENI = /^\d{1,8}([.,]\d{1,2})?$/;
+
+/** Kullanıcının yazdığı fiyatı ("150,5") sunucunun beklediği biçime ("150.5") çevirir; para string gider (§7.2). */
+export function fiyatiNormalizeEt(deger: unknown): string {
+  return String(deger ?? '').trim().replace(',', '.');
+}
+
 /** Boş değeri `Validators.required`'a bırakır: alan zorunlu değilse boş geçerlidir. */
 function bosMu(kontrol: AbstractControl): boolean {
   return kontrol.value === null || kontrol.value === '';
@@ -38,5 +46,9 @@ export class SinemaDogrulayicilar {
     }
     const sade = String(kontrol.value).trim().replace(TELEFON_AYRACLARI, '');
     return TR_CEP_DESENI.test(sade) ? null : { telefon: true };
+  }
+
+  static fiyat(kontrol: AbstractControl): ValidationErrors | null {
+    return bosMu(kontrol) || FIYAT_DESENI.test(String(kontrol.value).trim()) ? null : { fiyat: true };
   }
 }

@@ -1,0 +1,69 @@
+<div class="d-flex flex-wrap align-items-end gap-3 mb-4">
+  <h2 class="h4 mb-0 me-auto">Filmler</h2>
+  <form role="search" (submit)="$event.preventDefault()">
+    <label for="yonetim-film-arama" class="visually-hidden">Film adıyla ara</label>
+    <input
+      id="yonetim-film-arama"
+      type="search"
+      class="form-control"
+      placeholder="Film ara"
+      autocomplete="off"
+      [formControl]="aramaKontrolu"
+    />
+  </form>
+</div>
+
+<ng-container *ngIf="gorunum$ | async as gorunum">
+  <app-yukleniyor *ngIf="gorunum.durum.yukleniyor" etiket="Filmler yükleniyor…"></app-yukleniyor>
+
+  <app-hata-mesaji
+    *ngIf="gorunum.durum.hata as hata"
+    [mesaj]="hata.mesaj"
+    [tekrarDenenebilir]="true"
+    (tekrarDene)="tekrarDene()"
+  ></app-hata-mesaji>
+
+  <ng-container *ngIf="gorunum.durum.veri as sayfa">
+    <p *ngIf="sayfa.totalElements === 0" class="text-muted" role="status">Film bulunamadı.</p>
+
+    <ul class="list-group" *ngIf="sayfa.totalElements > 0">
+      <li
+        class="list-group-item d-flex flex-wrap align-items-center gap-2"
+        *ngFor="let film of sayfa.content; trackBy: filmIzle"
+        data-test="film-satiri"
+      >
+        <div class="me-auto">
+          <div class="fw-semibold">{{ film.title }}</div>
+          <div class="small text-muted">
+            <span *ngIf="film.releaseDate">{{ film.releaseDate | slice: 0:4 }} ·&ngsp;</span>
+            <span>{{ film.runtimeMinutes }} dk</span>
+            <span *ngIf="film.certification">&ngsp;· {{ film.certification }}</span>
+          </div>
+        </div>
+        <span class="badge" [ngClass]="film.visible ? 'bg-success' : 'bg-secondary'">
+          {{ film.visible ? 'Görünür' : 'Gizli' }}
+        </span>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          [disabled]="gorunum.islemdekiler.has(film.id)"
+          [attr.aria-label]="film.title + (film.visible ? ' filmini gizle' : ' filmini göster')"
+          (click)="gorunurlukDegistirIstendi(film)"
+        >
+          {{ film.visible ? 'Gizle' : 'Göster' }}
+        </button>
+      </li>
+    </ul>
+
+    <nav *ngIf="sayfa.totalPages > 1" class="d-flex justify-content-center mt-4" aria-label="Film listesi sayfaları">
+      <ngb-pagination
+        [collectionSize]="sayfa.totalElements"
+        [pageSize]="sayfaBoyutu"
+        [page]="sayfa.page + 1"
+        [maxSize]="5"
+        [rotate]="true"
+        (pageChange)="sayfaDegisti($event)"
+      ></ngb-pagination>
+    </nav>
+  </ng-container>
+</ng-container>

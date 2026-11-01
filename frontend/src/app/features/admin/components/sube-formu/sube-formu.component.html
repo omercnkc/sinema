@@ -1,0 +1,50 @@
+<form [formGroup]="form" (ngSubmit)="gonder()" novalidate aria-label="Şube bilgileri">
+  <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6">
+      <label for="sube-ad" class="form-label">Şube adı</label>
+      <input
+        id="sube-ad"
+        type="text"
+        class="form-control"
+        formControlName="name"
+        aria-describedby="sube-ad-hata"
+        [class.is-invalid]="ad.touched && ad.invalid"
+      />
+      <div id="sube-ad-hata" class="invalid-feedback">{{ ad | alanHatasi: 'Şube adı' }}</div>
+    </div>
+    <div class="col-sm-6">
+      <label for="sube-sehir" class="form-label">Şehir</label>
+      <input
+        id="sube-sehir"
+        type="text"
+        class="form-control"
+        formControlName="city"
+        aria-describedby="sube-sehir-hata"
+        [class.is-invalid]="sehir.touched && sehir.invalid"
+      />
+      <div id="sube-sehir-hata" class="invalid-feedback">{{ sehir | alanHatasi: 'Şehir' }}</div>
+    </div>
+    <div class="col-12">
+      <label for="sube-adres" class="form-label">Adres</label>
+      <input
+        id="sube-adres"
+        type="text"
+        class="form-control"
+        formControlName="address"
+        aria-describedby="sube-adres-hata"
+        [class.is-invalid]="adres.touched && adres.invalid"
+      />
+      <div id="sube-adres-hata" class="invalid-feedback">{{ adres | alanHatasi: 'Adres' }}</div>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary btn-sm" [disabled]="gonderiliyor">
+      <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      Kaydet
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="gonderiliyor" (click)="iptal.emit()">
+      Vazgeç
+    </button>
+  </div>
+</form>

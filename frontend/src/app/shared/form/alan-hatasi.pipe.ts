@@ -10,6 +10,7 @@ const MESAJLAR: Readonly<Record<string, MesajUretici>> = {
   maxlength: (etiket, ayrinti) => `${etiket} en çok ${(ayrinti as { requiredLength: number }).requiredLength} karakter olabilir.`,
   parola: () => 'Parola en az 8 karakter olmalı ve çok uzun olmamalı.',
   kisiAdi: (etiket) => `${etiket} yalnızca harf, boşluk, kesme ve tire içerebilir.`,
+  fiyat: () => 'Geçerli bir tutar girin (ör. 150 ya da 150,50).',
   telefon: () => 'Geçerli bir cep telefonu girin (ör. 0532 123 45 67).',
   // Sunucunun alan hatası (sunucuHatalariniUygula): mesaj hazır gelir
   sunucu: (_, ayrinti) => String(ayrinti),

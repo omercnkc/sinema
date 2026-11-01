@@ -5,7 +5,7 @@ import { BehaviorSubject, combineLatest, Observable, throwError } from 'rxjs';
 import { distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
 import { YuklemeDurumu, yuklemeDurumu } from '../../../../shared/yukleme/yukleme-durumu';
-import { AKILLI_ISARET_ADLARI, AkilliIsaret, FilmDetayi } from '../../models/film.models';
+import { AKILLI_ISARET_ADLARI, AkilliIsaret, FilmDetayi } from '../../../../shared/models/film.models';
 import { FilmService } from '../../services/film.service';
 
 const FILM_YOK = new UygulamaHatasi(HttpStatusCode.NotFound, 'MOVIE_NOT_FOUND', 'Film bulunamadı.');

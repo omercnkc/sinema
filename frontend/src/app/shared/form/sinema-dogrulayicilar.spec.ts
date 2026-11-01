@@ -1,5 +1,5 @@
 import { FormControl } from '@angular/forms';
-import { SinemaDogrulayicilar } from './sinema-dogrulayicilar';
+import { fiyatiNormalizeEt, SinemaDogrulayicilar } from './sinema-dogrulayicilar';
 
 describe('SinemaDogrulayicilar', () => {
   function gecerli(dogrulayici: (kontrol: FormControl) => unknown, deger: string): boolean {
@@ -25,5 +25,13 @@ describe('SinemaDogrulayicilar', () => {
     expect(gecerli(SinemaDogrulayicilar.parola, 'a'.repeat(72))).toBeTrue();
     // 37 x "ş" = 74 bayt (karakter sayısı 72'nin altında olsa da BCrypt sınırını aşar)
     expect(gecerli(SinemaDogrulayicilar.parola, 'ş'.repeat(37))).toBeFalse();
+  });
+
+  it('should accept prices with comma or dot and at most 2 decimals', () => {
+    ['150', '150,5', '150.50', '0', '12345678.99', ''].forEach((fiyat) =>
+      expect(gecerli(SinemaDogrulayicilar.fiyat, fiyat)).withContext(fiyat).toBeTrue());
+    ['-1', '150,555', '123456789', '1.2.3', 'yüz'].forEach((fiyat) =>
+      expect(gecerli(SinemaDogrulayicilar.fiyat, fiyat)).withContext(fiyat).toBeFalse());
+    expect(fiyatiNormalizeEt(' 150,5 ')).toBe('150.5');
   });
 });

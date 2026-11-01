@@ -1,0 +1,45 @@
+<form [formGroup]="form" (ngSubmit)="gonder()" novalidate aria-label="Salon bilgileri">
+  <app-hata-mesaji *ngIf="hataMesaji" [mesaj]="hataMesaji"></app-hata-mesaji>
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6">
+      <label for="salon-ad" class="form-label">Salon adı</label>
+      <input
+        id="salon-ad"
+        type="text"
+        class="form-control form-control-sm"
+        formControlName="name"
+        aria-describedby="salon-ad-hata"
+        [class.is-invalid]="ad.touched && ad.invalid"
+      />
+      <div id="salon-ad-hata" class="invalid-feedback">{{ ad | alanHatasi: 'Salon adı' }}</div>
+    </div>
+    <div class="col-sm-6">
+      <label for="salon-fiyat" class="form-label">Varsayılan bilet fiyatı (₺)</label>
+      <input
+        id="salon-fiyat"
+        type="text"
+        inputmode="decimal"
+        class="form-control form-control-sm"
+        formControlName="defaultTicketPrice"
+        aria-describedby="salon-fiyat-ipucu salon-fiyat-hata"
+        [class.is-invalid]="fiyat.touched && fiyat.invalid"
+      />
+      <div id="salon-fiyat-ipucu" class="form-text" *ngIf="duzenleme; else yeniSalonIpucu">
+        Yeni fiyat yalnızca bundan sonra eklenen seanslara uygulanır.
+      </div>
+      <ng-template #yeniSalonIpucu>
+        <div id="salon-fiyat-ipucu" class="form-text">Seans eklenirken bu fiyat önerilir.</div>
+      </ng-template>
+      <div id="salon-fiyat-hata" class="invalid-feedback">{{ fiyat | alanHatasi: 'Fiyat' }}</div>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary btn-sm" [disabled]="gonderiliyor">
+      <span *ngIf="gonderiliyor" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      Kaydet
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="gonderiliyor" (click)="iptal.emit()">
+      Vazgeç
+    </button>
+  </div>
+</form>

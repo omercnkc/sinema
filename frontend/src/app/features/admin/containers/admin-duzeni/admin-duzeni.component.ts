@@ -5,8 +5,12 @@ interface MenuOgesi {
   readonly yol: string;
 }
 
-/** Yan menü. Bölümler ilgili alt görevle eklenir (filmler, şubeler ve salonlar, seanslar). */
-const MENU: readonly MenuOgesi[] = [{ etiket: 'Yöneticiler', yol: 'yoneticiler' }];
+/** Yan menü. Seanslar bölümü kendi alt göreviyle (M7 alt görev 7) eklenir. */
+const MENU: readonly MenuOgesi[] = [
+  { etiket: 'Filmler', yol: 'filmler' },
+  { etiket: 'Şubeler ve salonlar', yol: 'subeler' },
+  { etiket: 'Yöneticiler', yol: 'yoneticiler' },
+];
 
 /** Yönetim panelinin iskeleti: md ve üstünde solda dikey menü, küçük ekranda üstte yatay menü; sağda alt sayfa. */
 @Component({

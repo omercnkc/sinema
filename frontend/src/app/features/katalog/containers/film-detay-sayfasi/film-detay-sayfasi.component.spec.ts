@@ -5,7 +5,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { of, throwError } from 'rxjs';
 import { UygulamaHatasi } from '../../../../core/hata/uygulama-hatasi';
 import { SharedModule } from '../../../../shared/shared.module';
-import { FilmDetayi } from '../../models/film.models';
+import { FilmDetayi } from '../../../../shared/models/film.models';
 import { FilmService } from '../../services/film.service';
 import { FilmDetaySayfasiComponent } from './film-detay-sayfasi.component';
 

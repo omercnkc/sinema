@@ -5,7 +5,8 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { sessizBaglam } from '../../../core/hata/hata.interceptor';
 import { Sayfa } from '../../../shared/models/sayfa.models';
-import { FilmDetayi, FilmFiltresi, FilmOzeti } from '../models/film.models';
+import { FilmDetayi, FilmOzeti } from '../../../shared/models/film.models';
+import { FilmFiltresi } from '../models/film-filtresi.models';
 
 const FILM_ADRESI = `${environment.apiTabanAdresi}/catalog/movies`;
 /** Izgarada 2/3/4 sütuna tam bölünür. */
