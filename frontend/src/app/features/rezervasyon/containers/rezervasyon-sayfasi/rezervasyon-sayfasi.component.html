@@ -14,6 +14,14 @@
         <h1 *ngSwitchDefault class="h3 mb-3">İşlem kapandı</h1>
       </ng-container>
 
+      <div *ngIf="rezervasyon.seatChanges.length > 0" class="alert alert-info" role="status" data-test="koltuk-degisti">
+        <strong>Koltuğunuz değişti.</strong> Salon düzeni güncellendi:&ngsp;
+        <span *ngFor="let degisiklik of rezervasyon.seatChanges; trackBy: degisiklikIzle; let son = last">
+          {{ degisiklik.oldLabel }} → <strong>{{ degisiklik.newLabel }}</strong>{{ son ? '.' : ', ' }}
+        </span>
+        Biletinizdeki koltuk bilgisi güncel.
+      </div>
+
       <!-- Onaylı işlemde bu bilgiler biletin üzerinde -->
       <div *ngIf="gorunum.durum !== 'ONAYLANDI'" class="card mb-3">
         <div class="card-body">

@@ -19,6 +19,16 @@ export interface Rezervasyon {
   readonly totalAmount: string;
   /** Yalnızca CONFIRMED'da dolu */
   readonly ticketCode: string | null;
+  /** Salon düzeni göçünde koltuğu değişti (K35); yalnızca tekil sorguda dolu, listede boş. */
+  readonly seatChanges: readonly KoltukDegisikligi[];
+}
+
+/** Düzen göçünde yedek koltuk atandı ya da konum aynı kalıp etiket değişti (K51). */
+export interface KoltukDegisikligi {
+  readonly oldLabel: string;
+  readonly newLabel: string;
+  readonly reason: 'LABEL_CHANGED' | 'REPLACEMENT';
+  readonly changedAt: string;
 }
 
 /** `POST /bookings/reservations` (K24: en çok 5 koltuk). */

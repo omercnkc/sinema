@@ -42,6 +42,7 @@
         </ul>
         <div class="header__oturum" data-test="oturum-alani">
           <ng-container *ngIf="kullanici$ | async as kullanici; else misafir">
+            <app-bildirim-zili></app-bildirim-zili>
             <div ngbDropdown display="dynamic" placement="bottom-end">
               <button type="button" class="btn btn-outline-light btn-sm" id="kullanici-menusu" ngbDropdownToggle>
                 {{ kullanici.firstName || kullanici.email }}

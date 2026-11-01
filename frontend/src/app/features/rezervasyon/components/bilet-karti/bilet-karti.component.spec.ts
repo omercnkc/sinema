@@ -12,7 +12,7 @@ describe('BiletKartiComponent', () => {
     reservationId: 18, showtimeId: 101, status: 'CONFIRMED', movieTitle: 'Yıldız Haritası', cinemaName: 'Kadıköy',
     hallName: 'Salon 1', startsAt: '2026-11-01T17:00:00Z', expiresAt: '2026-11-01T16:03:00Z',
     serverTime: '2026-11-01T16:00:00Z', seats: [{ cellId: 60, label: 'D-3' }, { cellId: 61, label: 'D-4' }],
-    totalAmount: '320.00', ticketCode: 'ABCD1234EFGH5678',
+    totalAmount: '320.00', ticketCode: 'ABCD1234EFGH5678', seatChanges: [],
   };
   let fixture: ComponentFixture<BiletKartiComponent>;
 

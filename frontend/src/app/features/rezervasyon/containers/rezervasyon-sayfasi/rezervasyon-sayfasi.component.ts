@@ -21,7 +21,7 @@ import { IS_SAAT_DILIMI } from '../../../../core/zaman/is-saat-dilimi';
 import { SayfaYonlendirici } from '../../../../core/yonlendirme/sayfa-yonlendirici.service';
 import { SunucuSaati } from '../../../../core/zaman/sunucu-saati.service';
 import { YuklemeDurumu, yuklemeDurumu } from '../../../../shared/yukleme/yukleme-durumu';
-import { GorunenDurum, gorunenDurum, Rezervasyon } from '../../models/rezervasyon.models';
+import { GorunenDurum, gorunenDurum, KoltukDegisikligi, Rezervasyon } from '../../models/rezervasyon.models';
 import { OdemeService } from '../../services/odeme.service';
 import { RezervasyonService } from '../../services/rezervasyon.service';
 import { SeansDetayService } from '../../services/seans-detay.service';
@@ -139,6 +139,10 @@ export class RezervasyonSayfasiComponent implements OnDestroy {
 
   koltukIzle(_: number, koltuk: { cellId: number }): number {
     return koltuk.cellId;
+  }
+
+  degisiklikIzle(_: number, degisiklik: KoltukDegisikligi): string {
+    return `${degisiklik.oldLabel}-${degisiklik.changedAt}`;
   }
 
   ngOnDestroy(): void {

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NgbCollapseModule, NgbDropdownModule, NgbToastModule } from '@ng-bootstrap/ng-bootstrap';
 import { BildirimAlaniComponent } from './bildirim-alani/bildirim-alani.component';
+import { BildirimZiliComponent } from './bildirim-zili/bildirim-zili.component';
 import { FooterComponent } from './footer/footer.component';
 import { HeaderComponent } from './header/header.component';
 import { SayfaBulunamadiComponent } from './sayfa-bulunamadi/sayfa-bulunamadi.component';
@@ -12,7 +13,7 @@ import { SayfaBulunamadiComponent } from './sayfa-bulunamadi/sayfa-bulunamadi.co
  * Yalnızca ihtiyacı olan modülleri alır (SharedModule'ün form modülüne ihtiyacı yok).
  */
 @NgModule({
-  declarations: [HeaderComponent, FooterComponent, BildirimAlaniComponent, SayfaBulunamadiComponent],
+  declarations: [HeaderComponent, FooterComponent, BildirimAlaniComponent, BildirimZiliComponent, SayfaBulunamadiComponent],
   imports: [CommonModule, RouterModule, NgbCollapseModule, NgbDropdownModule, NgbToastModule],
   exports: [HeaderComponent, FooterComponent, BildirimAlaniComponent],
 })

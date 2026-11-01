@@ -18,7 +18,7 @@ describe('RezervasyonlarimSayfasiComponent', () => {
     return {
       reservationId: id, showtimeId: 101, status: 'CONFIRMED', movieTitle: 'Yıldız Haritası', cinemaName: 'Kadıköy',
       hallName: 'Salon 1', startsAt: '2026-11-01T17:00:00Z', expiresAt: '2026-11-01T16:03:00Z', serverTime: SUNUCU,
-      seats: [{ cellId: 1, label: 'D-3' }, { cellId: 2, label: 'D-4' }], totalAmount: '320.00', ticketCode: 'K', ...degisiklik,
+      seats: [{ cellId: 1, label: 'D-3' }, { cellId: 2, label: 'D-4' }], totalAmount: '320.00', ticketCode: 'K', seatChanges: [], ...degisiklik,
     };
   }
   let fixture: ComponentFixture<RezervasyonlarimSayfasiComponent>;

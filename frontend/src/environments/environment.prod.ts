@@ -5,4 +5,6 @@ export const environment = {
   tmdbGorselTabanAdresi: 'https://image.tmdb.org/t/p',
   /** Koltuk doluluğunun yenilenme aralığı (K33: 5 sn, yapılandırılabilir). */
   dolulukYenilemeMs: 5000,
+  /** Üst menüdeki bildirim zilinin okunmamış sayısını yenileme aralığı (sayfa değişiminde ayrıca yenilenir). */
+  bildirimYenilemeMs: 60000,
 };

@@ -1,0 +1,33 @@
+@import "tema";
+
+$bildirim-menu-genisligi: 20rem;
+
+.bildirim-zili {
+  // ngbDropdownToggle'ın ok işareti zilde gereksiz
+  &::after {
+    display: none;
+  }
+
+  &__rozet {
+    position: absolute;
+    top: -0.4rem;
+    right: -0.5rem;
+    font-size: $font-size-sm * 0.75;
+  }
+
+  &__menu {
+    width: $bildirim-menu-genisligi;
+    max-height: 24rem;
+    overflow-y: auto;
+  }
+
+  &__oge {
+    white-space: normal;
+    border-left: 0.2rem solid transparent;
+
+    &--okunmamis {
+      border-left-color: $primary;
+      font-weight: $font-weight-bold;
+    }
+  }
+}

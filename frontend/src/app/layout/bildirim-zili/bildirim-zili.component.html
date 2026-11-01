@@ -1,0 +1,42 @@
+<div ngbDropdown display="dynamic" placement="bottom-end" (openChange)="menuDegisti($event)">
+  <ng-container *ngIf="okunmamisSayisi$ | async as sayi; else okunmamisYok">
+    <button
+      type="button"
+      class="btn btn-outline-light btn-sm position-relative bildirim-zili"
+      id="bildirim-zili"
+      ngbDropdownToggle
+      [attr.aria-label]="'Bildirimler, ' + sayi + ' okunmamış'"
+    >
+      <span aria-hidden="true">🔔</span>
+      <span class="badge rounded-pill bg-danger bildirim-zili__rozet" data-test="okunmamis-sayisi" aria-hidden="true">{{ sayi }}</span>
+    </button>
+  </ng-container>
+  <ng-template #okunmamisYok>
+    <button type="button" class="btn btn-outline-light btn-sm bildirim-zili" id="bildirim-zili" ngbDropdownToggle aria-label="Bildirimler">
+      <span aria-hidden="true">🔔</span>
+    </button>
+  </ng-template>
+
+  <div ngbDropdownMenu aria-labelledby="bildirim-zili" class="bildirim-zili__menu">
+    <h2 class="dropdown-header">Bildirimler</h2>
+    <ng-container *ngIf="liste$ | async as durum">
+      <span *ngIf="durum.yukleniyor" class="dropdown-item-text small text-muted">Yükleniyor…</span>
+      <span *ngIf="durum.hata" class="dropdown-item-text small text-danger">Bildirimler alınamadı.</span>
+      <ng-container *ngIf="durum.veri as sayfa">
+        <span *ngIf="sayfa.content.length === 0" class="dropdown-item-text small text-muted">Bildiriminiz yok.</span>
+        <button
+          *ngFor="let bildirim of sayfa.content; trackBy: bildirimIzle"
+          type="button"
+          ngbDropdownItem
+          class="bildirim-zili__oge"
+          [class.bildirim-zili__oge--okunmamis]="!bildirim.read"
+          data-test="bildirim"
+          (click)="sec(bildirim)"
+        >
+          <span class="d-block">{{ bildirim.message }}</span>
+          <small class="text-muted">{{ bildirim.createdAt | date: 'd MMM HH:mm':saatDilimi }}</small>
+        </button>
+      </ng-container>
+    </ng-container>
+  </div>
+</div>

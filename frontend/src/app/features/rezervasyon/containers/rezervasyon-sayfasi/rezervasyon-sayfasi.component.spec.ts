@@ -24,6 +24,7 @@ const BEKLEYEN: Rezervasyon = {
   reservationId: 18, showtimeId: 101, status: 'PENDING_PAYMENT', movieTitle: 'Yıldız Haritası', cinemaName: 'Kadıköy',
   hallName: 'Salon 1', startsAt: '2026-11-01T17:00:00Z', expiresAt: '2026-11-01T16:03:00Z', serverTime: SUNUCU_SIMDI,
   seats: [{ cellId: 60, label: 'D-3' }, { cellId: 61, label: 'D-4' }], totalAmount: '320.00', ticketCode: null,
+  seatChanges: [],
 };
 
 describe('gorunenDurum', () => {
@@ -118,6 +119,27 @@ describe('RezervasyonSayfasiComponent', () => {
       expect(biletKarti(fixture).afisYolu).toBe('/afis.jpg');
       expect(biletKarti(fixture).dogrulamaAdresi).toBe(`${document.location.origin}/bilet/ABCD1234EFGH5678`);
       expect(fixture.nativeElement.querySelector('.card-body h2')).toBeNull();
+    });
+
+    it('should show seat change banner after a layout migration', () => {
+      servis.getir.and.returnValue(of({
+        ...ONAYLI,
+        seatChanges: [
+          { oldLabel: 'D-3', newLabel: 'C-3', reason: 'LABEL_CHANGED', changedAt: '2026-11-01T10:00:00Z' },
+          { oldLabel: 'D-4', newLabel: 'C-5', reason: 'REPLACEMENT', changedAt: '2026-11-01T10:00:00Z' },
+        ],
+      }));
+      const fixture = olustur();
+
+      const bant = fixture.nativeElement.querySelector('[data-test="koltuk-degisti"]').textContent.replace(/\s+/g, ' ');
+      expect(bant).toContain('Koltuğunuz değişti.');
+      expect(bant).toContain('D-3 → C-3, D-4 → C-5.');
+    });
+
+    it('should not show seat change banner when seats never changed', () => {
+      servis.getir.and.returnValue(of(ONAYLI));
+
+      expect(olustur().nativeElement.querySelector('[data-test="koltuk-degisti"]')).toBeNull();
     });
 
     it('should still show the ticket when the poster cannot be loaded', () => {

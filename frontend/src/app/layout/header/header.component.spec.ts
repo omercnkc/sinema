@@ -1,3 +1,4 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -6,6 +7,10 @@ import { BehaviorSubject, of } from 'rxjs';
 import { Kullanici } from '../../core/oturum/oturum.models';
 import { OturumService } from '../../core/oturum/oturum.service';
 import { HeaderComponent } from './header.component';
+
+/** Zil kendi testinde; burada yalnızca giriş yapmış kullanıcıya gösterildiği denetlenir. */
+@Component({ selector: 'app-bildirim-zili', template: '', changeDetection: ChangeDetectionStrategy.OnPush })
+class SahteBildirimZiliComponent {}
 
 describe('HeaderComponent', () => {
   let fixture: ComponentFixture<HeaderComponent>;
@@ -18,7 +23,7 @@ describe('HeaderComponent', () => {
     oturum = { kullanici$, cikisYap: jasmine.createSpy('cikisYap').and.returnValue(of(undefined)) };
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, NgbCollapseModule, NgbDropdownModule],
-      declarations: [HeaderComponent],
+      declarations: [HeaderComponent, SahteBildirimZiliComponent],
       providers: [{ provide: OturumService, useValue: oturum }],
     }).compileComponents();
     fixture = TestBed.createComponent(HeaderComponent);
@@ -56,6 +61,7 @@ describe('HeaderComponent', () => {
     fixture.detectChanges();
 
     expect(oturumAlani().querySelector('#kullanici-menusu')?.textContent?.trim()).toBe('Ayşe');
+    expect(oturumAlani().querySelector('app-bildirim-zili')).not.toBeNull();
     expect(oturumAlani().querySelector('a[ngbDropdownItem]')?.getAttribute('href')).toBe('/rezervasyonlarim');
     fixture.componentInstance.cikisYap();
 
